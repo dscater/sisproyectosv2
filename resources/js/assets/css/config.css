@@ -1,0 +1,32 @@
+:root {
+    --principal: #1867c0;
+    --principal_hover: #40a5f7;
+    --principal_transparent: #2a99f3c2;
+    --secundario: #ffff00;
+    --secundario2: #e7d803;
+    --secundario_hover: #e4e400;
+    --fondo_app: #f2f2f2;
+    --correcto: #d2e7c9;
+    --transparente: #000000bd;
+    --secundarion_transparente: #a14609d0;
+    --progress: #4b5563;
+}
+
+html {
+    overflow-y: scroll;
+    overflow-y: overlay;
+}
+
+.modal.show {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.swal2-confirm.swal2-styled.swal2-default-outline,
+.swal2-cancel.swal2-styled {
+    color: white;
+}
+
+.accion_icon {
+    width: 40px;
+    margin: 3px;
+}
