@@ -7,6 +7,7 @@ use App\Http\Controllers\MonedaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProyectoController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\TipoCambioController;
 use App\Http\Controllers\TrabajoController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UsuarioController;
@@ -76,7 +77,6 @@ Route::middleware(['auth'])->prefix("admin")->group(function () {
     );
 
     // TRABAJOS
-    Route::get("/trabajos/pdf/{ingreso}", [TrabajoController::class, 'pdf'])->name("trabajos.pdf");
     Route::get("/trabajos/paginado", [TrabajoController::class, 'paginado'])->name("trabajos.paginado");
     Route::get("/trabajos/listado", [TrabajoController::class, 'listado'])->name("trabajos.listado");
     Route::resource("trabajos", TrabajoController::class)->only(
@@ -84,12 +84,19 @@ Route::middleware(['auth'])->prefix("admin")->group(function () {
     );
 
     // MONEDAS
-    Route::get("/monedas/pdf/{ingreso}", [MonedaController::class, 'pdf'])->name("monedas.pdf");
     Route::get("/monedas/paginado", [MonedaController::class, 'paginado'])->name("monedas.paginado");
     Route::get("/monedas/listado", [MonedaController::class, 'listado'])->name("monedas.listado");
     Route::resource("monedas", MonedaController::class)->only(
         ["index", "create", "store", "edit", "update", "show", "destroy"]
     );
+
+    // TIPO DE CAMBIOS
+    Route::get("/tipo_cambios/paginado", [TipoCambioController::class, 'paginado'])->name("tipo_cambios.paginado");
+    Route::get("/tipo_cambios/listado", [TipoCambioController::class, 'listado'])->name("tipo_cambios.listado");
+    Route::resource("tipo_cambios", TipoCambioController::class)->only(
+        ["index", "create", "store", "edit", "update", "show", "destroy"]
+    );
+
 
     // REPORTES
     Route::get('reportes/trabajos', [ReporteController::class, "trabajos"])->name("reportes.trabajos");

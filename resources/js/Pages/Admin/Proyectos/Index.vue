@@ -4,9 +4,14 @@ import MiTable from "@/Components/MiTable.vue";
 import { Head, usePage, Link } from "@inertiajs/vue3";
 import { useProyectos } from "@/composables/proyectos/useProyectos";
 import { useCrudAxios } from "@/composables/curdAxios/useCrudAxios";
-import { ref, onMounted } from "vue";
+import { ref, onMounted,onBeforeMount } from "vue";
 import Formulario from "./Formulario.vue";
 import axios from "axios";
+import { useAppStore } from "@/stores/aplicacion/appStore";
+const appStore = useAppStore();
+onBeforeMount(() => {
+    appStore.startLoading();
+});
 
 const { props } = usePage();
 const { limpiarProyecto, setProyecto, oProyecto } = useProyectos();
@@ -106,6 +111,7 @@ const cargaRegistros = () => {
 cargaRegistros();
 
 onMounted(() => {
+    appStore.stopLoading();
     // cargaRegistros();
 });
 </script>
@@ -143,7 +149,7 @@ onMounted(() => {
                             class="btn btn-primary btn-flat h-100"
                             @click="agregarRegistro"
                         >
-                            <i class="fa fa-plus"></i> Agregar Proyecto
+                            <i class="fa fa-plus"></i> Nuevo Proyecto
                         </button>
                     </div>
                     <div class="col-md-4 my-1">

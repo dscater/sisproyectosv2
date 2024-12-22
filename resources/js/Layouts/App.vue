@@ -1,12 +1,10 @@
 <script setup>
 // includes
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import { usePage } from "@inertiajs/vue3";
 import Footer from "./includes/Footer.vue";
 import NavBar from "./includes/NavBar.vue";
 import SideBar from "./includes/SideBar.vue";
-import { onMounted } from "vue";
-
-onMounted(() => {});
 </script>
 <template>
     <div class="wrapper">

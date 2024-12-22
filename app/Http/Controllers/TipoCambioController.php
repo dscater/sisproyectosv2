@@ -18,6 +18,18 @@ class TipoCambioController extends Controller
         }
     }
 
+    public function listado(Request $request)
+    {
+        $tipo_cambios = TipoCambio::select("tipo_cambios.*");
+        if ($request->order && $request->order == "desc") {
+            $tipo_cambios->orderBy("tipo_cambios.id", $request->order);
+        }
+        $tipo_cambios = $tipo_cambios->get();
+        return response()->JSON([
+            "tipo_cambios" => $tipo_cambios
+        ]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([

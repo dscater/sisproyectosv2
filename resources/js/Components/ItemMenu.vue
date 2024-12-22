@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { onMounted, ref, defineEmits, watch, computed } from "vue";
 import { usePage, router, Link } from "@inertiajs/vue3";
 
 const props = defineProps({
@@ -19,9 +19,22 @@ const props = defineProps({
         type: String,
         default: "GET",
     },
+    arrayRutaClassActive: {
+        type: Array,
+        default: [],
+    },
 });
 
 const route_current = ref("");
+const arrRutasActive = ref(props.arrayRutaClassActive);
+const link = ref(null);
+
+watch(
+    () => props.arrayRutaClassActive,
+    (newVal) => {
+        arrRutasActive.value = newVal;
+    }
+);
 
 router.on("navigate", (event) => {
     route_current.value = route().current();
@@ -31,14 +44,34 @@ const ejecutaPost = () => {
     router.post(route(props.ruta));
 };
 
-onMounted(() => {});
+const classActive = computed(() => {
+    if (arrRutasActive.value.length > 0) {
+        return arrRutasActive.value.includes(route_current.value)
+            ? "active"
+            : "";
+    }
+    return route_current.value == props.ruta ? "active" : "";
+});
+
+const emits = defineEmits(["onClick"]);
+onMounted(() => {
+    route_current.value = route().current();
+    link.value.addEventListener("click", function () {
+        emits("onClick");
+    });
+});
 </script>
 <template>
-    <li class="nav-item" v-if="method.toLowerCase() == 'get'">
+    <li
+        class="nav-item"
+        v-if="method.toLowerCase() == 'get'"
+        ref="link"
+        :class="[$attrs.class]"
+    >
         <Link
             :href="ruta ? route(ruta) : '/'"
             class="nav-link"
-            :class="[route_current == ruta ? 'active' : '']"
+            :class="[classActive ?? '']"
         >
             <i class="nav-icon fas" :class="icon ? icon : 'fa-th'"></i>
             <p>
@@ -47,7 +80,7 @@ onMounted(() => {});
         </Link>
     </li>
     <li class="nav-item" v-else>
-        <a href="#" class="nav-link" @click.prevent="ejecutaPost()">
+        <a href="#" class="nav-link" @click.prevent="ejecutaPost()" ref="link">
             <i class="nav-icon fas" :class="icon ? icon : 'fa-th'"></i>
             <p>
                 {{ label }}

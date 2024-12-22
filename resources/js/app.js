@@ -7,12 +7,12 @@ import "./assets/css/adminlte.min.css";
 import "./assets/css/config.css";
 import "./assets/css/datatables.css";
 import "./assets/css/form.css";
-import "./assets/css/icheck-bootstrap.min.css"
+import "./assets/css/icheck-bootstrap.min.css";
 
 // mis scripts
-import "./assets/js/jquery.min.js"
-import "./assets/js/bootstrap.bundle.js"
-import "./assets/js/adminlte.min.js"
+import "./assets/js/jquery.min.js";
+import "./assets/js/bootstrap.bundle.js";
+import "./assets/js/adminlte.min.js";
 
 import { createApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
@@ -27,6 +27,9 @@ window.Swal = Swal;
 import { createPinia } from "pinia";
 const pinia = createPinia();
 
+// Element-UI plus
+import ElementPlus from "element-plus";
+import "element-plus/dist/index.css";
 
 // Default Layout
 import App from "@/Layouts/App.vue";
@@ -51,6 +54,7 @@ createInertiaApp({
             .use(plugin)
             .use(ZiggyVue, Ziggy)
             .use(pinia)
+            .use(ElementPlus)
             .mount(el);
     },
     progress: {

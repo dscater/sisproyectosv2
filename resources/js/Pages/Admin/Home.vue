@@ -1,7 +1,12 @@
 <script setup>
 import Content from "@/Components/Content.vue";
 import { Head, usePage } from "@inertiajs/vue3";
-import { onMounted } from "vue";
+import { onMounted, onBeforeMount } from "vue";
+import { useAppStore } from "@/stores/aplicacion/appStore";
+const appStore = useAppStore();
+onBeforeMount(() => {
+    appStore.startLoading();
+});
 
 const props = defineProps({
     moneda_principal: {
@@ -38,7 +43,9 @@ const props = defineProps({
     },
 });
 
-onMounted(() => {});
+onMounted(() => {
+    appStore.stopLoading();
+});
 </script>
 
 <template>

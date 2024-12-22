@@ -1,12 +1,16 @@
 <script setup>
 import Content from "@/Components/Content.vue";
 import MiTable from "@/Components/MiTable.vue";
-import { Head, usePage, Link } from "@inertiajs/vue3";
+import { Head, usePage, Link, router } from "@inertiajs/vue3";
 import { useTrabajos } from "@/composables/trabajos/useTrabajos";
 import { useCrudAxios } from "@/composables/curdAxios/useCrudAxios";
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, reactive, onBeforeMount } from "vue";
 import axios from "axios";
-
+import { useAppStore } from "@/stores/aplicacion/appStore";
+const appStore = useAppStore();
+onBeforeMount(() => {
+    appStore.startLoading();
+});
 const { props } = usePage();
 const { limpiarTrabajo, setTrabajo, oTrabajo } = useTrabajos();
 const { axiosGet, axiosDelete } = useCrudAxios();
@@ -72,9 +76,7 @@ const headers = ref([
 const search = ref("");
 const multiSearch = ref({
     search: "",
-    pendiente: false,
-    proceso: false,
-    concluido: false,
+    filtro: [],
 });
 const options = ref({
     page: 1,
@@ -88,12 +90,13 @@ const loading = ref(true);
 
 const editarTrabajo = (item) => {
     setTrabajo(item);
+    router.get(route("trabajos.edit", item.id));
 };
 
 const eliminarTrabajo = (item) => {
     Swal.fire({
         title: "¿Quierés eliminar este registro?",
-        html: `<strong>${item.nombre}</strong>`,
+        html: `<strong>${item.proyecto.nombre} <br/> ${item.cliente.nombre}</strong>`,
         showCancelButton: true,
         confirmButtonColor: "#B61431",
         confirmButtonText: "Si, eliminar",
@@ -118,6 +121,7 @@ const updateDatos = async () => {
     }
 };
 onMounted(() => {
+    appStore.stopLoading();
 });
 </script>
 <template>
@@ -154,47 +158,31 @@ onMounted(() => {
                             class="btn btn-primary btn-flat"
                             :href="route('trabajos.create')"
                         >
-                            <i class="fa fa-plus"></i> Agregar Trabajo
+                            <i class="fa fa-plus"></i> Nuevo Trabajo
                         </Link>
                     </div>
-                    <div class="col-md-1 text-center">
-                        <label for="sPendiente">Pagos Pendientes</label>
-                        <div class="icheck-primary">
-                            <input
-                                type="checkbox"
-                                id="sPendiente"
-                                class="w-100"
-                                v-model="multiSearch.pendiente"
-                            />
-                            <label for="sPendiente"></label>
-                        </div>
-                    </div>
-                    <div class="col-md-1 text-center">
-                        <label for="sProceso">En Proceso</label>
-                        <div class="icheck-primary">
-                            <input
-                                type="checkbox"
-                                id="sProceso"
-                                class="w-100"
-                                v-model="multiSearch.proceso"
-                            />
-                            <label for="sProceso"></label>
-                        </div>
-                    </div>
-                    <div class="col-md-1 text-center">
-                        <label for="sConcluido">Concluidos/Enviados</label>
-                        <div class="icheck-primary">
-                            <input
-                                type="checkbox"
-                                id="sConcluido"
-                                class="w-100"
-                                v-model="multiSearch.concluido"
-                            />
-                            <label for="sConcluido"></label>
-                        </div>
+                    <div class="col-md-3 my-1 d-flex pl-4 align-end">
+                        <el-select
+                            class="w-100 mt-auto"
+                            size="large"
+                            placeholder="Filtrar por:"
+                            v-model="multiSearch.filtro"
+                            multiple
+                            collapse-tags
+                            collapse-tags-tooltip
+                            clearable
+                        >
+                            <el-option value="pagopendiente"
+                                >PAGOS PENDIENTES</el-option
+                            >
+                            <el-option value="proceso">EN PROCESO</el-option>
+                            <el-option value="concluidosenviados"
+                                >CONCLUIDOS/ENVIADOS</el-option
+                            >
+                        </el-select>
                     </div>
                     <div class="col-md-5 my-1 d-flex pl-4">
-                        <div class="input-group" style="align-items: end;">
+                        <div class="input-group" style="align-items: end">
                             <input
                                 v-model="multiSearch.search"
                                 placeholder="Buscar"

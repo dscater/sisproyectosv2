@@ -3,6 +3,7 @@ import Content from "@/Components/Content.vue";
 import { Head, Link } from "@inertiajs/vue3";
 import Formulario from "./Parcial/Formulario.vue";
 import { useTrabajos } from "@/composables/trabajos/useTrabajos";
+
 const { limpiarTrabajo, setTrabajo, oTrabajo } = useTrabajos();
 const props = defineProps({
     proyectos: {},
@@ -23,7 +24,9 @@ limpiarTrabajo();
         <template #header>
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0">Trabajos <small class="text-muted">> Nuevo</small></h1>
+                    <h1 class="m-0">
+                        Trabajos <small class="text-muted">> Nuevo</small>
+                    </h1>
                 </div>
                 <!-- /.col -->
                 <div class="col-sm-6">
@@ -32,7 +35,9 @@ limpiarTrabajo();
                             <Link :href="route('inicio')">Inicio</Link>
                         </li>
                         <li class="breadcrumb-item">
-                            <Link :href="route('trabajos.index')">Trabajos</Link>
+                            <Link :href="route('trabajos.index')"
+                                >Trabajos</Link
+                            >
                         </li>
                         <li class="breadcrumb-item active">Nuevo</li>
                     </ol>

@@ -1,7 +1,9 @@
 <script setup>
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
+import { router } from "@inertiajs/vue3";
 import ItemMenu from "@/Components/ItemMenu.vue";
-
+import { useAppStore } from "@/stores/aplicacion/appStore";
+const appStore = useAppStore();
 onMounted(() => {
     // Selecciona el elemento del widget
     var sidebarSearchElement = $('[data-widget="sidebar-search"]');
@@ -83,6 +85,11 @@ onMounted(() => {
                         :label="'Trabajos'"
                         :ruta="'trabajos.index'"
                         :icon="'fa-list'"
+                        :array-ruta-class-active="[
+                            'trabajos.index',
+                            'trabajos.create',
+                            'trabajos.edit',
+                        ]"
                     ></ItemMenu>
                     <ItemMenu
                         :label="'Salir'"

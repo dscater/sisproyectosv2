@@ -49,6 +49,23 @@ body .main-sidebar .sidebar .nav .nav-link.active {
     background-color: var(--principal);
 }
 
+/* ELEMENT-UI */
+.el-select.el-select--large {
+    height: 38px;
+}
+.el-select.is-invalid .el-select__wrapper {
+    box-shadow: 0 0 0 1px #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23dc3545' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+/* .el-select.el-select--large .el-select__wrapper{
+    padding: 0px 10px;
+    height: 20px;
+} */
+
 /* MODAL */
 
 .modal.show {
@@ -88,6 +105,92 @@ body table.table tbody tr td {
 }
 
 /* MODIFICAICÓN ESTILOS ADMINLTE */
+.loading {
+    position: fixed;
+    top: -200vh;
+    left: 0;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    transition: all 0.7s ease-in-out;
+}
+
+.loading::before {
+    content: "";
+    position: absolute;
+    top: -200vh;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    z-index: -1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.87);
+    z-index: -1;
+    filter: blur(2px);
+    transition: all 0.7s ease-in-out;
+}
+
+.loading.show {
+    top: 0;
+}
+
+.loading.show::before {
+    top: 0;
+}
+
+/* .loading {
+    position: fixed;
+    display: flex;
+    opacity: 0;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    transform: scale(0);
+    transition: opacity 3s ease-in-out, transform 0.6s ease-in;
+}
+
+.loading::before {
+    transform: scale(0);
+    display: flex;
+    opacity: 0;
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    z-index: -1;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.87);
+    z-index: -1;
+    filter: blur(2px);
+    transition: opacity 3s ease-in-out, transform 0.6s ease-in;
+}
+
+.loading.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.loading.show::before {
+    opacity: 1;
+    transform: scale(1);
+} */
+
 .modal-title {
     font-weight: bold;
     font-size: 1.4rem;

@@ -19,7 +19,7 @@ const oTrabajo = ref({
     estado_pago: "PENDIENTE",
     descripcion: "",
     fecha_inicio: fHelpers().getFechaActual(),
-    dias_plazo: "",
+    dias_plazo: 1,
     fecha_entrega: fHelpers().getFechaActual(),
     estado_trabajo: "EN PROCESO",
     fecha_envio: "",
@@ -76,8 +76,11 @@ export const useTrabajos = () => {
         oTrabajo.value.estado_pago = "PENDIENTE";
         oTrabajo.value.descripcion = "";
         oTrabajo.value.fecha_inicio = fHelpers().getFechaActual();
-        oTrabajo.value.dias_plazo = "";
-        oTrabajo.value.fecha_entrega = fHelpers().getFechaActual();
+        oTrabajo.value.dias_plazo = 1;
+        oTrabajo.value.fecha_entrega = fHelpers().sumarDiasFecha(
+            fHelpers().getFechaActual(),
+            1
+        );
         oTrabajo.value.estado_trabajo = "EN PROCESO";
         oTrabajo.value.fecha_envio = "";
         oTrabajo.value.fecha_conclusion = "";

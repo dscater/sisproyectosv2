@@ -8,6 +8,7 @@ use App\Models\Pago;
 use App\Models\Proyecto;
 use App\Models\TipoCambio;
 use App\Models\Trabajo;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -76,9 +77,7 @@ class TrabajoController extends Controller
     {
         $perPage = $request->input('perPage', 5);
         $search = $request->search;
-        $pendiente = $request->pendiente;
-        $proceso = $request->proceso;
-        $concluido = $request->concluido;
+        $filtro = $request->filtro;
         $trabajos = Trabajo::with(["proyecto", "cliente", "moneda_seleccionada", "moneda", "moneda_cambio", "tipo_cambio.moneda_1", "tipo_cambio.moneda_2"])
             ->select("trabajos.*")
             ->join("proyectos", "proyectos.id", "=", "trabajos.proyecto_id")
@@ -86,14 +85,19 @@ class TrabajoController extends Controller
         if (trim($search) != "") {
             $trabajos->where(DB::raw('CONCAT(proyectos.nombre, proyectos.alias, trabajos.descripcion, trabajos.estado_pago,clientes.nombre)'), 'LIKE', "%$search%");
         }
-        if ($pendiente && $pendiente == 'true') {
-            $trabajos->where("trabajos.estado_pago", "PENDIENTE");
-        }
-        if ($proceso && $proceso == 'true') {
-            $trabajos->where("trabajos.estado_trabajo", "EN PROCESO");
-        }
-        if ($concluido && $concluido == 'true') {
-            $trabajos->whereIn("trabajos.estado_trabajo", ["CONCLUIDO", "ENVIADO"]);
+
+        if ($filtro && count($filtro) > 0) {
+            foreach ($filtro as $value) {
+                if ($value == 'pagopendiente') {
+                    $trabajos->where("trabajos.estado_pago", "PENDIENTE");
+                }
+                if ($value == 'proceso') {
+                    $trabajos->where("trabajos.estado_trabajo", "EN PROCESO");
+                }
+                if ($value == 'concluidosenviados') {
+                    $trabajos->whereIn("trabajos.estado_trabajo", ["CONCLUIDO", "ENVIADO"]);
+                }
+            }
         }
 
         if ($request->orderBy && $request->orderAsc) {
@@ -110,21 +114,7 @@ class TrabajoController extends Controller
 
     public function create()
     {
-        $proyectos = Proyecto::orderBy("alias", 'asc')->get();
-        $clientes = Cliente::orderBy("nombre", 'asc')->get();
-        $monedas = Moneda::orderBy("nombre", 'asc')->get();
-        $moneda_principal = Moneda::where("principal", 1)->get()->first();
-        $tipo_cambios = TipoCambio::with("moneda_1", "moneda_2", "moneda_menor_valor")->orderBy("created_at", "desc")->get();
-        return Inertia::render(
-            'Admin/Trabajos/Create',
-            [
-                'proyectos' => $proyectos,
-                'clientes' => $clientes,
-                'monedas' => $monedas,
-                "tipo_cambios" => $tipo_cambios,
-                "moneda_principal" => $moneda_principal
-            ]
-        );
+        return Inertia::render('Admin/Trabajos/Create');
     }
 
     public function store(Request $request)
@@ -198,19 +188,9 @@ class TrabajoController extends Controller
 
     public function edit(Trabajo $trabajo)
     {
-        $proyectos = Proyecto::orderBy("alias", 'asc')->get();
-        $clientes = Cliente::orderBy("nombre", 'asc')->get();
-        $monedas = Moneda::orderBy("nombre", 'asc')->get();
-        $tipo_cambios = TipoCambio::with("moneda_1", "moneda_2", "moneda_menor_valor")->orderBy("created_at", "desc")->get();
         return Inertia::render(
-            'Admin/Trabajos/edit',
-            [
-                'trabajo' => $trabajo,
-                'proyectos' => $proyectos,
-                'clientes' => $clientes,
-                'monedas' => $monedas,
-                "tipo_cambios" => $tipo_cambios
-            ]
+            'Admin/Trabajos/Edit',
+            compact("trabajo")
         );
     }
 
@@ -307,7 +287,7 @@ class TrabajoController extends Controller
         try {
             $existe_pagos = Pago::where("trabajo_id", $trabajo->id)->get();
             if (count($existe_pagos) > 0) {
-                throw new Exception("No es posible eliminar eliminar el registro porque esta siendo utiliado", 422);
+                throw new Exception("No es posible eliminar eliminar el registro porque tiene pagos realizados", 422);
             }
             DB::delete("DELETE FROM pagos WHERE trabajo_id = $trabajo->id");
             $trabajo->delete();
