@@ -1,7 +1,7 @@
 <script setup>
 import MiModal from "@/Components/MiModal.vue";
 import { useForm, usePage } from "@inertiajs/vue3";
-import { useProyectos } from "@/composables/proyectos/useProyectos";
+import { useClientes } from "@/composables/clientes/useClientes";
 import { watch, ref, computed, defineEmits } from "vue";
 const props = defineProps({
     estado_formulario: {
@@ -14,11 +14,11 @@ const props = defineProps({
     },
 });
 
-const { oProyecto, limpiarProyecto } = useProyectos();
+const { oCliente, limpiarCliente } = useClientes();
 const accion_form = ref(props.accion_formulario);
 const estado_form = ref(props.estado_formulario);
 const enviando = ref(false);
-let form = useForm(oProyecto.value);
+let form = useForm(oCliente.value);
 watch(
     () => props.estado_formulario,
     (newValue) => {
@@ -27,7 +27,7 @@ watch(
             document
                 .getElementsByTagName("body")[0]
                 .classList.add("modal-open");
-            form = useForm(oProyecto.value);
+            form = useForm(oCliente.value);
         } else {
             document
                 .getElementsByTagName("body")[0]
@@ -61,8 +61,8 @@ const enviarFormulario = () => {
     enviando.value = true;
     let url =
         form["_method"] == "POST"
-            ? route("proyectos.store")
-            : route("proyectos.update", form.id);
+            ? route("clientes.store")
+            : route("clientes.update", form.id);
 
     form.post(url, {
         preserveScroll: true,
@@ -76,7 +76,7 @@ const enviarFormulario = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonText: `Aceptar`,
             });
-            limpiarProyecto();
+            limpiarCliente();
             emits("envio-formulario");
         },
         onError: (err) => {
@@ -120,7 +120,7 @@ const cerrarFormulario = () => {
         :footer-class="'justify-content-end'"
     >
         <template #header>
-            <h4 class="modal-title">Nuevo proyecto</h4>
+            <h4 class="modal-title">Nuevo cliente</h4>
             <button
                 type="button"
                 class="close"
@@ -132,8 +132,8 @@ const cerrarFormulario = () => {
         <template #body>
             <form>
                 <div class="row">
-                    <div class="col-md-8 mt-1">
-                        <label>Nombre del proyecto*</label>
+                    <div class="col-md-12 mt-1">
+                        <label>Nombre del cliente*</label>
                         <input
                             class="form-control"
                             :class="{
@@ -146,40 +146,6 @@ const cerrarFormulario = () => {
                             v-if="form.errors?.nombre"
                             class="error invalid-feedback"
                             >{{ form.errors.nombre }}</span
-                        >
-                    </div>
-                    <div class="col-md-4 mt-1">
-                        <label>Alias*</label>
-                        <input
-                            class="form-control"
-                            :class="{
-                                'is-invalid': form.errors?.alias,
-                            }"
-                            required
-                            v-model="form.alias"
-                        />
-
-                        <span
-                            v-if="form.errors?.alias"
-                            class="error invalid-feedback"
-                            >{{ form.errors.alias }}</span
-                        >
-                    </div>
-                    <div class="col-12 mt-1">
-                        <label>Descripción*</label>
-                        <textarea
-                            class="form-control"
-                            :class="{
-                                'is-invalid': form.errors?.descripcion,
-                            }"
-                            required
-                            rows="1"
-                            v-model="form.descripcion"
-                        ></textarea>
-                        <span
-                            v-if="form.errors?.descripcion"
-                            class="error invalid-feedback"
-                            >{{ form.errors.descripcion }}</span
                         >
                     </div>
                 </div>

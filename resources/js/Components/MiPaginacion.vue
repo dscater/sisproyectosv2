@@ -189,3 +189,21 @@ onMounted(() => {
         </li>
     </ul>
 </template>
+
+<style scoped>
+.page-item.disabled,
+.page-item.disabled,
+.page-item a:disabled,
+.page-item button:disabled {
+    cursor: not-allowed;
+    opacity: 70%;
+    font-weight: 500;
+    color: rgb(70, 70, 70);
+}
+
+.page-item a,
+.page-item button {
+    font-weight: 500;
+    color: rgb(70, 70, 70);
+}
+</style>

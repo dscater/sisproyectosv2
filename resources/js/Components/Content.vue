@@ -12,7 +12,9 @@
 
         <!-- Main content -->
         <div class="content">
-            <slot />
+            <div class="container-fluid">
+                <slot />
+            </div>
         </div>
         <!-- /.content -->
     </div>

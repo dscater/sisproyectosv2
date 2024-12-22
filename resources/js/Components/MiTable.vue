@@ -1,7 +1,7 @@
 <script setup>
 import axios from "axios";
 import MiPaginacion from "@/Components/MiPaginacion.vue";
-import { ref, onMounted, watch, nextTick } from "vue";
+import { ref, onMounted, watch, nextTick, useSlots } from "vue";
 
 const props = defineProps({
     cols: {
@@ -48,9 +48,19 @@ const props = defineProps({
         type: Array,
         default: [5, 10, 20, 30, 50, 100],
     },
+    syncOrderBy: {
+        default: null,
+    },
+    syncOrderAsc: {
+        default: null,
+    },
     search: {
         type: String,
         default: "",
+    },
+    multiSearch: {
+        type: Object,
+        default: null,
     },
     numPages: {
         type: Number,
@@ -66,7 +76,12 @@ const props = defineProps({
     },
     delaySearch: {
         type: Number,
-        default: 700,
+        default: 300,
+    },
+    // para listar los registros por cards - PENDIENTE
+    card: {
+        type: Boolean,
+        default: false,
     },
 });
 
@@ -77,12 +92,16 @@ const textSinRegistros = ref(props.sinRegistros);
 const error = ref(false);
 const mensajeError = ref("");
 const per_page = ref(props.perPage);
-const orderBy = ref(null);
-const orderAsc = ref(null);
+const orderBy = ref(props.syncOrderBy);
+const orderAsc = ref(
+    props.syncOrderAsc ? props.syncOrderAsc.toLowerCase() : null
+);
+
 const total = ref(listData.value.length);
 const currentPage = ref(1);
 const filter_page = ref(props.filterPage);
 const tSearch = ref(props.search);
+const oMultiSearch = ref(props.multiSearch);
 const aPaginas = ref([]);
 const cDeRegistros = ref(1);
 const cARegistros = ref(per_page.value);
@@ -90,31 +109,70 @@ const totalPages = ref(0);
 const pLoading = ref(false);
 const eTbody = ref(null);
 const intervalSearch = ref(null);
+
 const apiRegistros = async () => {
     try {
-        const response = await axios(props.url, {
-            params: {
+        let dataParams = {
+            page: currentPage.value,
+            currentPage: currentPage.value,
+            perPage: per_page.value,
+            search: tSearch.value,
+            orderBy: orderBy.value,
+            orderAsc: orderAsc.value,
+        };
+        if (oMultiSearch.value) {
+            dataParams = {
                 page: currentPage.value,
                 currentPage: currentPage.value,
                 perPage: per_page.value,
-                search: tSearch.value,
+                ...oMultiSearch.value,
                 orderBy: orderBy.value,
                 orderAsc: orderAsc.value,
-            },
+            };
+        }
+        const response = await axios(props.url, {
+            params: dataParams,
         });
 
         return response.data;
-    } catch (error) {
-        console.log(error);
+    } catch (err) {
+        pLoading.value = false;
+        error.value = true;
+        console.log(err);
         return null;
     }
 };
+
+watch(
+    () => props.syncOrderBy,
+    (newVal) => {
+        orderBy.value = newVal;
+        cargarDatos();
+    }
+);
+
+watch(
+    () => props.syncOrderAsc,
+    (newVal) => {
+        orderAsc.value = newVal ? newVal.toLowerCase() : null;
+        cargarDatos();
+    }
+);
 
 watch(
     () => props.loading,
     (newVal) => {
         pLoading.value = newVal;
     }
+);
+
+watch(
+    () => props.multiSearch,
+    (newVal) => {
+        oMultiSearch.value = newVal;
+        cargarDatos();
+    },
+    { deep: true }
 );
 
 watch(
@@ -149,8 +207,11 @@ const cargarDatos = async () => {
         total.value = resp.total;
         listItems.value = resp.data;
         totalPages.value = resp.lastPage;
+        muestraCantidadRegistros();
     } else {
         listItems.value = await filtrarDatosEstaticos();
+        // Actualiza los contadores de registros
+        muestraCantidadRegistros();
     }
     await nextTick();
     if (eTbody.value) {
@@ -192,6 +253,8 @@ const cambioDePagina = async (value) => {
         await cargarDatos();
     } else {
         listItems.value = await filtrarDatosEstaticos();
+        // Actualiza los contadores de registros
+        muestraCantidadRegistros();
     }
 };
 
@@ -245,13 +308,52 @@ const filtrarDatosEstaticos = async () => {
     );
 
     // Actualiza los contadores de registros
-    cDeRegistros.value = startIndex + 1; // Primer registro de la página
-    const total_reg = listaFiltrada.length - 1;
-    cARegistros.value = cDeRegistros.value + total_reg; // Último registro de la página
+    // cDeRegistros.value = startIndex + 1; // Primer registro de la página
+    // const total_reg = listaFiltrada.length - 1;
+    // cARegistros.value = cDeRegistros.value + total_reg; // Último registro de la página
 
     // Devuelve la sección del array filtrado, ordenado y paginado
     return listaFiltrada;
 };
+
+const muestraCantidadRegistros = () => {
+    const startIndex = (parseInt(currentPage.value) - 1) * per_page.value;
+    const total_reg = listItems.value.length - 1;
+    cDeRegistros.value = startIndex + 1; // Primer registro de la página
+    cARegistros.value = cDeRegistros.value + total_reg; // Último registro de la página
+};
+
+const getColumnStyle = (item) => {
+    const width = item.width
+        ? `${item.width + (item.wp ? item.wp : "%")}`
+        : "auto"; // Puedes calcular o definir el valor base para el ancho
+    return {
+        width: width,
+    };
+};
+
+function getColumnValue(obj, key) {
+    return key.split(".").reduce((acc, part) => acc && acc[part], obj);
+}
+
+function getRowClass(item) {
+    let classes = [];
+    for (const column of listCols.value) {
+        if (column.classRow) {
+            const className = column.classRow(item);
+            if (className) {
+                classes.push(className);
+            }
+        }
+    }
+    return classes.join(" ");
+}
+
+function getClassActiveSort(item) {
+    return orderBy.value == (item.keySortable ? item.keySortable : item.key);
+}
+
+const slots = useSlots();
 
 onMounted(() => {
     if (props.api) {
@@ -264,12 +366,17 @@ defineExpose({
 });
 </script>
 <template>
-    <table class="table table-bordered" :class="[tableClass, $attrs.class]">
+    <table
+        class="table table-bordered mb-0"
+        :class="[tableClass, $attrs.class]"
+    >
         <thead :class="[headerClass]">
-            <template v-if="$slots.tableHeader"></template>
+            <template v-if="$slots.tableHeader">
+                <slot name="tableHeader"></slot>
+            </template>
             <template v-else>
                 <tr>
-                    <th v-for="item in listCols">
+                    <th v-for="item in listCols" :style="getColumnStyle(item)">
                         <div
                             class="iheader sortable"
                             v-if="item.sortable"
@@ -285,11 +392,7 @@ defineExpose({
                             <div
                                 class="accion"
                                 :class="{
-                                    active:
-                                        orderBy ==
-                                        (item.keySortable
-                                            ? item.keySortable
-                                            : item.key),
+                                    active: getClassActiveSort(item),
                                 }"
                             >
                                 <i
@@ -334,16 +437,24 @@ defineExpose({
                 </div>
             </div>
             <template v-if="listItems.length > 0">
-                <tr v-for="(item, index) in listItems">
+                <tr
+                    v-for="(item, index) in listItems"
+                    :class="getRowClass(item)"
+                >
                     <td
                         v-for="(i_col, index) in listCols"
                         :data-label="i_col.label"
+                        :class="i_col.classTd ? i_col.classTd(item) : ''"
                     >
                         <template v-if="$slots[i_col.key]">
-                            <slot :name="i_col.key" :item="item"></slot>
+                            <slot
+                                :name="i_col.key"
+                                :item="item"
+                                v-bind="$attrs"
+                            ></slot>
                         </template>
                         <template v-else>
-                            {{ item[i_col.key] }}
+                            {{ getColumnValue(item, i_col.key) }}
                         </template>
                     </td>
                 </tr>
@@ -356,20 +467,17 @@ defineExpose({
                 </tr>
             </template>
         </tbody>
+        <tfoot></tfoot>
     </table>
-    <div class="row mt-3">
-        <div class="my-1 col-md-3 offset-md-3">
-            <select class="form-control" v-model="per_page">
+    <div class="row mt-1">
+        <div class="my-1 col-md-3">
+            <select class="form-control rounded-0" v-model="per_page">
                 <option v-for="item in filter_page" :value="item">
                     Mostrar {{ item }} registros
                 </option>
             </select>
         </div>
-        <div class="my-1 col-md-3 text-center">
-            Mostrando {{ cDeRegistros }} a {{ cARegistros }} registros - Total
-            {{ total }} registros
-        </div>
-        <div class="my-1 col-md-3 d-flex justify-content-center">
+        <div class="my-1 col-md-6 d-flex justify-content-center">
             <MiPaginacion
                 :current-page="currentPage"
                 :total-data="total"
@@ -377,13 +485,20 @@ defineExpose({
                 @updatePage="cambioDePagina"
             />
         </div>
+        <div class="my-1 col-md-3 text-right">
+            Mostrando {{ cDeRegistros }} a {{ cARegistros }} registros - Total
+            {{ total }} registros
+        </div>
     </div>
-    <div v-if="error">Ocurrió un error al intentar obtener los registros</div>
+    <div v-if="error" class="alert alert-danger">
+        Ocurrió un error al intentar obtener los registros
+    </div>
 </template>
 <style scoped>
 table thead tr th .iheader {
     display: flex;
     flex-direction: row;
+    justify-content: space-between;
     gap: 3px;
 }
 

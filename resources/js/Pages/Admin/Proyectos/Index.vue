@@ -37,12 +37,12 @@ const headers = ref([
         sortable: true,
     },
     {
-        label: "Fecha de Registro",
+        label: "FECHA DE REGISTRO",
         key: "fecha_registro_t",
         keySortable: "fecha_registro",
         sortable: true,
     },
-    { label: "Acción", key: "accion" },
+    { label: "ACCIÓN", key: "accion" },
 ]);
 
 const search = ref("");
@@ -131,55 +131,69 @@ onMounted(() => {
             <!-- /.row -->
         </template>
         <div class="row mb-1">
-            <div
-                class="col-12"
-                v-if="props.auth.user.permisos.includes('proyectos.create')"
-            >
-                <button class="btn btn-primary" @click="agregarRegistro">
-                    <i class="fa fa-plus"></i> Agregar Proyecto
-                </button>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-primary">
-                        <div class="row">
-                            <div class="col-md-4 offset-md-8">
-                                <input
-                                    v-model="search"
-                                    placeholder="Buscar"
-                                    class="form-control"
-                                />
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="col-md-8 my-1">
+                        <button
+                            v-if="
+                                props.auth.user.permisos.includes(
+                                    'proyectos.create'
+                                )
+                            "
+                            class="btn btn-primary btn-flat h-100"
+                            @click="agregarRegistro"
+                        >
+                            <i class="fa fa-plus"></i> Agregar Proyecto
+                        </button>
+                    </div>
+                    <div class="col-md-4 my-1">
+                        <div class="input-group">
+                            <input
+                                v-model="search"
+                                placeholder="Buscar"
+                                class="form-control border-1 border-right-0"
+                                @keypress.enter.prevent="updateDatos"
+                            />
+                            <div class="input-append">
+                                <button
+                                    class="btn btn-default rounded-0 border-left-0"
+                                    @click="updateDatos"
+                                >
+                                    <i class="fa fa-search"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <MiTable
-                            ref="miTable"
-                            :cols="headers"
-                            :api="true"
-                            :url="route('proyectos.paginado')"
-                            :numPages="5"
-                            :search="search"
-                        >
-                            <template #accion="{ item }">
-                                <button
-                                    class="btn btn-warning accion_icon"
-                                    @click.prevent="editarProyecto(item)"
-                                >
-                                    <i class="fa fa-edit"></i>
-                                </button>
-                                <button
-                                    class="btn btn-danger accion_icon"
-                                    @click.prevent="eliminarProyecto(item)"
-                                >
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </template>
-                        </MiTable>
-                    </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <MiTable
+                    class="bg-white"
+                    ref="miTable"
+                    :cols="headers"
+                    :api="true"
+                    :url="route('proyectos.paginado')"
+                    :numPages="5"
+                    :search="search"
+                >
+                    <template #accion="{ item }">
+                        <button
+                            class="btn btn-warning accion_icon"
+                            @click.prevent="editarProyecto(item)"
+                        >
+                            <i class="fa fa-edit"></i>
+                        </button>
+                        <button
+                            class="btn btn-danger accion_icon"
+                            @click.prevent="eliminarProyecto(item)"
+                        >
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </template>
+                </MiTable>
             </div>
         </div>
         <Formulario

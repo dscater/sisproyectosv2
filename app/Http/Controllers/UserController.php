@@ -17,6 +17,16 @@ class UserController extends Controller
             "proyectos.edit",
             "proyectos.destroy",
 
+            "clientes.create",
+            "clientes.index",
+            "clientes.edit",
+            "clientes.destroy",
+
+            "trabajos.create",
+            "trabajos.index",
+            "trabajos.edit",
+            "trabajos.destroy",
+
             "reportes.usuarios",
             "reportes.productos",
         ],

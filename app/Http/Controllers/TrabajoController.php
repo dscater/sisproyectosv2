@@ -10,69 +10,102 @@ use App\Models\TipoCambio;
 use App\Models\Trabajo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class TrabajoController extends Controller
 {
-    public function index(Request $request)
+    public $validacion = [
+        'proyecto_id' => 'required',
+        'cliente_id' => 'required',
+        'costo_original' => 'required|numeric|min:1',
+        'moneda_seleccionada_id' => 'required',
+        'estado_pago' => 'required',
+        'descripcion' => 'required|min:4',
+        'fecha_inicio' => 'required|date',
+        'dias_plazo' => 'required|numeric',
+        'fecha_entrega' => 'required|date',
+        'estado_trabajo' => 'required',
+        'fecha_envio' => 'nullable|date',
+        'fecha_conclusion' => 'nullable|date',
+    ];
+
+    public $mensajes = [
+        "proyecto_id.required" => "Este campo es obligatorio",
+        "cliente_id.required" => "Este campo es obligatorio",
+        "costo_original.required" => "Este campo es obligatorio",
+        "costo_original.numeric" => "Debes ingresar un valor númerico",
+        "costo_original.min" => "Debes ingresar al menos :min",
+        "moneda_seleccionada_id.required" => "Este campo es obligatorio",
+        "estado_pago.required" => "Este campo es obligatorio",
+        "descripcion.required" => "Este campo es obligatorio",
+        "descripcion.min" => "Debes ingresar al menos :min caracteres",
+        "fecha_inicio.required" => "Este campo es obligatorio",
+        "fecha_inicio.date" => "Debes ingresar una fecha valida",
+        "dias_plazo.required" => "Este campo es obligatorio",
+        "dias_plazo.numeric" => "Debes ingresar un valor númerico",
+        "fecha_entrega.required" => "Este campo es obligatorio",
+        "estado_trabajo.required" => "Este campo es obligatorio",
+        "fecha_envio.required" => "Este campo es obligatorio",
+        "fecha_envio.date" => "Debes ingresar una fecha valida",
+        "fecha_conclusion.required" => "Este campo es obligatorio",
+        "fecha_conclusion.date" => "Debes ingresar una fecha valida",
+    ];
+    // Trabajo::refactorizarCostos();
+    // Trabajo::refactorizarPagos();
+    // Trabajo::refactorizarCostosOriginales();
+    // TrabajoController::registraPagos();
+    public function index()
     {
-        // Trabajo::refactorizarCostos();
-        // Trabajo::refactorizarPagos();
-        // Trabajo::refactorizarCostosOriginales();
-        // TrabajoController::registraPagos();
+        return Inertia::render("Admin/Trabajos/Index");
+    }
+
+    public function listado(Request $request)
+    {
+        $trabajos = Trabajo::select("trabajos.*");
+        if ($request->order && $request->order == "desc") {
+            $trabajos->orderBy("trabajos.id", $request->order);
+        }
+        $trabajos = $trabajos->get();
+        return response()->JSON([
+            "trabajos" => $trabajos
+        ]);
+    }
+
+    public function paginado(Request $request)
+    {
+        $perPage = $request->input('perPage', 5);
+        $search = $request->search;
         $pendiente = $request->pendiente;
         $proceso = $request->proceso;
         $concluido = $request->concluido;
-        $texto = mb_strtoupper($request->texto);
-
-        $trabajos = Trabajo::select("trabajos.*")
+        $trabajos = Trabajo::with(["proyecto", "cliente", "moneda_seleccionada", "moneda", "moneda_cambio", "tipo_cambio.moneda_1", "tipo_cambio.moneda_2"])
+            ->select("trabajos.*")
             ->join("proyectos", "proyectos.id", "=", "trabajos.proyecto_id")
-            ->join("clientes", "clientes.id", "=", "trabajos.cliente_id")
-            ->where(DB::raw('CONCAT(proyectos.nombre, proyectos.alias, trabajos.descripcion, trabajos.estado_pago,clientes.nombre)'), 'LIKE', "%$texto%")
-            ->orderBy('trabajos.created_at', 'desc');
-        if ($pendiente == 'true') {
+            ->join("clientes", "clientes.id", "=", "trabajos.cliente_id");
+        if (trim($search) != "") {
+            $trabajos->where(DB::raw('CONCAT(proyectos.nombre, proyectos.alias, trabajos.descripcion, trabajos.estado_pago,clientes.nombre)'), 'LIKE', "%$search%");
+        }
+        if ($pendiente && $pendiente == 'true') {
             $trabajos->where("trabajos.estado_pago", "PENDIENTE");
         }
-
-        if ($proceso == 'true') {
+        if ($proceso && $proceso == 'true') {
             $trabajos->where("trabajos.estado_trabajo", "EN PROCESO");
         }
-        if ($concluido == 'true') {
+        if ($concluido && $concluido == 'true') {
             $trabajos->whereIn("trabajos.estado_trabajo", ["CONCLUIDO", "ENVIADO"]);
         }
 
-
-        if ($pendiente == 'false' && $proceso == 'false' && $concluido == 'false' && $texto == "") {
-            return redirect()->route("trabajos.index");
-        } else {
-            $trabajos = $trabajos->paginate(10)
-                ->withQueryString();
+        if ($request->orderBy && $request->orderAsc) {
+            $trabajos->orderBy($request->orderBy, $request->orderAsc);
         }
 
-        $cancelados = Trabajo::where("estado_pago", "COMPLETO")->get();
-        $en_proceso = Trabajo::where("estado_trabajo", "EN PROCESO")->get();
-        $no_cancelados = Trabajo::where("estado_pago", "PENDIENTE")
-            ->whereIn("estado_trabajo", ["ENVIADO", "CONCLUIDO"])->get();
-
-        $total_cancelado = Trabajo::getTotalCancelado();
-        $total_saldo = Trabajo::getTotalSaldoPendiente();
-        $costo_total = Trabajo::getTotalTrabajos();
-
-        return Inertia::render(
-            'trabajos/index',
-            [
-                'trabajos' => $trabajos,
-                'paginationLinks' => $trabajos->onEachSide(1)->links(),
-                "total_trabajos" => count(Trabajo::all()),
-                'cancelados' => count($cancelados),
-                'no_cancelados' => count($no_cancelados),
-                'en_proceso' => count($en_proceso),
-                'total_cancelado' => $total_cancelado,
-                'total_saldo' => $total_saldo,
-                'costo_total' => $costo_total,
-                'filtros' => $request->only(["texto", "pendiente", "proceso", "concluido"])
-            ]
-        );
+        $trabajos = $trabajos->paginate($perPage);
+        return response()->JSON([
+            'data' => $trabajos->items(),
+            'total' => $trabajos->total(),
+            'lastPage' => $trabajos->lastPage(),
+        ]);
     }
 
     public function create()
@@ -81,10 +114,9 @@ class TrabajoController extends Controller
         $clientes = Cliente::orderBy("nombre", 'asc')->get();
         $monedas = Moneda::orderBy("nombre", 'asc')->get();
         $moneda_principal = Moneda::where("principal", 1)->get()->first();
-
         $tipo_cambios = TipoCambio::with("moneda_1", "moneda_2", "moneda_menor_valor")->orderBy("created_at", "desc")->get();
         return Inertia::render(
-            'trabajos/create',
+            'Admin/Trabajos/Create',
             [
                 'proyectos' => $proyectos,
                 'clientes' => $clientes,
@@ -97,20 +129,7 @@ class TrabajoController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'proyecto_id' => 'required',
-            'cliente_id' => 'required',
-            'costo_original' => 'required|numeric|min:1',
-            'moneda_seleccionada_id' => 'required',
-            'estado_pago' => 'required',
-            'descripcion' => 'required|min:4',
-            'fecha_inicio' => 'required|date',
-            'dias_plazo' => 'required|numeric',
-            'fecha_entrega' => 'required|date',
-            'estado_trabajo' => 'required',
-            'fecha_envio' => 'nullable|date',
-            'fecha_conclusion' => 'nullable|date',
-        ]);
+        $request->validate($this->validacion, $this->mensajes);
         DB::beginTransaction();
         try {
             $request["fecha_registro"] = date("Y-m-d");
@@ -165,10 +184,15 @@ class TrabajoController extends Controller
             }
             $trabajo->save();
             DB::commit();
-            return redirect()->route('trabajos.index')->with('msj', 'Trabajo registrado con éxito');
+            return redirect()->route('trabajos.index')->with('message', 'Trabajo registrado con éxito');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->route('trabajos.index')->with('error', 'Ocurrió un error inesperado: ' . $e->getMessage());
+            Log::debug("ERROR: " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
         }
     }
 
@@ -179,7 +203,7 @@ class TrabajoController extends Controller
         $monedas = Moneda::orderBy("nombre", 'asc')->get();
         $tipo_cambios = TipoCambio::with("moneda_1", "moneda_2", "moneda_menor_valor")->orderBy("created_at", "desc")->get();
         return Inertia::render(
-            'trabajos/edit',
+            'Admin/Trabajos/edit',
             [
                 'trabajo' => $trabajo,
                 'proyectos' => $proyectos,
@@ -204,6 +228,7 @@ class TrabajoController extends Controller
         $trabajo->save();
         return response()->JSON(['trabajo' => $trabajo, 'message' => 'Registro actualizado con éxito']);
     }
+
     public function confirma_concluido(Trabajo $trabajo, Request $request)
     {
         $trabajo->estado_trabajo = 'CONCLUIDO';
@@ -214,85 +239,88 @@ class TrabajoController extends Controller
 
     public function update(Request $request, Trabajo $trabajo)
     {
-        $request->validate([
-            'proyecto_id' => 'required',
-            'cliente_id' => 'required',
-            'costo_original' => 'required|numeric|min:1',
-            'moneda_seleccionada_id' => 'required',
-            'estado_pago' => 'required',
-            'descripcion' => 'required|min:4',
-            'fecha_inicio' => 'required|date',
-            'dias_plazo' => 'required|numeric',
-            'fecha_entrega' => 'required|date',
-            'estado_trabajo' => 'required',
-            'fecha_envio' => 'nullable|date',
-            'fecha_conclusion' => 'nullable|date',
-        ]);
-
-        if (trim($request->fecha_conclusion) == "") {
-            unset($request["fecha_conclusion"]);
-        }
-
-
-        $request["costo"] = $request->costo_original;
-        $request["moneda_id"] = $request->moneda_seleccionada_id;
-
-        if ($request["tipo_cambio_id"] != 0) {
-            $moneda_principal = Moneda::where("principal", 1)->get()->first();
-            $tipo_cambio = TipoCambio::findOrFail($request["tipo_cambio_id"]);
-            $costo_trasnformado = Trabajo::getMontoCambio($request["tipo_cambio_id"], $request["moneda_id"], (float)$request["costo"]);
-            if ($request["moneda_id"] == $moneda_principal->id) {
-                // convertir a la segunda moneda
-                // solo afectara las columnas de cambio
-                $request["costo_cambio"] = $costo_trasnformado;
-            } else {
-                // convertir a moneda principal
-                $request["costo_cambio"] = $request["costo"];
-                $request["costo"] = $costo_trasnformado;
+        try {
+            $request->validate($this->validacion, $this->mensajes);
+            if (trim($request->fecha_conclusion) == "") {
+                unset($request["fecha_conclusion"]);
             }
-            $request["moneda_id"] = $tipo_cambio->moneda1_id;
-            $request["moneda_cambio_id"] = $tipo_cambio->moneda2_id;
-        } else {
-            $request["costo_cambio"] = $request->costo;
-            $request["moneda_cambio_id"] = 0;
-        }
+            $request["costo"] = $request->costo_original;
+            $request["moneda_id"] = $request->moneda_seleccionada_id;
 
-        $descricion_aux = nl2br(mb_strtoupper($request->descripcion));
-        $trabajo->update(array_map('mb_strtoupper', $request->except("fecha_envio")));
-        $trabajo->descripcion = $descricion_aux;
+            if ($request["tipo_cambio_id"] != 0) {
+                $moneda_principal = Moneda::where("principal", 1)->get()->first();
+                $tipo_cambio = TipoCambio::findOrFail($request["tipo_cambio_id"]);
+                $costo_trasnformado = Trabajo::getMontoCambio($request["tipo_cambio_id"], $request["moneda_id"], (float)$request["costo"]);
+                if ($request["moneda_id"] == $moneda_principal->id) {
+                    // convertir a la segunda moneda
+                    // solo afectara las columnas de cambio
+                    $request["costo_cambio"] = $costo_trasnformado;
+                } else {
+                    // convertir a moneda principal
+                    $request["costo_cambio"] = $request["costo"];
+                    $request["costo"] = $costo_trasnformado;
+                }
+                $request["moneda_id"] = $tipo_cambio->moneda1_id;
+                $request["moneda_cambio_id"] = $tipo_cambio->moneda2_id;
+            } else {
+                $request["costo_cambio"] = $request->costo;
+                $request["moneda_cambio_id"] = 0;
+            }
 
-        $trabajo->saldo = $trabajo->costo - $trabajo->cancelado;
-        if ($trabajo->tipo_cambio_id != 0) {
-            $trabajo->saldo_cambio = $trabajo->costo_cambio - $trabajo->cancelado_cambio;
-            $trabajo->save();
-        } else {
-            $trabajo->saldo_cambio = $trabajo->costo_cambio - $trabajo->cancelado_cambio;
-            $trabajo->save();
-        }
+            $descricion_aux = nl2br(mb_strtoupper($request->descripcion));
+            $trabajo->update(array_map('mb_strtoupper', $request->except("fecha_envio")));
+            $trabajo->descripcion = $descricion_aux;
 
-        if (!isset($request->fecha_envio)) {
-            $trabajo->fecha_envio = null;
+            $trabajo->saldo = $trabajo->costo - $trabajo->cancelado;
+            if ($trabajo->tipo_cambio_id != 0) {
+                $trabajo->saldo_cambio = $trabajo->costo_cambio - $trabajo->cancelado_cambio;
+                $trabajo->save();
+            } else {
+                $trabajo->saldo_cambio = $trabajo->costo_cambio - $trabajo->cancelado_cambio;
+                $trabajo->save();
+            }
+
+            if (!isset($request->fecha_envio)) {
+                $trabajo->fecha_envio = null;
+                $trabajo->save();
+            } else {
+                $trabajo->fecha_envio = $request->fecha_envio;
+                $trabajo->save();
+            }
             $trabajo->save();
-        } else {
-            $trabajo->fecha_envio = $request->fecha_envio;
-            $trabajo->save();
+            DB::commit();
+            return redirect()->route('trabajos.index')->with('message', 'Registro actualizado con éxito');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::debug("ERROR: " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
         }
-        $trabajo->save();
-        sleep(1);
-        return redirect()->route('trabajos.index')->with('msj', 'Registro actualizado con éxito');
     }
 
     public function destroy(Trabajo $trabajo)
     {
         DB::beginTransaction();
         try {
+            $existe_pagos = Pago::where("trabajo_id", $trabajo->id)->get();
+            if (count($existe_pagos) > 0) {
+                throw new Exception("No es posible eliminar eliminar el registro porque esta siendo utiliado", 422);
+            }
             DB::delete("DELETE FROM pagos WHERE trabajo_id = $trabajo->id");
             $trabajo->delete();
-            // sleep(1);
             DB::commit();
-            return redirect()->route('trabajos.index')->with('msj', 'Registro eliminado con éxito');
+            return redirect()->route('trabajos.index')->with('message', 'Registro eliminado con éxito');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
         } catch (\Exception $e) {
-            return redirect()->route('trabajos.index')->with('error', 'Ocurrió un error. ' . $e->getMessage());
+            DB::rollBack();
+            // Log::debug("ERROR " . $e->getCode() . ": " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
         }
     }
 

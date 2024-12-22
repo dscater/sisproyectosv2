@@ -80,6 +80,11 @@ onMounted(() => {
                         :icon="'fa-list'"
                     ></ItemMenu>
                     <ItemMenu
+                        :label="'Trabajos'"
+                        :ruta="'trabajos.index'"
+                        :icon="'fa-list'"
+                    ></ItemMenu>
+                    <ItemMenu
                         :label="'Salir'"
                         :ruta="'logout'"
                         :method="'POST'"

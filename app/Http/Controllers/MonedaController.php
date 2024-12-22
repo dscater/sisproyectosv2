@@ -18,6 +18,20 @@ class MonedaController extends Controller
         return Inertia::render('monedas/index', ['monedas' => $monedas, 'tipo_cambios' => $tipo_cambios, "principal" => $principal, "list_monedas" => $list_monedas]);
     }
 
+
+
+    public function listado(Request $request)
+    {
+        $monedas = Moneda::select("monedas.*");
+        if ($request->order && $request->order == "desc") {
+            $monedas->orderBy("monedas.id", $request->order);
+        }
+        $monedas = $monedas->get();
+        return response()->JSON([
+            "monedas" => $monedas
+        ]);
+    }
+
     public function listaMonedas()
     {
         $monedas = Moneda::all();

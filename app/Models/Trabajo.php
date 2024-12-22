@@ -11,15 +11,36 @@ class Trabajo extends Model
     use HasFactory;
 
     protected $fillable = [
-        'proyecto_id', 'cliente_id', 'costo_original', 'moneda_seleccionada_id', 'costo', 'moneda_id', 'tipo_cambio_id',
-        'cancelado', 'saldo', 'cancelado_cambio', 'saldo_cambio', 'costo_cambio', 'moneda_cambio_id',
-        'estado_pago', 'descripcion', 'fecha_inicio', 'dias_plazo', 'fecha_entrega', 'estado_trabajo',
-        'fecha_envio', 'fecha_conclusion', 'fecha_registro',
+        'proyecto_id',
+        'cliente_id',
+        'costo_original',
+        'moneda_seleccionada_id',
+        'costo',
+        'moneda_id',
+        'tipo_cambio_id',
+        'cancelado',
+        'saldo',
+        'cancelado_cambio',
+        'saldo_cambio',
+        'costo_cambio',
+        'moneda_cambio_id',
+        'estado_pago',
+        'descripcion',
+        'fecha_inicio',
+        'dias_plazo',
+        'fecha_entrega',
+        'estado_trabajo',
+        'fecha_envio',
+        'fecha_conclusion',
+        'fecha_registro',
     ];
 
-    protected $appends = ["porcentaje_cancelado", "cantidad_pagos"];
+    protected $appends = ["porcentaje_cancelado", "cantidad_pagos", "fecha_registro_t"];
 
-    protected $with = ["proyecto", "cliente", "moneda_seleccionada", "moneda", "moneda_cambio", "tipo_cambio.moneda_1", "tipo_cambio.moneda_2"];
+    public function getFechaRegistroTAttribute()
+    {
+        return date("d/m/Y", strtotime($this->fecha_registro));
+    }
 
     public function getCantidadPagosAttribute()
     {
