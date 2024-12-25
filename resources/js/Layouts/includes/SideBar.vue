@@ -92,6 +92,16 @@ onMounted(() => {
                         ]"
                     ></ItemMenu>
                     <ItemMenu
+                        :label="'Pagos'"
+                        :ruta="'pagos.index'"
+                        :icon="'fa-list'"
+                        :array-ruta-class-active="[
+                            'pagos.index',
+                            'pagos.create',
+                            'pagos.edit',
+                        ]"
+                    ></ItemMenu>
+                    <ItemMenu
                         :label="'Salir'"
                         :ruta="'logout'"
                         :method="'POST'"

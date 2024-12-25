@@ -2,15 +2,17 @@ import axios from "axios";
 import { usePage } from "@inertiajs/vue3";
 
 export const useCrudAxios = () => {
-    const { flash } = usePage().props;
+    let flash = null;
     const axiosGet = async (url, data) => {
         try {
             const response = await axios.get(url, {
                 headers: { Accept: "application/json" },
                 params: data,
             });
+            flash = usePage().props.flash;
             return response.data;
         } catch (err) {
+            flash = usePage().props.flash;
             Swal.fire({
                 icon: "error",
                 title: "Error",
@@ -24,7 +26,9 @@ export const useCrudAxios = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonText: `Aceptar`,
             });
-            throw err; // Puedes manejar el error según tus necesidades
+            throw err;
+        } finally {
+            flash = null;
         }
     };
     const axiosPostFormData = async (url, formdata) => {
@@ -35,6 +39,7 @@ export const useCrudAxios = () => {
                     "Content-Type": "multipart/form-data",
                 },
             });
+            flash = usePage().props.flash;
             Swal.fire({
                 icon: "success",
                 title: "Correcto",
@@ -44,6 +49,7 @@ export const useCrudAxios = () => {
             });
             return response.data;
         } catch (err) {
+            flash = usePage().props.flash;
             Swal.fire({
                 icon: "error",
                 title: "Error",
@@ -57,7 +63,9 @@ export const useCrudAxios = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonText: `Aceptar`,
             });
-            throw err; // Puedes manejar el error según tus necesidades
+            throw err;
+        } finally {
+            flash = null;
         }
     };
 
@@ -66,6 +74,7 @@ export const useCrudAxios = () => {
             const response = await axios.post(url, data, {
                 headers: { Accept: "application/json" },
             });
+            flash = usePage().props.flash;
             Swal.fire({
                 icon: "success",
                 title: "Correcto",
@@ -75,6 +84,7 @@ export const useCrudAxios = () => {
             });
             return response.data;
         } catch (err) {
+            flash = usePage().props.flash;
             Swal.fire({
                 icon: "error",
                 title: "Error",
@@ -88,7 +98,9 @@ export const useCrudAxios = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonText: `Aceptar`,
             });
-            throw err; // Puedes manejar el error según tus necesidades
+            throw err;
+        } finally {
+            flash = null;
         }
     };
 
@@ -97,6 +109,7 @@ export const useCrudAxios = () => {
             const response = await axios.delete(url, {
                 headers: { Accept: "application/json" },
             });
+            flash = usePage().props.flash;
             Swal.fire({
                 icon: "success",
                 title: "Correcto",
@@ -106,6 +119,7 @@ export const useCrudAxios = () => {
             });
             return response.data;
         } catch (err) {
+            flash = usePage().props.flash;
             Swal.fire({
                 icon: "error",
                 title: "Error",
@@ -119,7 +133,9 @@ export const useCrudAxios = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonText: `Aceptar`,
             });
-            throw err; // Puedes manejar el error según tus necesidades
+            throw err;
+        } finally {
+            flash = null;
         }
     };
 

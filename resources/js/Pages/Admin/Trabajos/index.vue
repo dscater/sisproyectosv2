@@ -51,7 +51,7 @@ const headers = ref([
         key: "saldo",
         sortable: true,
         classTd: (item) => {
-            return parseInt(item.saldo) == 0 ? "bg-cancelado" : "bg-red";
+            return item.estado_pago == 'COMPLETO' ? "bg-cancelado" : "bg-red";
         },
     },
     {

@@ -27,6 +27,12 @@ class UserController extends Controller
             "trabajos.edit",
             "trabajos.destroy",
 
+            "pagos.create",
+            "pagos.index",
+            "pagos.edit",
+            "pagos.destroy",
+
+
             "reportes.usuarios",
             "reportes.productos",
         ],

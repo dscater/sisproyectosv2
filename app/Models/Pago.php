@@ -10,13 +10,28 @@ class Pago extends Model
     use HasFactory;
 
     protected $fillable = [
-        'trabajo_id', 'cliente_id', 'monto', 'moneda_id', 'tipo_cambio_id', 'monto_cambio', 'moneda_cambio_id', 'descripcion', 'fecha_pago',
-        'foto_comprobante', 'archivo_comprobante', "descripcion_archivo"
+        'trabajo_id',
+        'cliente_id',
+        'monto',
+        'moneda_id',
+        'tipo_cambio_id',
+        'monto_cambio',
+        'moneda_cambio_id',
+        'descripcion',
+        'fecha_pago',
+        'foto_comprobante',
+        'archivo_comprobante',
+        "descripcion_archivo"
     ];
 
     protected $with = ["trabajo.proyecto", "cliente", "moneda", "moneda_cambio"];
 
-    protected $appends = ["url_foto", "url_archivo", "tipo_archivo"];
+    protected $appends = ["url_foto", "url_archivo", "tipo_archivo", "fecha_pago_t"];
+
+    public function getFechaPagoTAttribute()
+    {
+        return date("d/m/Y", strtotime($this->fecha_pago));
+    }
 
     public function getUrlFotoAttribute()
     {

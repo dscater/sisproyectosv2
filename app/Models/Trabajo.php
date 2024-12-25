@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -92,26 +93,26 @@ class Trabajo extends Model
 
     // end mutators and accesors
 
-    // FUNCION PARA OBTENER EL TOTAL CANCELADO
+    // FUNCION PARA OBTENER EL TOTAL CANCELADO DE TODOS LOS TRABAJOS
     static function getTotalCancelado()
     {
         return Trabajo::sum("cancelado");
     }
 
-    // FUNCION PARA OBTENER EL MONTO PENDIENTE
+    // FUNCION PARA OBTENER EL MONTO PENDIENTE DE TODOS LOS TRABAJOS
     static function getTotalSaldoPendiente()
     {
         return Trabajo::where("saldo", ">", 0)->whereIn("estado_trabajo", ["ENVIADO", "CONCLUIDO"])->sum("saldo");
     }
 
-    // FUNCION PARA OBTENER EL TOTAL DE TODOS LOS TRABAJOS
+    // FUNCION PARA OBTENER EL TOTAL COSTO DE TODOS LOS TRABAJOS
     static function getTotalTrabajos()
     {
         return Trabajo::sum("costo");
     }
 
-    // refactizar costos originales con moneda_selecccionada_id = 0
-    static function refactorizarCostosOriginales()
+    // reestablecer costos originales con moneda_selecccionada_id = 0
+    static function reestablecerCostosOriginales()
     {
         $trabajos = Trabajo::all();
         foreach ($trabajos as $t) {
@@ -127,8 +128,8 @@ class Trabajo extends Model
         return true;
     }
 
-    // Funcion para asignar los costos,saldos y cancelado a Bs. de todos los trabajos
-    static function refactorizarCostos()
+    // Funcion para asignar los costos,saldos y cancelado a Moneda Principal de todos los trabajos
+    static function reestablecerCostos()
     {
         $moneda_principal = Moneda::where("principal", 1)->get()->first();
         if ($moneda_principal) {
@@ -179,37 +180,108 @@ class Trabajo extends Model
         return false;
     }
 
-    // Funcion para asignar los pagos a Bs. de todos los trabajos
-    static function refactorizarPagos()
+    // Funcion para asignar los pagos a Moneda Principal de todos los trabajos
+    static function reestablecerPagos()
     {
         $moneda_principal = Moneda::where("principal", 1)->get()->first();
+        $trabajos = Trabajo::all();
+
         if ($moneda_principal) {
-            $pagos = Pago::all();
-            foreach ($pagos as $p) {
-                if ($p->moneda_id != $moneda_principal->id) {
-                    // solo si la moneda es diferente a la principal intercambiar los valores de las columnas
-                    $aux_pago = Pago::find($p->id);
-                    $p->monto = $aux_pago->monto_cambio;
-                    $p->monto_cambio = $aux_pago->monto;
-                    // monedas
-                    $p->moneda_id = $moneda_principal->id;
-                    $p->moneda_cambio_id = $aux_pago->moneda_id;
-                } else {
-                    // verificar si usan un tipo de cambios
-                    if ($p->trabajo->tipo_cambio_id != 0) {
-                        $tipo_cambio = $p->trabajo->tipo_cambio;
-                        // monto
-                        $monto_cambio = self::getMontoCambio($tipo_cambio->id, $p->moneda_id, $p->monto);
-                        $p->monto_cambio = $monto_cambio;
+            foreach ($trabajos as $trabajo) {
+                $pagos = Pago::where("trabajo_id", $trabajo->id)->get();
+                if (count($pagos) > 0) {
+                    $suma_total = 0;
+                    $suma_total_cambio = 0;
+                    foreach ($pagos as $p) {
+                        if ($p->moneda_id != $moneda_principal->id) {
+                            // solo si la moneda es diferente a la principal intercambiar los valores de las columnas
+                            $aux_pago = Pago::find($p->id);
+                            $p->monto = $aux_pago->monto_cambio;
+                            $p->monto_cambio = $aux_pago->monto;
+                            // monedas
+                            $p->moneda_id = $moneda_principal->id;
+                            $p->moneda_cambio_id = $aux_pago->moneda_id;
+                        } else {
+                            // verificar si usan un tipo de cambios
+                            if ($p->trabajo->tipo_cambio_id != 0) {
+                                $tipo_cambio = $p->trabajo->tipo_cambio;
+                                // monto
+                                $monto_cambio = self::getMontoCambio($tipo_cambio->id, $p->moneda_id, $p->monto);
+                                $p->monto_cambio = $monto_cambio;
+                                // monedas
+                                $p->moneda_id = $moneda_principal->id;
+                                $p->moneda_cambio_id = $tipo_cambio->moneda2_id;
+                            }
+                        }
+                        $suma_total += (float)$p->monto;
+                        $suma_total_cambio += (float)$p->monto_cambio;
+                        $p->save();
+                    }
+                    $trabajo->estado_pago = 'PENDIENTE';
+                    if ($trabajo->costo == $suma_total) {
+                        $trabajo->estado_pago = 'COMPLETO';
+                        $trabajo->cancelado = $suma_total;
+                        $trabajo->cancelado_cambio = $suma_total_cambio;
+                    }
+                    $trabajo->save();
+                }
+            }
+
+            return true;
+        }
+
+        throw new Exception("No encontro el registro de moneda principal");
+        return false;
+    }
+
+    // Funcion para asignar los pagos a Moneda Principal de un solo trabajo
+    static function reestablecerPagoTrabajo($id)
+    {
+        $moneda_principal = Moneda::where("principal", 1)->get()->first();
+        $trabajo = Trabajo::findOrFail($id);
+        if ($moneda_principal) {
+            $pagos = Pago::where("trabajo_id", $id)->get();
+            if (count($pagos) > 0) {
+                $suma_total = 0;
+                $suma_total_cambio = 0;
+                foreach ($pagos as $p) {
+                    if ($p->moneda_id != $moneda_principal->id) {
+                        // solo si la moneda es diferente a la principal intercambiar los valores de las columnas
+                        $aux_pago = Pago::find($p->id);
+                        $p->monto = $aux_pago->monto_cambio;
+                        $p->monto_cambio = $aux_pago->monto;
                         // monedas
                         $p->moneda_id = $moneda_principal->id;
-                        $p->moneda_cambio_id = $tipo_cambio->moneda2_id;
+                        $p->moneda_cambio_id = $aux_pago->moneda_id;
+                    } else {
+                        // verificar si usan un tipo de cambios
+                        if ($p->trabajo->tipo_cambio_id != 0) {
+                            $tipo_cambio = $p->trabajo->tipo_cambio;
+                            // monto
+                            $monto_cambio = self::getMontoCambio($tipo_cambio->id, $p->moneda_id, $p->monto);
+                            $p->monto_cambio = $monto_cambio;
+                            // monedas
+                            $p->moneda_id = $moneda_principal->id;
+                            $p->moneda_cambio_id = $tipo_cambio->moneda2_id;
+                        }
                     }
+                    $suma_total += (float)$p->monto;
+                    $suma_total_cambio += (float)$p->monto_cambio;
+                    $p->save();
                 }
-                $p->save();
+                $trabajo->estado_pago = 'PENDIENTE';
+                $trabajo->cancelado = $suma_total;
+                $trabajo->saldo = $trabajo->costo - $suma_total;
+                $trabajo->cancelado_cambio = $suma_total_cambio;
+                $trabajo->saldo_cambio = $trabajo->costo_cambio - $suma_total_cambio;
+                if ($trabajo->saldo <= 0) {
+                    $trabajo->estado_pago = 'COMPLETO';
+                }
+                $trabajo->save();
             }
             return true;
         }
+        throw new Exception("No encontro el registro de moneda principal");
         return false;
     }
 

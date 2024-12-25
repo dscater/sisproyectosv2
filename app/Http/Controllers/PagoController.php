@@ -24,15 +24,7 @@ class PagoController extends Controller
     public function index(Request $request)
     {
         // Pago::refactorizarCostos();
-        $texto = $request->texto;
-        $pagos = Pago::select("pagos.*")->join("trabajos", "trabajos.id", "=", "pagos.trabajo_id")
-            ->join("proyectos", "proyectos.id", "=", "trabajos.proyecto_id")
-            ->where(DB::raw('CONCAT(proyectos.nombre, proyectos.alias, pagos.descripcion)'), 'LIKE', "%$texto%")
-            ->orWhere("pagos.fecha_pago", 'LIKE', "%$texto%")
-            ->orderBy('pagos.fecha_pago', 'desc')
-            ->orderBy('pagos.created_at', 'desc')->paginate(10)
-            ->withQueryString();
-        return Inertia::render('pagos/index', ['pagos' => $pagos, 'filtros' => $request->only(["texto"])]);
+        return Inertia::render("Admin/Pagos/Index");
     }
 
     public function listaPagos()
@@ -41,21 +33,45 @@ class PagoController extends Controller
         return response()->JSON($pagos);
     }
 
+    public function listado(Request $request)
+    {
+        $pagos = Pago::select("pagos.*");
+        if ($request->order && $request->order == "desc") {
+            $pagos->orderBy("pagos.id", $request->order);
+        }
+        $pagos = $pagos->get();
+        return response()->JSON([
+            "pagos" => $pagos
+        ]);
+    }
+    public function paginado(Request $request)
+    {
+        $perPage = $request->input('perPage', 5);
+        $search = $request->search;
+        $pagos = Pago::with(["trabajo.proyecto", "cliente", "moneda"])
+            ->select("pagos.*")
+            ->join("trabajos", "trabajos.id", "=", "pagos.trabajo_id")
+            ->join("proyectos", "proyectos.id", "=", "trabajos.proyecto_id")
+            ->join("clientes", "clientes.id", "=", "pagos.cliente_id");
+        if (trim($search) != "") {
+            $pagos->where(DB::raw('CONCAT(proyectos.nombre, proyectos.alias, pagos.descripcion, pagos.estado_pago,clientes.nombre)'), 'LIKE', "%$search%");
+        }
+
+        if ($request->orderBy && $request->orderAsc) {
+            $pagos->orderBy($request->orderBy, $request->orderAsc);
+        }
+
+        $pagos = $pagos->paginate($perPage);
+        return response()->JSON([
+            'data' => $pagos->items(),
+            'total' => $pagos->total(),
+            'lastPage' => $pagos->lastPage(),
+        ]);
+    }
+
     public function create()
     {
-        $trabajos = Trabajo::select("trabajos.*")
-            ->join("proyectos", "proyectos.id", "=", "trabajos.proyecto_id")
-            ->where('trabajos.saldo', '>', 0)
-            ->orderBy("proyectos.alias", "asc")
-            ->get();
-        $moneda_principal = Moneda::where("principal", 1)->get()->first();
-        return Inertia::render(
-            'pagos/create',
-            [
-                'trabajos' => $trabajos,
-                "moneda_principal" => $moneda_principal
-            ]
-        );
+        return Inertia::render('Admin/Pagos/Create');
     }
 
     public function store(Request $request)

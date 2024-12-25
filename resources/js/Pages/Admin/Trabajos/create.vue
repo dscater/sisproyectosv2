@@ -3,18 +3,7 @@ import Content from "@/Components/Content.vue";
 import { Head, Link } from "@inertiajs/vue3";
 import Formulario from "./Parcial/Formulario.vue";
 import { useTrabajos } from "@/composables/trabajos/useTrabajos";
-
 const { limpiarTrabajo, setTrabajo, oTrabajo } = useTrabajos();
-const props = defineProps({
-    proyectos: {},
-    clientes: {},
-    monedas: {},
-    tipo_cambios: {
-        type: Array,
-        default: () => [],
-    },
-    moneda_principal: {},
-});
 
 limpiarTrabajo();
 </script>

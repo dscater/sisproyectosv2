@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\InicioController;
 use App\Http\Controllers\MonedaController;
+use App\Http\Controllers\PagoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProyectoController;
 use App\Http\Controllers\ReporteController;
@@ -83,7 +84,15 @@ Route::middleware(['auth'])->prefix("admin")->group(function () {
         ["index", "create", "store", "edit", "update", "show", "destroy"]
     );
 
+    // PAGOS
+    Route::get("/pagos/paginado", [PagoController::class, 'paginado'])->name("pagos.paginado");
+    Route::get("/pagos/listado", [PagoController::class, 'listado'])->name("pagos.listado");
+    Route::resource("pagos", PagoController::class)->only(
+        ["index", "create", "store", "edit", "update", "show", "destroy"]
+    );
+
     // MONEDAS
+    Route::get("monedas/getMonedaPrincipal", [MonedaController::class, 'getMonedaPrincipal'])->name("monedas.getMonedaPrincipal");
     Route::get("/monedas/paginado", [MonedaController::class, 'paginado'])->name("monedas.paginado");
     Route::get("/monedas/listado", [MonedaController::class, 'listado'])->name("monedas.listado");
     Route::resource("monedas", MonedaController::class)->only(
@@ -96,7 +105,6 @@ Route::middleware(['auth'])->prefix("admin")->group(function () {
     Route::resource("tipo_cambios", TipoCambioController::class)->only(
         ["index", "create", "store", "edit", "update", "show", "destroy"]
     );
-
 
     // REPORTES
     Route::get('reportes/trabajos', [ReporteController::class, "trabajos"])->name("reportes.trabajos");

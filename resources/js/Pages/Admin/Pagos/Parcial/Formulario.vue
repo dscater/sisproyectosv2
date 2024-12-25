@@ -1,7 +1,7 @@
 <script setup>
 import { useForm, usePage, Link } from "@inertiajs/vue3";
 import { ref, computed, onMounted, onBeforeMount, defineEmits } from "vue";
-import { useTrabajos } from "@/composables/trabajos/useTrabajos";
+import { usePagos } from "@/composables/pagos/usePagos";
 import { useCrudAxios } from "@/composables/curdAxios/useCrudAxios";
 import { fHelpers } from "@/Functions/fHelpers";
 import { useAppStore } from "@/stores/aplicacion/appStore";
@@ -9,16 +9,12 @@ const appStore = useAppStore();
 onBeforeMount(() => {
     appStore.startLoading();
 });
-const { oTrabajo, limpiarTrabajo } = useTrabajos();
+const { oPago, limpiarPago } = usePagos();
 const enviando = ref(false);
-const listProyectos = ref([]);
-const listClientes = ref([]);
-const listMonedas = ref([]);
-const listTipoCambios = ref([]);
-const listEstadoTrabajo = ref(["EN PROCESO", "ENVIADO", "CONCLUIDO"]);
-const listEstadoPagos = ref(["PENDIENTE", "COMPLETO"]);
+const listTrabajos = ref([]);
+const monedaPrincipal = ref(null);
 
-let form = useForm(oTrabajo.value);
+let form = useForm(oPago.value);
 
 const textBtn = computed(() => {
     if (enviando.value) {
@@ -34,8 +30,8 @@ const enviarFormulario = () => {
     enviando.value = true;
     let url =
         form["_method"] == "POST"
-            ? route("trabajos.store")
-            : route("trabajos.update", form.id);
+            ? route("pagos.store")
+            : route("pagos.update", form.id);
 
     form.post(url, {
         preserveScroll: true,
@@ -50,7 +46,7 @@ const enviarFormulario = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonText: `Aceptar`,
             });
-            limpiarTrabajo();
+            limpiarPago();
         },
         onError: (err) => {
             enviando.value = false;
@@ -72,51 +68,23 @@ const enviarFormulario = () => {
     });
 };
 
-const obtenerFechaEntrega = () => {
-    form.fecha_entrega = "";
-    if (form.fecha_inicio != "") {
-        if (
-            form.dias_plazo &&
-            ("" + form.dias_plazo).trim() != "" &&
-            parseInt(form.dias_plazo) > 0
-        ) {
-            form.fecha_entrega = fHelpers().sumarDiasFecha(
-                form.fecha_inicio,
-                form.dias_plazo
-            );
-        } else {
-            form.fecha_entrega = form.fecha_inicio;
-        }
-    }
-};
-
-const getProyectos = async () => {
+const getTrabajos = async () => {
     const resp = await useCrudAxios().axiosGet(route("proyectos.listado"), {
         order: "desc",
     });
-    listProyectos.value = resp.proyectos;
+    listTrabajos.value = resp.proyectos;
 };
 
-const getClientes = async () => {
-    const resp = await useCrudAxios().axiosGet(route("clientes.listado"));
-    listClientes.value = resp.clientes;
-};
-
-const getMonedas = async () => {
-    const resp = await useCrudAxios().axiosGet(route("monedas.listado"));
-    listMonedas.value = resp.monedas;
-};
-
-const getTipoCambios = async () => {
-    const resp = await useCrudAxios().axiosGet(route("tipo_cambios.listado"));
-    listTipoCambios.value = resp.tipo_cambios;
+const getMonedaPrincipal = async () => {
+    const resp = await useCrudAxios().axiosGet(
+        route("monedas.getMonedaPrincipal")
+    );
+    monedaPrincipal.value = resp;
 };
 
 const cargarListas = async () => {
-    await getProyectos();
-    await getClientes();
-    await getMonedas();
-    await getTipoCambios();
+    await getTrabajos();
+    await getMonedaPrincipal();
     appStore.stopLoading();
 };
 
@@ -129,57 +97,30 @@ onMounted(() => {
     <form>
         <div class="row">
             <div class="col-md-4 mt-1">
-                <label>Seleccionar Proyecto*</label>
+                <label>Seleccionar Trabajo*</label>
                 <el-select
                     class="w-100"
                     size="large"
                     :class="{
-                        'is-invalid': form.errors?.proyecto_id,
+                        'is-invalid': form.errors?.trabajo_id,
                     }"
                     required
                     placeholder="Seleccionar Proyecto"
-                    v-model="form.proyecto_id"
+                    v-model="form.trabajo_id"
                     filterable
                     clearable
                 >
                     <el-option
-                        v-for="item in listProyectos"
+                        v-for="item in listTrabajos"
                         :value="item.id"
                         :label="item.nombre"
                     >
                     </el-option>
                 </el-select>
                 <span
-                    v-if="form.errors?.proyecto_id"
+                    v-if="form.errors?.trabajo_id"
                     class="error invalid-feedback"
-                    >{{ form.errors.proyecto_id }}</span
-                >
-            </div>
-            <div class="col-md-4 mt-1">
-                <label>Seleccionar Cliente*</label>
-                <el-select
-                    class="w-100"
-                    size="large"
-                    :class="{
-                        'is-invalid': form.errors?.proyecto_id,
-                    }"
-                    required
-                    placeholder="Seleccionar Cliente"
-                    v-model="form.cliente_id"
-                    filterable
-                    clearable
-                >
-                    <el-option
-                        v-for="item in listClientes"
-                        :value="item.id"
-                        :label="item.nombre"
-                    >
-                    </el-option>
-                </el-select>
-                <span
-                    v-if="form.errors?.cliente_id"
-                    class="error invalid-feedback"
-                    >{{ form.errors.cliente_id }}</span
+                    >{{ form.errors.trabajo_id }}</span
                 >
             </div>
             <div class="col-md-4 mt-1">
@@ -201,80 +142,6 @@ onMounted(() => {
                 >
             </div>
             <div class="col-md-4 mt-1">
-                <label>Moneda*</label>
-                <select
-                    class="form-control"
-                    :class="{
-                        'is-invalid': form.errors?.moneda_seleccionada_id,
-                    }"
-                    required
-                    v-model="form.moneda_seleccionada_id"
-                >
-                    <option value="">- Seleccione -</option>
-                    <option v-for="item in listMonedas" :value="item.id">
-                        {{ item.nombre }}
-                    </option>
-                </select>
-                <span
-                    v-if="form.errors?.moneda_seleccionada_id"
-                    class="error invalid-feedback"
-                    >{{ form.errors.moneda_seleccionada_id }}</span
-                >
-            </div>
-            <div class="col-md-4 mt-1">
-                <label>Tipo de cambio*</label>
-                <select
-                    class="form-control"
-                    :class="{
-                        'is-invalid': form.errors?.tipo_cambio_id,
-                    }"
-                    required
-                    v-model="form.tipo_cambio_id"
-                >
-                    <option value="0">Ninguno</option>
-                    <option v-for="item in listTipoCambios" :value="item.id">
-                        {{
-                            item.moneda_1.nombre +
-                            " " +
-                            item.valor1 +
-                            " = " +
-                            item.moneda_2.nombre +
-                            " " +
-                            item.valor2
-                        }}
-                    </option>
-                </select>
-                <span
-                    v-if="form.errors?.tipo_cambio_id"
-                    class="error invalid-feedback"
-                    >{{ form.errors.tipo_cambio_id }}</span
-                >
-            </div>
-            <div class="col-md-4 mt-1">
-                <label>Estado del pago*</label>
-                <select
-                    class="form-control"
-                    :class="{
-                        'is-invalid': form.errors?.estado_pago,
-                    }"
-                    required
-                    v-model="form.estado_pago"
-                >
-                    <option value="">- Seleccione -</option>
-                    <option
-                        v-for="item in listEstadoPagos"
-                        :key="item"
-                        :value="item"
-                        v-text="item"
-                    ></option>
-                </select>
-                <span
-                    v-if="form.errors?.estado_pago"
-                    class="error invalid-feedback"
-                    >{{ form.errors.estado_pago }}</span
-                >
-            </div>
-            <div class="col-md-4 mt-1">
                 <label>Fecha de recepción*</label>
                 <input
                     type="date"
@@ -284,8 +151,6 @@ onMounted(() => {
                     }"
                     required
                     v-model="form.fecha_inicio"
-                    @keyup="obtenerFechaEntrega"
-                    @change="obtenerFechaEntrega"
                 />
                 <span
                     v-if="form.errors?.fecha_inicio"
@@ -304,8 +169,6 @@ onMounted(() => {
                     }"
                     required
                     v-model="form.dias_plazo"
-                    @keyup="obtenerFechaEntrega"
-                    @change="obtenerFechaEntrega"
                     min="0"
                 />
                 <span
@@ -330,30 +193,6 @@ onMounted(() => {
                     v-if="form.errors?.fecha_entrega"
                     class="error invalid-feedback"
                     >{{ form.errors.fecha_entrega }}</span
-                >
-            </div>
-            <div class="col-md-4 mt-1">
-                <label>Estado del trabajo*</label>
-                <select
-                    class="form-control"
-                    :class="{
-                        'is-invalid': form.errors?.estado_trabajo,
-                    }"
-                    required
-                    v-model="form.estado_trabajo"
-                >
-                    <option value="">- Seleccione -</option>
-                    <option
-                        v-for="item in listEstadoTrabajo"
-                        :key="item"
-                        :value="item"
-                        v-text="item"
-                    ></option>
-                </select>
-                <span
-                    v-if="form.errors?.estado_trabajo"
-                    class="error invalid-feedback"
-                    >{{ form.errors.estado_trabajo }}</span
                 >
             </div>
             <div class="col-md-4 mt-1">
@@ -411,7 +250,7 @@ onMounted(() => {
         <div class="row mt-2">
             <div class="col-12">
                 <Link
-                    :href="route('trabajos.index')"
+                    :href="route('pagos.index')"
                     class="btn btn-outline-secondary mr-1"
                     ><i class="fa fa-arrow-left"></i> Volver</Link
                 >

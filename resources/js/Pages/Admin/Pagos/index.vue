@@ -1,243 +1,240 @@
 <script setup>
-import BreezeAuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head } from "@inertiajs/vue3";
-import BreezeButton from "@/Components/PrimaryButton.vue";
-import { Link } from "@inertiajs/vue3";
-import { router } from "@inertiajs/vue3";
-import { useForm } from "@inertiajs/vue3";
-import pagination from "@/Components/Pagination.vue";
-import { inject, ref } from "vue";
-const props = defineProps({
-    pagos: {
-        type: Object,
-        default: () => ({}),
-    },
-    filtros: {
-        type: Object,
-        default: () => ({}),
-    },
+import Content from "@/Components/Content.vue";
+import MiTable from "@/Components/MiTable.vue";
+import { Head, usePage, Link, router } from "@inertiajs/vue3";
+import { usePagos } from "@/composables/pagos/usePagos";
+import { useCrudAxios } from "@/composables/curdAxios/useCrudAxios";
+import { ref, onMounted, reactive, onBeforeMount } from "vue";
+import axios from "axios";
+import { useAppStore } from "@/stores/aplicacion/appStore";
+const appStore = useAppStore();
+onBeforeMount(() => {
+    appStore.startLoading();
 });
-const form = useForm();
-const Swal = inject("$swal");
+const { props } = usePage();
+const { limpiarPago, setPago, oPago } = usePagos();
+const { axiosGet, axiosDelete } = useCrudAxios();
+const responsePagos = ref([]);
+const listPagos = ref([]);
+const itemsPerPage = ref(5);
+const miTable = ref(null);
+const headers = ref([
+    {
+        label: "ID",
+        key: "id",
+        sortable: true,
+    },
+    {
+        label: "NOMBRE PROYECTO",
+        key: "trabajo.proyecto.nombre",
+        keySortable: "proyectos.nombre",
+        sortable: true,
+    },
+    {
+        label: "DESCRIPCIÓN TRABAJO",
+        key: "trabajo.descripcion",
+        keySortable: "trabajos.descripcion",
+        sortable: true,
+    },
+    {
+        label: "CLIENTE",
+        key: "cliente.nombre",
+        keySortable: "clientes.nombre",
+        sortable: true,
+    },
+    {
+        label: "MONTO CANCELADO",
+        key: "monto",
+        sortable: true,
+    },
+    {
+        label: "DESCRIPCIÓN",
+        key: "descripcion",
+        keySortable: "pagos.descripcion",
+        sortable: true,
+    },
+    {
+        label: "FECHA DE PAGO",
+        key: "fecha_pago_t",
+        keySortable: "fecha_pago",
+        sortable: true,
+    },
+    { label: "ACCIÓN", key: "accion" },
+]);
 
-function destroy(id) {
+const search = ref("");
+const multiSearch = ref({
+    search: "",
+    filtro: [],
+});
+const options = ref({
+    page: 1,
+    itemsPerPage: itemsPerPage,
+    sortBy: "",
+    sortOrder: "desc",
+    search: "",
+});
+
+const loading = ref(true);
+
+const editarPago = (item) => {
+    setPago(item);
+    router.get(route("pagos.edit", item.id));
+};
+
+const eliminarPago = (item) => {
     Swal.fire({
-        title: "¿Estás seguro de eliminar este registro?",
-        showDenyButton: false,
+        title: "¿Quierés eliminar este registro?",
+        html: `<strong>${item.proyecto.nombre} <br/> ${item.cliente.nombre}</strong>`,
         showCancelButton: true,
-        confirmButtonColor: "#dc3545",
+        confirmButtonColor: "#B61431",
         confirmButtonText: "Si, eliminar",
-        cancelButtonText: `No cancelar`,
-    }).then((result) => {
+        cancelButtonText: "No, cancelar",
+        denyButtonText: `No, cancelar`,
+    }).then(async (result) => {
         /* Read more about isConfirmed, isDenied below */
         if (result.isConfirmed) {
-            form.delete(route("pagos.destroy", id));
-        } else if (result.isDenied) {
-            Swal.fire("Eliminación cancelada", "", "info");
+            let respuesta = await axiosDelete(
+                route("pagos.destroy", item.id)
+            );
+            if (respuesta && respuesta.sw) {
+                updateDatos();
+            }
         }
     });
-}
-
-const search = ref(props.filtros.texto);
-const buscar = (e) => {
-    router.get(
-        route("pagos.index"),
-        { texto: e.target.value },
-        { preserveState: true }
-    );
 };
+
+const updateDatos = async () => {
+    if (miTable.value) {
+        await miTable.value.cargarDatos();
+    }
+};
+onMounted(() => {
+    appStore.stopLoading();
+});
 </script>
 <template>
     <Head title="Pagos" />
-    <BreezeAuthenticatedLayout>
+    <Content>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight">Pagos</h2>
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Pagos</h1>
+                </div>
+                <!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item">
+                            <Link :href="route('inicio')">Inicio</Link>
+                        </li>
+                        <li class="breadcrumb-item active">Pagos</li>
+                    </ol>
+                </div>
+                <!-- /.col -->
+            </div>
+            <!-- /.row -->
         </template>
-        <div class="py-12">
-            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div
-                    v-if="$page.props.flash.msj"
-                    class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg dark:bg-green-200 dark:text-green-800"
-                    role="alert"
-                >
-                    <span class="font-medium">
-                        {{ $page.props.flash.msj }}
-                    </span>
-                </div>
-                <div
-                    v-if="$page.props.flash.error"
-                    class="p-4 mb-4 text-sm text-white bg-red-700 rounded-lg dark:bg-red-700 dark:text-white"
-                    role="alert"
-                >
-                    <span class="font-medium">
-                        {{ $page.props.flash.error }}
-                    </span>
-                </div>
-                <div class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
-                    <div class="p-6 bg-white border-b border-gray-200">
-                        <div class="mb-2">
-                            <Link :href="route('pagos.create')">
-                                <BreezeButton>Agregar Pago</BreezeButton></Link
-                            >
-                        </div>
-                        <div
-                            class="relative overflow-x-auto shadow-md sm:rounded-lg"
+        <div class="row mb-1">
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="col-md-8 my-1 d-flex align-end pt-3">
+                        <Link
+                            v-if="
+                                props.auth.user.permisos.includes(
+                                    'pagos.create'
+                                )
+                            "
+                            class="btn btn-primary btn-flat"
+                            :href="route('pagos.create')"
                         >
-                            <div class="sm:flex">
-                                <div class="w-full sm:mr-auto sm:w-1/2 p-1">
-                                    <pagination :links="pagos.links" />
-                                </div>
-                                <div class="w-full sm:ml-auto sm:w-1/2 p-1">
-                                    <input
-                                        type="text"
-                                        v-model="search"
-                                        name="buscar"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full"
-                                        placeholder="Buscar"
-                                        @keyup="buscar($event)"
-                                    />
-                                </div>
-                            </div>
-                            <table
-                                class="w-full text-sm text-left text-gray-500 dark:text-gray-400"
-                            >
-                                <thead
-                                    class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 hidden sm:table-header-group"
+                            <i class="fa fa-plus"></i> Nuevo Pago
+                        </Link>
+                    </div>
+                    <div class="col-md-4  my-1 d-flex pl-4">
+                        <div class="input-group" style="align-items: end">
+                            <input
+                                v-model="multiSearch.search"
+                                placeholder="Buscar"
+                                class="form-control border-1 border-right-0"
+                                @keypress.enter.prevent="updateDatos"
+                            />
+                            <div class="input-append">
+                                <button
+                                    class="btn btn-default rounded-0 border-left-0"
+                                    @click="updateDatos"
                                 >
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3">
-                                            Proyecto
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                            Descripción Trabajo
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                            Cliente
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                            Monto Cancelado
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                            Descripción
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                            Fecha del pago
-                                        </th>
-                                        <th scope="col" class="px-6 py-3">
-                                            Acción
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr
-                                        v-for="pago in pagos.data"
-                                        :key="pago.id"
-                                        class="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
-                                    >
-                                        <td
-                                            data-col="Proyecto"
-                                            class="px-6 py-4 block before:content-[attr(data-col)] before:block before:bold before:text-white sm:before:content-[] sm:before:hidden sm:table-cell"
-                                        >
-                                            <span class="font-bold">{{
-                                                pago.trabajo.proyecto.alias
-                                            }}</span>
-                                            - {{ pago.trabajo.proyecto.nombre }}
-                                        </td>
-                                        <td
-                                            data-col="Descripción Trabajo"
-                                            class="px-6 py-4 block before:content-[attr(data-col)] before:block before:bold before:text-white sm:before:content-[] sm:before:hidden sm:table-cell"
-                                        >
-                                            <span
-                                                v-html="
-                                                    pago.trabajo.descripcion
-                                                "
-                                            ></span>
-                                        </td>
-                                        <td
-                                            data-col="Cliente"
-                                            class="px-6 py-4 block before:content-[attr(data-col)] before:block before:bold before:text-white sm:before:content-[] sm:before:hidden sm:table-cell"
-                                        >
-                                            {{ pago.cliente.nombre }}
-                                        </td>
-                                        <td
-                                            data-col="Monto"
-                                            class="text-center px-6 py-4 block before:content-[attr(data-col)] before:block before:bold before:text-white sm:before:content-[] sm:before:hidden sm:table-cell"
-                                        >
-                                            <span
-                                                class="bg-white p-1 rounded-lg font-bold text-sm text-black"
-                                            >
-                                                {{ pago.moneda.nombre }}
-                                                {{ pago.monto }}
-                                            </span>
-                                            <template
-                                                v-if="
-                                                    pago.moneda_cambio_id != 0
-                                                "
-                                            >
-                                                <span
-                                                    class="font-bold mt-1 text-sm block"
-                                                >
-                                                    <span>{{
-                                                        pago.moneda_cambio
-                                                            ?.nombre
-                                                    }}</span>
-                                                    {{
-                                                        pago.monto_cambio
-                                                    }}</span
-                                                >
-                                            </template>
-                                        </td>
-                                        <td
-                                            data-col="Descripción"
-                                            class="px-6 py-4 block before:content-[attr(data-col)] before:block before:bold before:text-white sm:before:content-[] sm:before:hidden sm:table-cell"
-                                        >
-                                            {{ pago.descripcion }}
-                                        </td>
-                                        <td
-                                            data-col="Fecha"
-                                            class="px-6 py-4 block before:content-[attr(data-col)] before:block before:bold before:text-white sm:before:content-[] sm:before:hidden sm:table-cell"
-                                        >
-                                            {{ pago.fecha_pago }}
-                                        </td>
-                                        <td
-                                            data-col="Acción"
-                                            class="px-6 py-4 block before:content-[attr(data-col)] before:block before:bold before:text-white sm:before:content-[] sm:before:hidden sm:table-cell"
-                                        >
-                                            <Link
-                                                :href="
-                                                    route('pagos.show', pago.id)
-                                                "
-                                                class="px-4 py-2 text-white bg-blue-600 rounded-lg inline-block hover:bg-blue-700"
-                                                title="Ver pago"
-                                            >
-                                                <font-awesome-icon icon="eye" />
-                                            </Link>
-                                            <Link
-                                                :href="
-                                                    route('pagos.edit', pago.id)
-                                                "
-                                                class="px-4 py-2 text-white bg-yellow-600 rounded-lg inline-block mt-2 hover:bg-yellow-500"
-                                            >
-                                                <font-awesome-icon
-                                                    icon="edit"
-                                                />
-                                            </Link>
-                                            <BreezeButton
-                                                class="bg-red-700 inline-block mt-2 hover:bg-red-800"
-                                                @click="destroy(pago.id)"
-                                            >
-                                                <font-awesome-icon
-                                                    icon="trash"
-                                                />
-                                            </BreezeButton>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                    <i class="fa fa-search"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </BreezeAuthenticatedLayout>
+
+        <div class="row">
+            <div class="col-12">
+                <MiTable
+                    class="bg-white mitabla"
+                    ref="miTable"
+                    :cols="headers"
+                    :api="true"
+                    :url="route('pagos.paginado')"
+                    :numPages="5"
+                    :multiSearch="multiSearch"
+                    :syncOrderBy="'fecha_pago'"
+                    :syncOrderAsc="'DESC'"
+                >
+                    <template #costo="{ item }">
+                        <div class="w-100">
+                            <div
+                                class="badge badge-primary text-md rounded-0 w-100 text-center"
+                            >
+                                {{ item.moneda.nombre }}
+                                {{ item.costo }}
+                            </div>
+                            <div
+                                v-if="item.tipo_cambio_id != 0"
+                                class="badge badge-success text-md rounded-0 w-100 text-center"
+                            >
+                                {{ item.moneda_cambio.nombre }}
+                                {{ item.costo_cambio }}
+                            </div>
+                        </div>
+                    </template>
+
+                    <template #cancelado="{ item }">
+                        <div class="w-100">
+                            <div class="w-100 text-center">
+                                {{ item.moneda.nombre }}
+                                {{ item.cancelado }}
+                            </div>
+                            <div
+                                v-if="item.tipo_cambio_id != 0"
+                                class="w-100 text-center"
+                            >
+                                {{ item.moneda_cambio.nombre }}
+                                {{ item.costo_cambio }}
+                            </div>
+                        </div>
+                    </template>
+
+                    <template #accion="{ item }">
+                        <button
+                            class="btn btn-warning accion_icon"
+                            @click.prevent="editarPago(item)"
+                        >
+                            <i class="fa fa-edit"></i>
+                        </button>
+                        <button
+                            class="btn btn-danger accion_icon"
+                            @click.prevent="eliminarPago(item)"
+                        >
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </template>
+                </MiTable>
+            </div>
+        </div>
+    </Content>
 </template>

@@ -63,6 +63,12 @@ class MonedaController extends Controller
         );
     }
 
+    public function getMonedaPrincipal()
+    {
+        $moneda_principal = Moneda::where("principal", 1)->get()->first();
+        return response()->JSON($moneda_principal);
+    }
+
     public function update(Request $request, Moneda $moneda)
     {
         $request->validate([

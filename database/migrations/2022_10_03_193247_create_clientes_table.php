@@ -8,23 +8,26 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * @return void
      */
-    public function up(): void
+    public function up()
     {
-        Schema::create('configuracions', function (Blueprint $table) {
+        Schema::create('clientes', function (Blueprint $table) {
             $table->id();
-            $table->string("razon_social", 255);
-            $table->string("alias", 255);
-            $table->string("logo")->nullable();
+            $table->string("nombre", 255)->unique();
+            $table->date("fecha_registro");
             $table->timestamps();
         });
     }
 
     /**
      * Reverse the migrations.
+     *
+     * @return void
      */
-    public function down(): void
+    public function down()
     {
-        Schema::dropIfExists('configuracions');
+        Schema::dropIfExists('clientes');
     }
 };
