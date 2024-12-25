@@ -23,6 +23,10 @@ body {
     font-size: 0.85rem;
 }
 
+.login-page {
+    min-height: 100vh;
+}
+
 /* MIS ESTILOS */
 .contenedor_opciones {
     width: 100%;
