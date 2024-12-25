@@ -1,6 +1,6 @@
 <script setup>
-import { onMounted, onBeforeUnmount } from "vue";
-onMounted(() => {
+import { onMounted, onBeforeUnmount, onBeforeMount } from "vue";
+onBeforeMount(() => {
     document.getElementsByTagName("body")[0].classList.add("login-page");
 });
 

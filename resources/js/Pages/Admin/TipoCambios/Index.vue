@@ -2,7 +2,7 @@
 import Content from "@/Components/Content.vue";
 import MiTable from "@/Components/MiTable.vue";
 import { Head, usePage, Link } from "@inertiajs/vue3";
-import { useMonedas } from "@/composables/monedas/useMonedas";
+import { useTipoCambios } from "@/composables/tipo_cambios/useTipoCambios";
 import { useCrudAxios } from "@/composables/curdAxios/useCrudAxios";
 import { ref, onMounted, onBeforeMount } from "vue";
 import Formulario from "./Formulario.vue";
@@ -15,10 +15,10 @@ onBeforeMount(() => {
 });
 
 const { props } = usePage();
-const { limpiarMoneda, setMoneda, oMoneda } = useMonedas();
+const { limpiarTipoCambio, setTipoCambio, oTipoCambio } = useTipoCambios();
 const { axiosGet, axiosDelete } = useCrudAxios();
-const responseMonedas = ref([]);
-const listMonedas = ref([]);
+const responseTipoCambios = ref([]);
+const listTipoCambios = ref([]);
 const itemsPerPage = ref(5);
 const miTable = ref(null);
 const headers = ref([
@@ -29,19 +29,16 @@ const headers = ref([
         width: 1,
     },
     {
-        label: "NOMBRE",
-        key: "nombre",
+        label: "PRINCIPAL",
+        key: "moneda1",
         sortable: true,
+        keySortable: "monedas.valor1",
     },
     {
-        label: "DESCRIPCIÓN",
-        key: "descripcion",
+        label: "MONEDA 2",
+        key: "moneda2",
         sortable: true,
-    },
-    {
-        label: "TIPO",
-        key: "principal",
-        sortable: true,
+        keySortable: "monedas.valor2",
     },
     { label: "Acción", key: "accion", width: "1" },
 ]);
@@ -60,20 +57,20 @@ const accion_formulario = ref(0);
 const muestra_formulario = ref(false);
 
 const agregarRegistro = () => {
-    limpiarMoneda();
+    limpiarTipoCambio();
     accion_formulario.value = 0;
     muestra_formulario.value = true;
 };
-const editarMoneda = (item) => {
-    setMoneda(item);
+const editarTipoCambio = (item) => {
+    setTipoCambio(item);
     accion_formulario.value = 1;
     muestra_formulario.value = true;
 };
 
-const eliminarMoneda = (item) => {
+const eliminarTipoCambio = (item) => {
     Swal.fire({
         title: "¿Quierés eliminar este registro?",
-        html: `<strong>${item.nombre}</strong>`,
+        html: `<strong>${item.moneda_1.nombre} ${item.valor1} - ${item.moneda_2.nombre} ${item.valor2}</strong>`,
         showCancelButton: true,
         confirmButtonColor: "#B61431",
         confirmButtonText: "Si, eliminar",
@@ -83,7 +80,7 @@ const eliminarMoneda = (item) => {
         /* Read more about isConfirmed, isDenied below */
         if (result.isConfirmed) {
             let respuesta = await axiosDelete(
-                route("monedas.destroy", item.id)
+                route("tipo_cambios.destroy", item.id)
             );
             if (respuesta && respuesta.sw) {
                 updateDatos();
@@ -103,12 +100,12 @@ onMounted(() => {
 });
 </script>
 <template>
-    <Head title="Monedas" />
+    <Head title="Tipo de Cambios" />
     <Content>
         <template #header>
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0">Monedas</h1>
+                    <h1 class="m-0">Tipo de Cambios</h1>
                 </div>
                 <!-- /.col -->
                 <div class="col-sm-6">
@@ -116,7 +113,7 @@ onMounted(() => {
                         <li class="breadcrumb-item">
                             <Link :href="route('inicio')">Inicio</Link>
                         </li>
-                        <li class="breadcrumb-item active">Monedas</li>
+                        <li class="breadcrumb-item active">Tipo de Cambios</li>
                     </ol>
                 </div>
                 <!-- /.col -->
@@ -130,13 +127,13 @@ onMounted(() => {
                         <button
                             v-if="
                                 props.auth.user.permisos.includes(
-                                    'monedas.create'
+                                    'tipo_cambios.create'
                                 )
                             "
                             class="btn btn-primary btn-flat h-100"
                             @click="agregarRegistro"
                         >
-                            <i class="fa fa-plus"></i> Nuevo Moneda
+                            <i class="fa fa-plus"></i> Nuevo Tipo de Cambio
                         </button>
                     </div>
                     <div class="col-md-4 my-1">
@@ -168,24 +165,27 @@ onMounted(() => {
                     ref="miTable"
                     :cols="headers"
                     :api="true"
-                    :url="route('monedas.paginado')"
+                    :url="route('tipo_cambios.paginado')"
                     :numPages="5"
                     :search="search"
                 >
-                    <template #principal="{ item }">
-                        {{ item.principal }}
+                    <template #moneda1="{ item }">
+                        {{ item.moneda_1.nombre }} {{ item.valor1 }}
                     </template>
+                    <template #moneda2="{ item }">
+                        {{ item.moneda_2.nombre }} {{ item.valor2 }}
+                    </template>
+
                     <template #accion="{ item }">
                         <button
                             class="btn btn-warning accion_icon"
-                            @click.prevent="editarMoneda(item)"
+                            @click.prevent="editarTipoCambio(item)"
                         >
                             <i class="fa fa-edit"></i>
                         </button>
                         <button
-                            v-if="item.principal == 0"
                             class="btn btn-danger accion_icon"
-                            @click.prevent="eliminarMoneda(item)"
+                            @click.prevent="eliminarTipoCambio(item)"
                         >
                             <i class="fa fa-trash"></i>
                         </button>

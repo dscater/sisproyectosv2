@@ -14,7 +14,6 @@ class Pago extends Model
         'cliente_id',
         'monto',
         'moneda_id',
-        'tipo_cambio_id',
         'monto_cambio',
         'moneda_cambio_id',
         'descripcion',

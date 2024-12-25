@@ -32,6 +32,15 @@ class UserController extends Controller
             "pagos.edit",
             "pagos.destroy",
 
+            "monedas.create",
+            "monedas.index",
+            "monedas.edit",
+            "monedas.destroy",
+
+            "tipo_cambios.create",
+            "tipo_cambios.index",
+            "tipo_cambios.edit",
+            "tipo_cambios.destroy",
 
             "reportes.usuarios",
             "reportes.productos",

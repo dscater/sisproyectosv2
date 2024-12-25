@@ -7,7 +7,6 @@ const oPago = ref({
     cliente_id: "",
     monto: "",
     moneda_id: "",
-    tipo_cambio_id: "",
     monto_cambio: "",
     moneda_cambio_id: "",
     descripcion: "",
@@ -26,7 +25,6 @@ export const usePagos = () => {
             oPago.value.cliente_id = item.cliente_id;
             oPago.value.monto = item.monto;
             oPago.value.moneda_id = item.moneda_id;
-            oPago.value.tipo_cambio_id = item.tipo_cambio_id;
             oPago.value.monto_cambio = item.monto_cambio;
             oPago.value.moneda_cambio_id = item.moneda_cambio_id;
             oPago.value.descripcion = item.descripcion;
@@ -46,7 +44,6 @@ export const usePagos = () => {
         oPago.value.cliente_id = "";
         oPago.value.monto = "";
         oPago.value.moneda_id = "";
-        oPago.value.tipo_cambio_id = "";
         oPago.value.monto_cambio = "";
         oPago.value.moneda_cambio_id = "";
         oPago.value.descripcion = "";

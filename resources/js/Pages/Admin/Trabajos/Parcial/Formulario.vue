@@ -41,7 +41,6 @@ const enviarFormulario = () => {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => {
-            enviando.value = false;
             const flash = usePage().props.flash;
             Swal.fire({
                 icon: "success",
@@ -53,7 +52,6 @@ const enviarFormulario = () => {
             limpiarTrabajo();
         },
         onError: (err) => {
-            enviando.value = false;
             const flash = usePage().props.flash;
             Swal.fire({
                 icon: "info",
@@ -68,6 +66,9 @@ const enviarFormulario = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonText: `Aceptar`,
             });
+        },
+        onFinish: () => {
+            enviando.value = false;
         },
     });
 };
@@ -128,7 +129,7 @@ onMounted(() => {
 <template>
     <form>
         <div class="row">
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Seleccionar Proyecto*</label>
                 <el-select
                     class="w-100"
@@ -155,13 +156,13 @@ onMounted(() => {
                     >{{ form.errors.proyecto_id }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Seleccionar Cliente*</label>
                 <el-select
                     class="w-100"
                     size="large"
                     :class="{
-                        'is-invalid': form.errors?.proyecto_id,
+                        'is-invalid': form.errors?.cliente_id,
                     }"
                     required
                     placeholder="Seleccionar Cliente"
@@ -182,7 +183,7 @@ onMounted(() => {
                     >{{ form.errors.cliente_id }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Costo*</label>
                 <input
                     type="number"
@@ -200,7 +201,7 @@ onMounted(() => {
                     >{{ form.errors.costo_original }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Moneda*</label>
                 <select
                     class="form-control"
@@ -221,7 +222,7 @@ onMounted(() => {
                     >{{ form.errors.moneda_seleccionada_id }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Tipo de cambio*</label>
                 <select
                     class="form-control"
@@ -250,7 +251,7 @@ onMounted(() => {
                     >{{ form.errors.tipo_cambio_id }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Estado del pago*</label>
                 <select
                     class="form-control"
@@ -274,7 +275,7 @@ onMounted(() => {
                     >{{ form.errors.estado_pago }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Fecha de recepción*</label>
                 <input
                     type="date"
@@ -293,7 +294,7 @@ onMounted(() => {
                     >{{ form.errors.fecha_inicio }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Días de plazo para entregar*</label>
                 <input
                     type="number"
@@ -314,7 +315,7 @@ onMounted(() => {
                     >{{ form.errors.dias_plazo }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Fecha de entrega (automatico)*</label>
                 <input
                     type="date"
@@ -332,7 +333,7 @@ onMounted(() => {
                     >{{ form.errors.fecha_entrega }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Estado del trabajo*</label>
                 <select
                     class="form-control"
@@ -356,7 +357,7 @@ onMounted(() => {
                     >{{ form.errors.estado_trabajo }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Fecha de envío</label>
                 <input
                     type="date"
@@ -373,7 +374,7 @@ onMounted(() => {
                     >{{ form.errors.fecha_envio }}</span
                 >
             </div>
-            <div class="col-md-4 mt-1">
+            <div class="col-md-4 mt-3">
                 <label>Fecha de conclusión</label>
                 <input
                     type="date"
@@ -390,7 +391,7 @@ onMounted(() => {
                     >{{ form.errors.fecha_conclusion }}</span
                 >
             </div>
-            <div class="col-12 mt-1">
+            <div class="col-12 mt-3">
                 <label>Descripción*</label>
                 <textarea
                     class="form-control"

@@ -7,15 +7,33 @@ use App\Models\Trabajo;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class TipoCambioController extends Controller
 {
+    public $validacion = [
+        "moneda1_id" => "required",
+        "valor1" => "required|numeric|min:1",
+        "moneda2_id" => "required",
+        "valor2" => "required|numeric|min:1",
+    ];
+
+    public $mensajes = [
+        "moneda1_id.required" => "Este campo es obligatorio",
+        "valor1.required" => "Este campo es obligatorio",
+        "valor1.numeric" => "Debes ingresar un valor númerico",
+        "valor1.min" => "Debes ingresar al menos :min",
+        "moneda2_id.required" => "Este campo es obligatorio",
+        "valor2.required" => "Este campo es obligatorio",
+        "valor2.numeric" => "Debes ingresar un valor númerico",
+        "valor2.min" => "Debes ingresar al menos :min",
+    ];
+
     public function index(Request $request)
     {
-        $tipo_cambios = TipoCambio::with("moneda_1", "moneda_2", "moneda_menor_valor")->orderBy("created_at", "desc")->get();
-        if ($request->ajax()) {
-            return response()->JSON($tipo_cambios);
-        }
+        return Inertia::render("Admin/TipoCambios/Index");
     }
 
     public function listado(Request $request)
@@ -29,95 +47,120 @@ class TipoCambioController extends Controller
             "tipo_cambios" => $tipo_cambios
         ]);
     }
+    public function paginado(Request $request)
+    {
+        $perPage = $request->input('perPage', 5);
+        $search = $request->search;
+        $tipo_cambios = TipoCambio::with(["moneda_1", "moneda_2"])
+            ->select("tipo_cambios.*")
+            ->join("monedas as m1", "m1.id", "=", "tipo_cambios.moneda1_id")
+            ->join("monedas as m2", "m2.id", "=", "tipo_cambios.moneda2_id");
+        if (trim($search) != "") {
+            $tipo_cambios->where(DB::raw('CONCAT(m1.nombre, m1.descripcion, m2.nombre, m2.descripcion)'), 'LIKE', "%$search%");
+        }
+
+        if ($request->orderBy && $request->orderAsc) {
+            $tipo_cambios->orderBy($request->orderBy, $request->orderAsc);
+        }
+
+        $tipo_cambios = $tipo_cambios->paginate($perPage);
+        return response()->JSON([
+            'data' => $tipo_cambios->items(),
+            'total' => $tipo_cambios->total(),
+            'lastPage' => $tipo_cambios->lastPage(),
+        ]);
+    }
+
+    public function create()
+    {
+        return Inertia::render('Admin/TipoCambios/Create');
+    }
 
     public function store(Request $request)
     {
-        $request->validate([
-            "moneda1_id" => "required",
-            "valor1" => "required|numeric|min:1",
-            "moneda2_id" => "required",
-            "valor2" => "required|numeric|min:1",
-        ]);
-
-        TipoCambio::create([
-            "moneda1_id" => $request->moneda1_id,
-            "valor1" => $request->valor1,
-            "moneda2_id" => $request->moneda2_id,
-            "valor2" => $request->valor2,
-            "menor_valor" => $request->menor_valor,
-            "defecto" => 0,
-        ]);
-
-        if ($request->ajax()) {
-            return response()->JSON([
-                "sw" => true,
-                "message" => "Registro éxitoso"
-            ]);
-        }
-
-        return redirect()->route('monedas.index')->with('msj', 'Registro éxitoso');
-    }
-
-    public function update(TipoCambio $tipo_cambio, Request $request)
-    {
         DB::beginTransaction();
         try {
-            $uso = Trabajo::where("tipo_cambio_id", $tipo_cambio->id)->get();
-            if (count($uso) > 0) {
-                throw new Exception('No es posible actualizar el registro debido a que esta siendo utilizado. Esto se agregará en un futuro.');
-            }
-            $tipo_cambio->update([
-                "moneda1_id" => $request->moneda1_id,
-                "valor1" => $request->valor1,
-                "moneda2_id" => $request->moneda2_id,
-                "valor2" => $request->valor2,
-                "menor_valor" => $request->menor_valor,
-            ]);
+            $request->validate($this->validacion, $this->mensajes);
+            $request["menor_valor"] = 0;
+            $request["defecto"] = 0;
+            TipoCambio::create($request->all());
             DB::commit();
-            if ($request->ajax()) {
-                return response()->JSON([
-                    "sw" => true,
-                    "message" => "Registro actualizado con éxito"
-                ]);
-            }
-            return redirect()->route('monedas.index')->with('msj', 'Registro actualizado con éxito');
+            return redirect()->route('tipo_cambios.index')->with('message', 'Registro realizado con éxito');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
         } catch (\Exception $e) {
             DB::rollBack();
-            if ($request->ajax()) {
-                return response()->JSON([
-                    "sw" => false,
-                    "message" => "No se pudo actualizar el registro: " . $e->getMessage()
-                ], 401);
-            }
+            Log::debug("ERROR: " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
         }
     }
 
-    public function destroy(TipoCambio $tipo_cambio, Request $request)
+    public function edit(TipoCambio $tipo_cambio)
+    {
+        return Inertia::render('Admin/TipoCambios/Edit', ['tipo_cambio' => $tipo_cambio]);
+    }
+
+    public function show(TipoCambio $tipo_cambio)
+    {
+        return Inertia::render(
+            'tipo_cambios/show',
+            [
+                'tipo_cambio' => $tipo_cambio,
+            ]
+        );
+    }
+
+    public function update(Request $request, TipoCambio $tipo_cambio)
     {
         DB::beginTransaction();
         try {
-            $uso = Trabajo::where("tipo_cambio_id", $tipo_cambio->id)->get();
-            if (count($uso) > 0) {
-                throw new Exception('No es posible eliminar el registro debido a que esta siendo utilizado');
+            $existe_trabajos = Trabajo::where("tipo_cambio_id", $tipo_cambio->id)->get();
+            if (count($existe_trabajos) > 0) {
+                throw ValidationException::withMessages(
+                    [
+                        "enuso" => "No es posible actualizar el registro porque esta siendo utilizado"
+                    ]
+                );
+            }
+            $request->validate($this->validacion, $this->mensajes);
+            $tipo_cambio->update($request->all());
+            DB::commit();
+            return redirect()->route('tipo_cambios.index')->with('message', 'Registro actualizado con éxito');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::debug("ERROR: " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
+        }
+    }
+
+    public function destroy(TipoCambio $tipo_cambio)
+    {
+        DB::beginTransaction();
+        try {
+            $existe_trabajos = Trabajo::where("tipo_cambio_id", $tipo_cambio->id)->get();
+            if (count($existe_trabajos) > 0) {
+                throw new Exception("No es posible eliminar el registro porque esta siendo utilizado", 422);
             }
             $tipo_cambio->delete();
             DB::commit();
-            if ($request->ajax()) {
-                return response()->JSON([
-                    "sw" => true,
-                    "message" => "Registro eliminado con éxito"
-                ]);
-            }
-            return redirect()->route('monedas.index')->with('msj', 'Registro eliminado con éxito');
+            return response()->JSON([
+                "sw" => true,
+                "message" => "Registro eliminado con éxito"
+            ]);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
         } catch (\Exception $e) {
             DB::rollBack();
-            if ($request->ajax()) {
-                return response()->JSON([
-                    "sw" => false,
-                    "message" => "No se pudo eliminar el registro: " . $e->getMessage()
-                ], 401);
-            }
-            return redirect()->route('monedas.index')->with('error', 'No se pudo eliminar el registro: ' . $e->getMessage());
+            // Log::debug("ERROR " . $e->getCode() . ": " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
         }
     }
 }

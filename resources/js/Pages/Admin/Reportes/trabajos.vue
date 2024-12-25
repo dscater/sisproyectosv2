@@ -1,9 +1,14 @@
 <script setup>
-import BreezeAuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head } from "@inertiajs/vue3";
-import { useForm } from "@inertiajs/vue3";
-import { inject, onMounted, computed, ref } from "vue";
+import Content from "@/Components/Content.vue";
+import { Head, useForm, Link } from "@inertiajs/vue3";
+import { inject, onMounted, onBeforeMount, computed, ref, nextTick } from "vue";
 import axios from "axios";
+import { useAppStore } from "@/stores/aplicacion/appStore";
+const appStore = useAppStore();
+onBeforeMount(() => {
+    appStore.startLoading();
+});
+
 const props = defineProps({
     moneda_principal: {
         type: Object,
@@ -22,7 +27,6 @@ const props = defineProps({
         default: () => ({}),
     },
 });
-const Swal = inject("$swal");
 
 const form = useForm({
     filtro: "todos",
@@ -60,10 +64,6 @@ const cambioValoresFiltros = () => {
         cargaDatos();
     }, 400);
 };
-
-onMounted(() => {
-    cargaDatos();
-});
 
 function obtenerFechaActual() {
     const fecha = new Date();
@@ -127,651 +127,537 @@ const total_pagos_pendientes = computed(() => {
     );
     return pagoscompletos.length;
 });
+
+const renderizaFixedColumns = () => {
+    nextTick(() => {
+        const listRows = document.querySelectorAll("table tr");
+        listRows.forEach((row, index_row) => {
+            let ancho_anterior = 0; // Desplazamiento acumulado
+            const listTds = row.querySelectorAll("td");
+            listTds.forEach((td) => {
+                const ancho_elem = td.offsetWidth; // Obtener ancho del elemento actual
+
+                if (td.classList.contains("fixed-column")) {
+                    td.classList.add("xd"); // Agregar clase
+                    td.style.position = "sticky"; // Hacerlo sticky
+                    td.style.left = `${ancho_anterior}px`; // Posicionarlo con left
+                }
+
+                ancho_anterior += ancho_elem; // Sumar ancho actual al acumulado
+            });
+
+            ancho_anterior = 0; // Desplazamiento acumulado
+            const listThs = row.querySelectorAll("th");
+            listThs.forEach((th) => {
+                if (index_row == 0) {
+                    console.log("content:", th.innerHTML);
+                    console.log("WIDTH:", th.offsetWidth);
+                }
+                const ancho_elem = th.offsetWidth; // Obtener ancho del elemento actual
+
+                if (th.classList.contains("fixed-column")) {
+                    th.classList.add("xd"); // Agregar clase
+                    th.style.position = "sticky"; // Hacerlo sticky
+                    th.style.left = `${ancho_anterior}px`; // Posicionarlo con left
+                }
+
+                ancho_anterior += ancho_elem; // Sumar ancho actual al acumulado
+            });
+        });
+    });
+};
+
+onMounted(async () => {
+    cargaDatos();
+    appStore.stopLoading();
+    renderizaFixedColumns();
+});
 </script>
 <template>
-    <Head title="Clientes" />
-    <BreezeAuthenticatedLayout>
+    <Head title="Reporte trabajos" />
+    <Content>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight">Reportes</h2>
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Reporte Trabajos</h1>
+                </div>
+                <!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item">
+                            <Link :href="route('inicio')">Inicio</Link>
+                        </li>
+                        <li class="breadcrumb-item active">Reporte Trabajos</li>
+                    </ol>
+                </div>
+                <!-- /.col -->
+            </div>
+            <!-- /.row -->
         </template>
-        <div class="py-5">
-            <div class="mx-auto w-full grid sm:grid-cols-1 px-5 gap-2">
-                <div
-                    class="block w-full overflow-hidden bg-white shadow-sm sm:rounded-lg"
-                >
-                    <div class="mb-2">
-                        <h4
-                            class="w-full text-center font-bold text-lg uppercase"
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <form
+                            @submit.prevent="submit"
+                            target="_blank"
+                            class="p-3"
                         >
-                            Trabajos
-                        </h4>
-                    </div>
-                    <div
-                        class="relative overflow-x-auto shadow-md sm:rounded-lg"
-                    >
-                        <form @submit.prevent="submit" target="_blank" class="p-3">
-                            <div class="w-full md:w-1/4 inline-block p-2">
-                                <label
-                                    for="Title"
-                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                    >Filtro*</label
-                                >
-                                <select
-                                    v-model="form.filtro"
-                                    name="filtro"
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                    placeholder=""
-                                    @change="cambioValoresFiltros"
-                                >
-                                    <option value="todos">Todos</option>
-                                    <option value="proyecto">
-                                        Por proyecto
-                                    </option>
-                                    <option value="trabajo">Por trabajo</option>
-                                    <option value="estado_pago">
-                                        Estado de pago
-                                    </option>
-                                    <option value="estado_trabajo">
-                                        Estado de trabajo
-                                    </option>
-                                </select>
-                                <div
-                                    v-if="form.errors.bs"
-                                    class="text-sm text-red-600"
-                                >
-                                    {{ form.errors.bs }}
-                                </div>
-                            </div>
-                            <div
-                                class="w-full md:w-1/4 inline-block p-2"
-                                v-if="form.filtro == 'proyecto'"
-                            >
-                                <label
-                                    for="Title"
-                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                    >Seleccione el proyecto*</label
-                                >
-                                <select
-                                    v-model="form.proyecto"
-                                    name="proyecto"
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                    placeholder=""
-                                    @change="cambioValoresFiltros"
-                                >
-                                    <option value="todos">Todos</option>
-                                    <option
-                                        v-for="item in proyectos"
-                                        :value="item.id"
-                                    >
-                                        {{ item.nombre }} ({{ item.alias }})
-                                    </option>
-                                </select>
-                                <div
-                                    v-if="form.errors.proyecto"
-                                    class="text-sm text-red-600"
-                                >
-                                    {{ form.errors.proyecto }}
-                                </div>
-                            </div>
-                            <div
-                                class="w-full md:w-1/4 inline-block p-2"
-                                v-if="form.filtro == 'trabajo'"
-                            >
-                                <label
-                                    for="Title"
-                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                    >Seleccione el trabajo*</label
-                                >
-                                <select
-                                    v-model="form.trabajo"
-                                    name="trabajo"
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                    placeholder=""
-                                    @change="cambioValoresFiltros"
-                                >
-                                    <option value="todos">Todos</option>
-                                    <option
-                                        v-for="item in trabajos"
-                                        :value="item.id"
-                                    >
-                                        ({{ item.proyecto.alias }})
-                                        {{ item.descripcion }}
-                                    </option>
-                                </select>
-                                <div
-                                    v-if="form.errors.trabajo"
-                                    class="text-sm text-red-600"
-                                >
-                                    {{ form.errors.trabajo }}
-                                </div>
-                            </div>
-                            <div
-                                class="w-full md:w-1/4 inline-block p-2"
-                                v-if="form.filtro == 'estado_pago'"
-                            >
-                                <label
-                                    for="Title"
-                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                    >Estado de pago*</label
-                                >
-                                <select
-                                    v-model="form.estado_pago"
-                                    name="estado_pago"
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                    placeholder=""
-                                    @change="cambioValoresFiltros"
-                                >
-                                    <option value="todos">Todos</option>
-                                    <option value="COMPLETO">COMPLETO</option>
-                                    <option value="PENDIENTE">PENDIENTE</option>
-                                </select>
-                                <div
-                                    v-if="form.errors.estado_pago"
-                                    class="text-sm text-red-600"
-                                >
-                                    {{ form.errors.estado_pago }}
-                                </div>
-                            </div>
-                            <div
-                                class="w-full md:w-1/4 inline-block p-2"
-                                v-if="form.filtro == 'estado_trabajo'"
-                            >
-                                <label
-                                    for="Title"
-                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                    >Estado de trabajo*</label
-                                >
-                                <select
-                                    v-model="form.estado_trabajo"
-                                    name="estado_trabajo"
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                    placeholder=""
-                                    @change="cambioValoresFiltros"
-                                >
-                                    <option value="todos">Todos</option>
-                                    <option value="EN PROCESO">
-                                        EN PROCESO
-                                    </option>
-                                    <option value="ENVIADO">ENVIADO</option>
-                                    <option value="CONCLUIDO">CONCLUIDO</option>
-                                </select>
-                                <div
-                                    v-if="form.errors.estado_trabajo"
-                                    class="text-sm text-red-600"
-                                >
-                                    {{ form.errors.estado_trabajo }}
-                                </div>
-                            </div>
-                            <div class="w-full md:w-1/4 inline-block p-2">
-                                <label
-                                    for="Title"
-                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                    >Cliente*</label
-                                >
-                                <select
-                                    v-model="form.cliente_id"
-                                    name="cliente_id"
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                    placeholder=""
-                                    @change="cambioValoresFiltros"
-                                >
-                                    <option value="todos">Todos</option>
-                                    <option
-                                        v-for="item in clientes"
-                                        :value="item.id"
-                                    >
-                                        {{ item.nombre }}
-                                    </option>
-                                </select>
-                                <div
-                                    v-if="form.errors.cliente_id"
-                                    class="text-sm text-red-600"
-                                >
-                                    {{ form.errors.cliente_id }}
-                                </div>
-                            </div>
-                            <div class="w-full md:w-1/4 inline-block p-2">
-                                <label
-                                    for="Title"
-                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                    >Fechas*</label
-                                >
-                                <select
-                                    v-model="form.filtro_fecha"
-                                    name="filtro_fecha"
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                    placeholder=""
-                                    @change="cambioValoresFiltros"
-                                >
-                                    <option value="todos">Todos</option>
-                                    <option value="fechas">
-                                        Filtrar fechas
-                                    </option>
-                                </select>
-                            </div>
-                            <div
-                                class="w-full sm:flex sm:center"
-                                v-if="form.filtro_fecha != 'todos'"
-                            >
-                                <div class="w-full md:w-1/4 inline-block p-2 ml-auto">
-                                    <label
-                                        for="Title"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                        >Fecha inicial*</label
-                                    >
-                                    <input
-                                        v-model="form.fecha_ini"
-                                        type="date"
-                                        name="fecha_ini"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                        placeholder=""
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label>Filtro*</label>
+                                    <select
+                                        name="filtro"
+                                        class="form-control"
+                                        v-model="form.filtro"
                                         @change="cambioValoresFiltros"
-                                        @keyup="cambioValoresFiltros"
-                                    />
-                                </div>
-                                <div class="w-full md:w-1/4 inline-block p-2 mr-auto">
-                                    <label
-                                        for="Title"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                        >Fecha final*</label
                                     >
-                                    <input
-                                        v-model="form.fecha_fin"
-                                        type="date"
-                                        name="fecha_fin"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                        placeholder=""
-                                        @change="cambioValoresFiltros"
-                                        @keyup="cambioValoresFiltros"
-                                    />
+                                        <option value="todos">Todos</option>
+                                        <option value="proyecto">
+                                            Por proyecto
+                                        </option>
+                                        <option value="trabajo">
+                                            Por trabajo
+                                        </option>
+                                        <option value="estado_pago">
+                                            Estado de pago
+                                        </option>
+                                        <option value="estado_trabajo">
+                                            Estado de trabajo
+                                        </option>
+                                    </select>
+                                    <div
+                                        v-if="form.errors.bs"
+                                        class="text-sm text-red-600"
+                                    >
+                                        {{ form.errors.bs }}
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="w-full text-center p-2">
-                                <button
-                                    type="submit"
-                                    class="w-2/4 text-white bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5"
-                                    :disabled="form.processing"
-                                    :class="{
-                                        'opacity-25': form.processing,
-                                    }"
+                                <div
+                                    class="col-md-6"
+                                    v-if="form.filtro == 'proyecto'"
                                 >
-                                    Generar reporte
-                                </button>
+                                    <label>Seleccione el proyecto*</label>
+                                    <select
+                                        name="proyecto"
+                                        class="form-control"
+                                        v-model="form.proyecto"
+                                        @change="cambioValoresFiltros"
+                                    >
+                                        <option value="todos">Todos</option>
+                                        <option
+                                            v-for="item in proyectos"
+                                            :value="item.id"
+                                        >
+                                            {{ item.nombre }} ({{ item.alias }})
+                                        </option>
+                                    </select>
+                                    <div
+                                        v-if="form.errors.proyecto"
+                                        class="text-sm text-red-600"
+                                    >
+                                        {{ form.errors.proyecto }}
+                                    </div>
+                                </div>
+                                <div
+                                    class="col-md-6"
+                                    v-if="form.filtro == 'trabajo'"
+                                >
+                                    <label>Seleccione el trabajo*</label>
+                                    <select
+                                        name="trabajo"
+                                        class="form-control"
+                                        v-model="form.trabajo"
+                                        @change="cambioValoresFiltros"
+                                    >
+                                        <option value="todos">Todos</option>
+                                        <option
+                                            v-for="item in trabajos"
+                                            :value="item.id"
+                                        >
+                                            ({{ item.proyecto.alias }})
+                                            {{ item.descripcion }}
+                                        </option>
+                                    </select>
+                                    <div
+                                        v-if="form.errors.trabajo"
+                                        class="text-sm text-red-600"
+                                    >
+                                        {{ form.errors.trabajo }}
+                                    </div>
+                                </div>
+                                <div
+                                    class="col-md-6"
+                                    v-if="form.filtro == 'estado_pago'"
+                                >
+                                    <label>Estado de pago*</label>
+                                    <select
+                                        name="estado_pago"
+                                        class="form-control"
+                                        v-model="form.estado_pago"
+                                        @change="cambioValoresFiltros"
+                                    >
+                                        <option value="todos">Todos</option>
+                                        <option value="COMPLETO">
+                                            COMPLETO
+                                        </option>
+                                        <option value="PENDIENTE">
+                                            PENDIENTE
+                                        </option>
+                                    </select>
+                                    <div
+                                        v-if="form.errors.estado_pago"
+                                        class="text-sm text-red-600"
+                                    >
+                                        {{ form.errors.estado_pago }}
+                                    </div>
+                                </div>
+                                <div
+                                    class="col-md-6"
+                                    v-if="form.filtro == 'estado_trabajo'"
+                                >
+                                    <label>Estado de trabajo*</label>
+                                    <select
+                                        name="estado_trabajo"
+                                        class="form-control"
+                                        v-model="form.estado_trabajo"
+                                        @change="cambioValoresFiltros"
+                                    >
+                                        <option value="todos">Todos</option>
+                                        <option value="EN PROCESO">
+                                            EN PROCESO
+                                        </option>
+                                        <option value="ENVIADO">ENVIADO</option>
+                                        <option value="CONCLUIDO">
+                                            CONCLUIDO
+                                        </option>
+                                    </select>
+                                    <div
+                                        v-if="form.errors.estado_trabajo"
+                                        class="text-sm text-red-600"
+                                    >
+                                        {{ form.errors.estado_trabajo }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Cliente*</label>
+                                    <select
+                                        name="cliente_id"
+                                        class="form-control"
+                                        v-model="form.cliente_id"
+                                        @change="cambioValoresFiltros"
+                                    >
+                                        <option value="todos">Todos</option>
+                                        <option
+                                            v-for="item in clientes"
+                                            :value="item.id"
+                                        >
+                                            {{ item.nombre }}
+                                        </option>
+                                    </select>
+                                    <div
+                                        v-if="form.errors.cliente_id"
+                                        class="text-sm text-red-600"
+                                    >
+                                        {{ form.errors.cliente_id }}
+                                    </div>
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <div class="row">
+                                        <div class="col-md-6 offset-md-3">
+                                            <label>Fechas*</label>
+                                            <select
+                                                name="filtro_fecha"
+                                                class="form-control"
+                                                v-model="form.filtro_fecha"
+                                                @change="cambioValoresFiltros"
+                                            >
+                                                <option value="todos">
+                                                    Todos
+                                                </option>
+                                                <option value="fechas">
+                                                    Filtrar fechas
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div
+                                            class="col-12"
+                                            v-if="form.filtro_fecha != 'todos'"
+                                        >
+                                            <div class="row mt-2">
+                                                <div class="col-md-6">
+                                                    <label
+                                                        >Fecha inicial*</label
+                                                    >
+                                                    <input
+                                                        type="date"
+                                                        name="fecha_ini"
+                                                        class="form-control"
+                                                        v-model="form.fecha_ini"
+                                                        @change="
+                                                            cambioValoresFiltros
+                                                        "
+                                                        @keyup="
+                                                            cambioValoresFiltros
+                                                        "
+                                                    />
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label>Fecha final*</label>
+                                                    <input
+                                                        type="date"
+                                                        name="fecha_fin"
+                                                        class="form-control"
+                                                        v-model="form.fecha_fin"
+                                                        @change="
+                                                            cambioValoresFiltros
+                                                        "
+                                                        @keyup="
+                                                            cambioValoresFiltros
+                                                        "
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 mt-3">
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary btn-block"
+                                        :disabled="form.processing"
+                                    >
+                                        Generar reporte
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
                 </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="mb-2">
+                    <h4 class="w-100 text-center">
+                        Expresado en
+                        {{ moneda_principal.descripcion }}
+                    </h4>
+                    <p class="text-center text-sm">
+                        <span class="font-bold">Resultado:</span>
+                        {{ listTrabajos.length }} Registros encontrados
+                    </p>
+                </div>
                 <div
-                    class="block w-full overflow-hidden bg-white shadow-sm sm:rounded-lg"
+                    class="h-screen flex"
+                    :style="[
+                        listTrabajos.length > 5
+                            ? 'height: calc(75vh - 2rem)'
+                            : 'height:auto',
+                    ]"
                 >
-                    <div class="p-6 bg-white border-b border-gray-200">
-                        <div class="mb-2">
-                            <h4 class="font-bold text-lg uppercase text-center">
-                                Expresado en
-                                {{ moneda_principal.descripcion }}
-                            </h4>
-                            <p class="text-center text-sm">
-                                <span class="font-bold">Resultado:</span>
-                                {{ listTrabajos.length }} Registros encontrados
-                            </p>
-                        </div>
-                        <div
-                            class="h-screen flex"
-                            :style="[
-                                listTrabajos.length > 5
-                                    ? 'height: calc(75vh - 2rem)'
-                                    : 'height:auto',
-                            ]"
-                        >
-                            <div
-                                class="overflow-y-auto"
-                                :style="[
-                                    listTrabajos.length > 5
-                                        ? 'height: calc(70vh - 2rem)'
-                                        : 'height:auto',
-                                ]"
-                            >
-                                <table
-                                    class="w-full max-w-full text-sm text-left text-gray-500 dark:text-gray-400"
-                                >
-                                    <thead
-                                        class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0"
-                                    >
-                                        <tr>
-                                            <th
-                                                scope="col"
-                                                class="px-6 py-3"
-                                                width="20px"
-                                            >
-                                                #
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Proyecto
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Cliente
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Descripción
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Fecha Inicio
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Plazo días
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Fecha Entrega
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Estado/Trabajo
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Fecha de envío
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Fecha de conclusión
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Costo
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Cancelado
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Saldo
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Estado/Pago
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody
-                                        class="flex-grow overflow-y-auto"
-                                        style="max-height: 30vh"
-                                        v-if="!cargando"
-                                    >
-                                        <tr
-                                            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
-                                            v-for="(
-                                                item, index
-                                            ) in listTrabajos"
-                                        >
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ index + 1 }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.proyecto.nombre
-                                                }}<br />({{
-                                                    item.proyecto.alias
-                                                }})
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.cliente.nombre }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.descripcion }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.fecha_inicio }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.dias_plazo }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.fecha_entrega }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.estado_trabajo }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.fecha_envio }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.fecha_conclusion }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                            >
-                                                {{ item.costo }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                            >
-                                                {{ item.cancelado }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                            >
-                                                {{ item.saldo }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                                :class="[
-                                                    item.estado_pago ==
-                                                    'COMPLETO'
-                                                        ? 'bg-green-600'
-                                                        : 'bg-red-700',
-                                                ]"
-                                            >
-                                                {{ item.estado_pago }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                    <tbody
-                                        class="flex-grow overflow-y-auto"
-                                        style="max-height: 30vh"
-                                        v-else
-                                    >
-                                        <tr>
-                                            <td
-                                                colspan="14"
-                                                class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 text-center text-xl"
-                                            >
-                                                CARGANDO...
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                    <tfoot
-                                        class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-200 dark:text-gray-400 sticky bottom-0"
-                                    >
-                                        <tr
-                                            class="bg-white border-b dark:bg-gray-700 dark:border-solid border-white"
-                                        >
-                                            <td
-                                                colspan="10"
-                                                class="px-6 py-4 font-large text-gray-900 dark:text-white whitespace-wrap text-right text-xl"
-                                            >
-                                                TOTALES
-                                            </td>
-                                            <td
-                                                class="px-6 py-4 font-large text-gray-900 dark:text-white whitespace-wrap text-right text-xl"
-                                            >
-                                                {{ total_costo }}
-                                            </td>
-                                            <td
-                                                class="px-6 py-4 font-large text-gray-900 dark:text-white whitespace-wrap text-right text-xl"
-                                            >
-                                                {{ total_cancelado }}
-                                            </td>
-                                            <td
-                                                class="px-6 py-4 font-large text-gray-900 dark:text-white whitespace-wrap text-right text-xl"
-                                            >
-                                                {{ total_saldos }}
-                                            </td>
-                                            <td
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-xl"
-                                            ></td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </div>
-
-                        <table
-                            class="w-full max-w-full text-sm text-left text-gray-500 dark:text-gray-400"
-                        >
-                            <thead
-                                class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0"
-                            >
+                    <div
+                        style="overflow: auto"
+                        :style="[
+                            listTrabajos.length > 5
+                                ? 'height: calc(70vh - 2rem)'
+                                : 'height:auto',
+                        ]"
+                    >
+                        <table class="table table-bordered">
+                            <thead>
                                 <tr>
-                                    <th
-                                        scope="col"
-                                        colspan="8"
-                                        class="px-6 py-3 text-center font-bold text-lg"
-                                    >
-                                        TOTALES
-                                    </th>
-                                </tr>
-                                <tr>
-                                    <th
-                                        scope="col"
-                                        class="px-6 py-3 text-center font-bold"
-                                    >
-                                        COSTOS
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-6 py-3 text-center font-bold"
-                                    >
-                                        CANCELADO
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-6 py-3 text-center font-bold"
-                                    >
-                                        SALDO
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-6 py-3 text-center font-bold"
-                                    >
-                                        EN PROCESO
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-6 py-3 text-center font-bold"
-                                    >
-                                        ENVIADOS
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-6 py-3 text-center font-bold"
-                                    >
-                                        CONCLUIDOS
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-6 py-3 text-center font-bold"
-                                    >
-                                        PAGOS COMPLETOS
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        class="px-6 py-3 text-center font-bold"
-                                    >
-                                        PAGOS PENDIENTES
-                                    </th>
+                                    <th class="fixed-column">#</th>
+                                    <th class="fixed-column">Proyecto</th>
+                                    <th class="fixed-column">Cliente</th>
+                                    <th>Descripción</th>
+                                    <th>Fecha Inicio</th>
+                                    <th>Plazo días</th>
+                                    <th>Fecha Entrega</th>
+                                    <th>Estado/Trabajo</th>
+                                    <th>Fecha de envío</th>
+                                    <th>Fecha de conclusión</th>
+                                    <th>Costo</th>
+                                    <th>Cancelado</th>
+                                    <th>Saldo</th>
+                                    <th class="fixed-column">Estado/Pago</th>
                                 </tr>
                             </thead>
-                            <tbody
-                                class="flex-grow overflow-y-auto"
-                                v-if="!cargando"
-                            >
-                                <tr
-                                    class="bg-white border-b dark:bg-gray-600 dark:border-solid border-white"
-                                >
-                                    <td
-                                        class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                    >
-                                        {{ total_costo }}
+                            <tbody style="max-height: 30vh" v-if="!cargando">
+                                <tr v-for="(item, index) in listTrabajos">
+                                    <td class="fixed-column">
+                                        {{ index + 1 }}
+                                    </td>
+                                    <td class="fixed-column">
+                                        {{ item.proyecto?.nombre }}<br />({{
+                                            item.proyecto?.alias
+                                        }})
+                                    </td>
+                                    <td class="fixed-column">
+                                        {{ item.cliente?.nombre }}
+                                    </td>
+                                    <td>
+                                        {{ item.descripcion }}
+                                    </td>
+                                    <td>
+                                        {{ item.fecha_inicio }}
+                                    </td>
+                                    <td>
+                                        {{ item.dias_plazo }}
+                                    </td>
+                                    <td>
+                                        {{ item.fecha_entrega }}
+                                    </td>
+                                    <td>
+                                        {{ item.estado_trabajo }}
+                                    </td>
+                                    <td>
+                                        {{ item.fecha_envio }}
+                                    </td>
+                                    <td>
+                                        {{ item.fecha_conclusion }}
+                                    </td>
+                                    <td>
+                                        {{ item.costo }}
+                                    </td>
+                                    <td>
+                                        {{ item.cancelado }}
+                                    </td>
+                                    <td>
+                                        {{ item.saldo }}
                                     </td>
                                     <td
-                                        class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
+                                        class="fixed-column"
+                                        :class="[
+                                            item.estado_pago == 'COMPLETO'
+                                                ? 'bg-green-600'
+                                                : 'bg-red-700',
+                                        ]"
                                     >
-                                        {{ total_cancelado }}
-                                    </td>
-                                    <td
-                                        class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                    >
-                                        {{ total_saldos }}
-                                    </td>
-                                    <td
-                                        class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                    >
-                                        {{ total_proceso }}
-                                    </td>
-                                    <td
-                                        class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                    >
-                                        {{ total_enviado }}
-                                    </td>
-                                    <td
-                                        class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                    >
-                                        {{ total_concluidos }}
-                                    </td>
-                                    <td
-                                        class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                    >
-                                        {{ total_pagos_completos }}
-                                    </td>
-                                    <td
-                                        class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                    >
-                                        {{ total_pagos_pendientes }}
+                                        {{ item.estado_pago }}
                                     </td>
                                 </tr>
                             </tbody>
-                            <tbody class="flex-grow overflow-y-auto" v-else>
+                            <tbody
+                                class="flex-grow overflow-y-auto"
+                                style="max-height: 30vh"
+                                v-else
+                            >
                                 <tr>
                                     <td
-                                        colspan="9"
+                                        colspan="14"
                                         class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 text-center text-xl"
                                     >
                                         CARGANDO...
                                     </td>
                                 </tr>
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="10">TOTALES</td>
+                                    <td>
+                                        {{ total_costo }}
+                                    </td>
+                                    <td>
+                                        {{ total_cancelado }}
+                                    </td>
+                                    <td>
+                                        {{ total_saldos }}
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
+
+                <table class="table table-bordered">
+                    <thead class="">
+                        <tr>
+                            <th colspan="8">TOTALES</th>
+                        </tr>
+                        <tr>
+                            <th>COSTOS</th>
+                            <th>CANCELADO</th>
+                            <th>SALDO</th>
+                            <th>EN PROCESO</th>
+                            <th>ENVIADOS</th>
+                            <th>CONCLUIDOS</th>
+                            <th>PAGOS COMPLETOS</th>
+                            <th>PAGOS PENDIENTES</th>
+                        </tr>
+                    </thead>
+                    <tbody v-if="!cargando">
+                        <tr>
+                            <td>
+                                {{ total_costo }}
+                            </td>
+                            <td>
+                                {{ total_cancelado }}
+                            </td>
+                            <td>
+                                {{ total_saldos }}
+                            </td>
+                            <td>
+                                {{ total_proceso }}
+                            </td>
+                            <td>
+                                {{ total_enviado }}
+                            </td>
+                            <td>
+                                {{ total_concluidos }}
+                            </td>
+                            <td>
+                                {{ total_pagos_completos }}
+                            </td>
+                            <td>
+                                {{ total_pagos_pendientes }}
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody class="flex-grow overflow-y-auto" v-else>
+                        <tr>
+                            <td
+                                colspan="9"
+                                class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 text-center text-xl"
+                            >
+                                CARGANDO...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-    </BreezeAuthenticatedLayout>
+    </Content>
 </template>
-<style scoped></style>
+<style scoped>
+table thead tr th,
+table tbody tr td {
+    border: solid 1px rgb(216, 216, 216);
+}
+table thead tr {
+    position: sticky;
+    top: -1px;
+    z-index: 10000000;
+    background-color: white;
+    box-shadow: 0 3px 3px -3px rgb(216, 216, 216);
+}
+table tfoot tr {
+    position: sticky;
+    bottom: -2px;
+    z-index: 10000000;
+    background-color: white;
+    box-shadow: 3px 0px 0px 0px rgb(216, 216, 216);
+}
+
+table thead tr th.fixed-column,
+table tbody tr td.fixed-column {
+    position: sticky;
+    left: 0;
+    border-right: solid 1px rgb(216, 216, 216);
+}
+table tbody tr td.fixed-column {
+    background-color: white;
+}
+</style>

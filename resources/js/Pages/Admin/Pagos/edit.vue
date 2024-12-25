@@ -35,7 +35,7 @@ setPago(props.pago);
                                 >Pagos</Link
                             >
                         </li>
-                        <li class="breadcrumb-item active">Nuevo</li>
+                        <li class="breadcrumb-item active">Editar</li>
                     </ol>
                 </div>
                 <!-- /.col -->

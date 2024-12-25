@@ -235,15 +235,15 @@ class Trabajo extends Model
     }
 
     // Funcion para asignar los pagos a Moneda Principal de un solo trabajo
-    static function reestablecerPagoTrabajo($id)
+    static function reestablecerPagosTrabajo($id)
     {
         $moneda_principal = Moneda::where("principal", 1)->get()->first();
         $trabajo = Trabajo::findOrFail($id);
         if ($moneda_principal) {
             $pagos = Pago::where("trabajo_id", $id)->get();
+            $suma_total = 0;
+            $suma_total_cambio = 0;
             if (count($pagos) > 0) {
-                $suma_total = 0;
-                $suma_total_cambio = 0;
                 foreach ($pagos as $p) {
                     if ($p->moneda_id != $moneda_principal->id) {
                         // solo si la moneda es diferente a la principal intercambiar los valores de las columnas
@@ -269,20 +269,43 @@ class Trabajo extends Model
                     $suma_total_cambio += (float)$p->monto_cambio;
                     $p->save();
                 }
-                $trabajo->estado_pago = 'PENDIENTE';
-                $trabajo->cancelado = $suma_total;
-                $trabajo->saldo = $trabajo->costo - $suma_total;
-                $trabajo->cancelado_cambio = $suma_total_cambio;
-                $trabajo->saldo_cambio = $trabajo->costo_cambio - $suma_total_cambio;
-                if ($trabajo->saldo <= 0) {
-                    $trabajo->estado_pago = 'COMPLETO';
-                }
-                $trabajo->save();
             }
+            $trabajo->estado_pago = 'PENDIENTE';
+            $trabajo->cancelado = $suma_total;
+            $trabajo->saldo = $trabajo->costo - $suma_total;
+            $trabajo->cancelado_cambio = $suma_total_cambio;
+            $trabajo->saldo_cambio = $trabajo->costo_cambio - $suma_total_cambio;
+            if ($trabajo->saldo <= 0) {
+                $trabajo->estado_pago = 'COMPLETO';
+            }
+            $trabajo->save();
             return true;
         }
         throw new Exception("No encontro el registro de moneda principal");
         return false;
+    }
+
+    // actualizar saldo de trabajo por un nuevo pago
+    static function actualizaSaldoTrabajoPorPago($pago, $trabajo)
+    {
+        $monto_cancelado = $pago->monto;
+        // $monto_cancelado_cambio = $pago->monto_cambio;
+
+        // actualizar los saldos de las columnas correspondientes
+        $trabajo->cancelado = (float)$trabajo->cancelado + (float)$monto_cancelado;
+        $trabajo->saldo  = (float)$trabajo->saldo - (float)$monto_cancelado;
+        // $trabajo->cancelado_cambio = (float)$trabajo->cancelado_cambio + (float)$monto_cancelado_cambio;
+        $trabajo->cancelado_cambio = self::getMontoCambio($trabajo->tipo_cambio_id, $trabajo->moneda_id, $trabajo->cancelado);
+        // $trabajo->saldo_cambio = (float)$trabajo->saldo_cambio - (float)$monto_cancelado_cambio;
+        $trabajo->saldo_cambio = self::getMontoCambio($trabajo->tipo_cambio_id, $trabajo->moneda_id, $trabajo->saldo);
+
+        if ($trabajo->saldo == 0) {
+            $trabajo->estado_pago = "COMPLETO";
+        } else {
+            $trabajo->estado_pago = "PENDIENTE";
+        }
+        $trabajo->save();
+        return $trabajo;
     }
 
     // FUNCION PARA OBTENER EL TOTAL CANCELADO SIN TOMAR EN CUENTA UN PAGO
@@ -315,20 +338,21 @@ class Trabajo extends Model
         $moneda1_id = $tipo_cambio->moneda1_id;
         $valor1 = $tipo_cambio->valor1;
         $valor2 = $tipo_cambio->valor2;
+        $nuevo_monto = $monto;
         // verificar la moneda seleccionada con las monedas de cambio
         if ($moneda1_id == $moneda_id) { // es igual a la moneda 1
             if ($valor1 > $valor2) {
-                return (float)number_format((float)$monto / (float)($valor1), 2, ".", "");
+                $nuevo_monto = (float)number_format((float)$monto / (float)($valor1), 2, ".", "");
             } elseif ($valor2 > $valor1) {
-                return (float)number_format((float)$monto * (float)($valor2), 2, ".", "");
+                $nuevo_monto = (float)number_format((float)$monto * (float)($valor2), 2, ".", "");
             }
         } else {
             if ($valor1 > $valor2) {
-                return (float)number_format((float)$monto * (float)($valor1), 2, ".", "");
+                $nuevo_monto = (float)number_format((float)$monto * (float)($valor1), 2, ".", "");
             } elseif ($valor2 > $valor1) {
-                return (float)number_format((float)$monto / (float)($valor2), 2, ".", "");
+                $nuevo_monto = (float)number_format((float)$monto / (float)($valor2), 2, ".", "");
             }
         }
-        return (float)$monto;
+        return (float)$nuevo_monto;
     }
 }

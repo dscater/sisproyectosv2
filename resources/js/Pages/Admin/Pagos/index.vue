@@ -56,7 +56,7 @@ const headers = ref([
     {
         label: "FECHA DE PAGO",
         key: "fecha_pago_t",
-        keySortable: "fecha_pago",
+        keySortable: "pagos.created_at",
         sortable: true,
     },
     { label: "ACCIÓN", key: "accion" },
@@ -85,7 +85,7 @@ const editarPago = (item) => {
 const eliminarPago = (item) => {
     Swal.fire({
         title: "¿Quierés eliminar este registro?",
-        html: `<strong>${item.proyecto.nombre} <br/> ${item.cliente.nombre}</strong>`,
+        html: `<strong>${item.trabajo.proyecto.nombre} <br/> ${item.cliente.nombre}</strong>`,
         showCancelButton: true,
         confirmButtonColor: "#B61431",
         confirmButtonText: "Si, eliminar",
@@ -182,7 +182,7 @@ onMounted(() => {
                     :url="route('pagos.paginado')"
                     :numPages="5"
                     :multiSearch="multiSearch"
-                    :syncOrderBy="'fecha_pago'"
+                    :syncOrderBy="'pagos.created_at'"
                     :syncOrderAsc="'DESC'"
                 >
                     <template #costo="{ item }">

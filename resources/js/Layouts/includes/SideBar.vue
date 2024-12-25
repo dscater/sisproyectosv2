@@ -102,6 +102,39 @@ onMounted(() => {
                         ]"
                     ></ItemMenu>
                     <ItemMenu
+                        :label="'Monedas'"
+                        :ruta="'monedas.index'"
+                        :icon="'fa-list'"
+                    ></ItemMenu>
+                    <ItemMenu
+                        :label="'Tipo de cambios'"
+                        :ruta="'tipo_cambios.index'"
+                        :icon="'fa-list'"
+                    ></ItemMenu>
+
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-table"></i>
+                            <p>
+                                Reportes
+                                <i class="fas fa-angle-left right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <ItemMenu
+                                :label="'Trabajos'"
+                                :ruta="'reportes.trabajos'"
+                                :icon="'fa-angle-right'"
+                            ></ItemMenu>
+                            <ItemMenu
+                                :label="'Pagos'"
+                                :ruta="'reportes.pagos'"
+                                :icon="'fa-angle-right'"
+                            ></ItemMenu>
+                        </ul>
+                    </li>
+
+                    <ItemMenu
                         :label="'Salir'"
                         :ruta="'logout'"
                         :method="'POST'"

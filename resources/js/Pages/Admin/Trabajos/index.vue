@@ -245,7 +245,7 @@ onMounted(() => {
                                 class="w-100 text-center"
                             >
                                 {{ item.moneda_cambio.nombre }}
-                                {{ item.costo_cambio }}
+                                {{ item.cancelado_cambio }}
                             </div>
                         </div>
                     </template>

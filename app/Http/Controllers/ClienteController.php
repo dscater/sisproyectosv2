@@ -107,7 +107,7 @@ class ClienteController extends Controller
         try {
             $existe_trabajos = Trabajo::where("cliente_id", $cliente->id)->get();
             if (count($existe_trabajos) > 0) {
-                throw new Exception("No es posible eliminar eliminar el registro porque esta siendo utiliado", 422);
+                throw new Exception("No es posible eliminar el registro porque esta siendo utiliado", 422);
             }
             $cliente->delete();
             DB::commit();

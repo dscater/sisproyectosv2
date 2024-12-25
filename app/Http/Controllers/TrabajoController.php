@@ -63,7 +63,7 @@ class TrabajoController extends Controller
 
     public function listado(Request $request)
     {
-        $trabajos = Trabajo::select("trabajos.*");
+        $trabajos = Trabajo::with(["proyecto"])->select("trabajos.*");
         if ($request->order && $request->order == "desc") {
             $trabajos->orderBy("trabajos.id", $request->order);
         }
@@ -170,9 +170,9 @@ class TrabajoController extends Controller
         );
     }
 
-    public function getTrabajo(Trabajo $trabajo, Request $request)
+    public function show(Trabajo $trabajo, Request $request)
     {
-        $trabajo = $trabajo->load(["tipo_cambio.moneda_1", "tipo_cambio.moneda_2"]);
+        $trabajo = $trabajo->load(["moneda_seleccionada", "moneda", "moneda_cambio", "tipo_cambio"]);
         $total_pagos = Trabajo::getTotalCanceladoSinPago($trabajo->id, $request->filtra, $request->pago);
         return response()->JSON(["trabajo" => $trabajo, "total_pagos" => $total_pagos]);
     }
@@ -223,7 +223,7 @@ class TrabajoController extends Controller
             ];
             $trabajo->update($datos_trabajo);
             if ($old_tipo_cambio != $trabajo->tipo_cambio_id) {
-                Trabajo::reestablecerPagoTrabajo($trabajo->id);
+                Trabajo::reestablecerPagosTrabajo($trabajo->id);
             }
 
             DB::commit();
@@ -245,7 +245,7 @@ class TrabajoController extends Controller
         try {
             $existe_pagos = Pago::where("trabajo_id", $trabajo->id)->get();
             if (count($existe_pagos) > 0) {
-                throw new Exception("No es posible eliminar eliminar el registro porque tiene pagos realizados", 422);
+                throw new Exception("No es posible eliminar el registro porque tiene pagos realizados", 422);
             }
             DB::delete("DELETE FROM pagos WHERE trabajo_id = $trabajo->id");
             $trabajo->delete();

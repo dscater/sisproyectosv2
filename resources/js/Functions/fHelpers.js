@@ -24,8 +24,34 @@ export const fHelpers = () => {
         fecha.setDate(fecha.getDate() + dias);
         return fecha;
     }
+
+    const getMontoCambio = (moneda_id, monto, oTipoCambio) => {
+        const moneda1_id = oTipoCambio.moneda1_id;
+        const valor1 = oTipoCambio.valor1;
+        const valor2 = oTipoCambio.valor2;
+        let nuevo_monto = monto;
+        // verificar la moneda seleccionada con las monedas de cambio
+        if (moneda1_id == moneda_id) {
+            // es igual a la moneda 1
+            if (valor1 > valor2) {
+                nuevo_monto = parseFloat(monto) / parseFloat(valor1);
+            } else if (valor2 > valor1) {
+                nuevo_monto = parseFloat(monto) * parseFloat(valor2);
+            }
+        } else {
+            if (valor1 > valor2) {
+                nuevo_monto = parseFloat(monto) * parseFloat(valor1);
+            } else if (valor2 > valor1) {
+                nuevo_monto = parseFloat(monto) / parseFloat(valor2);
+            }
+        }
+
+        return parseFloat(parseFloat(nuevo_monto).toFixed(2)) ?? 0;
+    };
+
     return {
         getFechaActual,
         sumarDiasFecha,
+        getMontoCambio,
     };
 };

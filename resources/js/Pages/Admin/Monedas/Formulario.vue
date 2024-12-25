@@ -1,7 +1,7 @@
 <script setup>
 import MiModal from "@/Components/MiModal.vue";
 import { useForm, usePage } from "@inertiajs/vue3";
-import { useClientes } from "@/composables/clientes/useClientes";
+import { useMonedas } from "@/composables/monedas/useMonedas";
 import { watch, ref, computed, defineEmits } from "vue";
 const props = defineProps({
     estado_formulario: {
@@ -14,11 +14,11 @@ const props = defineProps({
     },
 });
 
-const { oCliente, limpiarCliente } = useClientes();
+const { oMoneda, limpiarMoneda } = useMonedas();
 const accion_form = ref(props.accion_formulario);
 const estado_form = ref(props.estado_formulario);
 const enviando = ref(false);
-let form = useForm(oCliente.value);
+let form = useForm(oMoneda.value);
 watch(
     () => props.estado_formulario,
     (newValue) => {
@@ -27,7 +27,7 @@ watch(
             document
                 .getElementsByTagName("body")[0]
                 .classList.add("modal-open");
-            form = useForm(oCliente.value);
+            form = useForm(oMoneda.value);
         } else {
             document
                 .getElementsByTagName("body")[0]
@@ -61,8 +61,8 @@ const enviarFormulario = () => {
     enviando.value = true;
     let url =
         form["_method"] == "POST"
-            ? route("clientes.store")
-            : route("clientes.update", form.id);
+            ? route("monedas.store")
+            : route("monedas.update", form.id);
 
     form.post(url, {
         preserveScroll: true,
@@ -75,7 +75,7 @@ const enviarFormulario = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonText: `Aceptar`,
             });
-            limpiarCliente();
+            limpiarMoneda();
             emits("envio-formulario");
         },
         onError: (err) => {
@@ -121,7 +121,7 @@ const cerrarFormulario = () => {
         :footer-class="'justify-content-end'"
     >
         <template #header>
-            <h4 class="modal-title">Nuevo cliente</h4>
+            <h4 class="modal-title">Nuevo moneda</h4>
             <button
                 type="button"
                 class="close"
@@ -133,8 +133,8 @@ const cerrarFormulario = () => {
         <template #body>
             <form>
                 <div class="row">
-                    <div class="col-md-12">
-                        <label>Nombre del cliente*</label>
+                    <div class="col-md-6">
+                        <label>Nombre del moneda*</label>
                         <input
                             class="form-control"
                             :class="{
@@ -147,6 +147,22 @@ const cerrarFormulario = () => {
                             v-if="form.errors?.nombre"
                             class="error invalid-feedback"
                             >{{ form.errors.nombre }}</span
+                        >
+                    </div>
+                    <div class="col-md-6">
+                        <label>Descripción*</label>
+                        <input
+                            class="form-control"
+                            :class="{
+                                'is-invalid': form.errors?.descripcion,
+                            }"
+                            required
+                            v-model="form.descripcion"
+                        />
+                        <span
+                            v-if="form.errors?.descripcion"
+                            class="error invalid-feedback"
+                            >{{ form.errors.descripcion }}</span
                         >
                     </div>
                 </div>

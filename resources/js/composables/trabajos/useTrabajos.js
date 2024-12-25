@@ -37,7 +37,7 @@ export const useTrabajos = () => {
             oTrabajo.value.moneda_seleccionada_id = item.moneda_seleccionada_id;
             oTrabajo.value.costo = item.costo;
             oTrabajo.value.moneda_id = item.moneda_id;
-            oTrabajo.value.tipo_cambio_id = item.tipo_cambio_id;
+            oTrabajo.value.tipo_cambio_id = item.tipo_cambio_id ?? "";
             oTrabajo.value.cancelado = item.cancelado;
             oTrabajo.value.saldo = item.saldo;
             oTrabajo.value.cancelado_cambio = item.cancelado_cambio;
@@ -66,7 +66,7 @@ export const useTrabajos = () => {
         oTrabajo.value.moneda_seleccionada_id = 1;
         oTrabajo.value.costo = 0;
         oTrabajo.value.moneda_id = "";
-        oTrabajo.value.tipo_cambio_id = 0;
+        oTrabajo.value.tipo_cambio_id = "";
         oTrabajo.value.cancelado = 0;
         oTrabajo.value.saldo = 0;
         oTrabajo.value.cancelado_cambio = "";

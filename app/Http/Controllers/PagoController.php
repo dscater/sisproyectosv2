@@ -15,22 +15,26 @@ class PagoController extends Controller
 {
     public $validacion = [
         "trabajo_id" => "required",
-        "monto" => "required|numeric",
-        "moneda_id" => "required",
+        "monto" => "required|numeric|min:1",
         "fecha_pago" => "required|date",
         "descripcion" => "required|min:4",
+    ];
+
+    public $mensajes = [
+        "trabajo_id.requried" => "Este campo es obligatorio",
+        "monto.requried" => "Este campo es obligatorio",
+        "monto.numeric" => "Debes ingresar un valor númerico",
+        "monto.min" => "Debes ingresar al menos :min",
+        "fecha_pago.requried" => "Este campo es obligatorio",
+        "fecha_pago.date" => "Debes ingrsar una fecha valida",
+        "descripcion.requried" => "Este campo es obligatorio",
+        "descripcion.min" => "Debes ingresar al menos :min caracteres",
     ];
 
     public function index(Request $request)
     {
         // Pago::refactorizarCostos();
         return Inertia::render("Admin/Pagos/Index");
-    }
-
-    public function listaPagos()
-    {
-        $pagos = Pago::all();
-        return response()->JSON($pagos);
     }
 
     public function listado(Request $request)
@@ -54,7 +58,7 @@ class PagoController extends Controller
             ->join("proyectos", "proyectos.id", "=", "trabajos.proyecto_id")
             ->join("clientes", "clientes.id", "=", "pagos.cliente_id");
         if (trim($search) != "") {
-            $pagos->where(DB::raw('CONCAT(proyectos.nombre, proyectos.alias, pagos.descripcion, pagos.estado_pago,clientes.nombre)'), 'LIKE', "%$search%");
+            $pagos->where(DB::raw('CONCAT(proyectos.nombre, proyectos.alias, pagos.descripcion, clientes.nombre)'), 'LIKE', "%$search%");
         }
 
         if ($request->orderBy && $request->orderAsc) {
@@ -88,27 +92,19 @@ class PagoController extends Controller
             $trabajo = Trabajo::find($request['trabajo_id']);
             $request['cliente_id'] = $trabajo->cliente_id;
 
-            $moneda_principal = Moneda::where("principal", 1)->get()->first();
-            if ($trabajo->tipo_cambio_id != 0) {
-                $request["moneda_cambio_id"] = $trabajo->tipo_cambio->moneda2_id;
-            } else {
-                $request["moneda_cambio_id"] = 0;
-                $request["monto_cambio"] = $request["monto"];
-            }
-            // asignar la moneda correspondiente a la principal
-            $request["moneda_id"] = $moneda_principal->id;
+            $datos_pago = [
+                "trabajo_id" => $trabajo->id,
+                "cliente_id" => $trabajo->cliente_id,
+                "monto" => $request->monto,
+                "moneda_id" => $trabajo->moneda_id,
+                "monto_cambio" => $trabajo->tipo_cambio_id != 0 ? $request->monto_cambio : $request->monto,
+                "moneda_cambio_id" => $trabajo->tipo_cambio_id != 0 ? $trabajo->moneda_cambio_id : 0,
+                "descripcion" => $request->descripcion,
+                "fecha_pago" => $request->fecha_pago,
+                "descripcion_archivo" => $request->descripcion_archivo,
+            ];
 
-            $nuevo_pago = Pago::create(array_map('mb_strtoupper', $request->except("foto_comprobante", "archivo_comprobante")));
-
-            $monto_cancelado = $nuevo_pago->monto;
-            $monto_cancelado_cambio = $nuevo_pago->monto_cambio;
-
-            // actualizar los saldos de las columnas correspondientes
-            $trabajo->cancelado = (float)$trabajo->cancelado + (float)$monto_cancelado;
-            $trabajo->saldo  = (float)$trabajo->saldo - (float)$monto_cancelado;
-            $trabajo->cancelado_cambio = (float)$trabajo->cancelado_cambio + (float)$monto_cancelado_cambio;
-            $trabajo->saldo_cambio = (float)$trabajo->saldo_cambio - (float)$monto_cancelado_cambio;
-            $trabajo->save();
+            $nuevo_pago = Pago::create($datos_pago);
 
             if ($request->hasFile("foto_comprobante")) {
                 $file = $request->file("foto_comprobante");
@@ -126,13 +122,8 @@ class PagoController extends Controller
             }
             $nuevo_pago->save();
 
-            // ACTUALIZAR SALDO Y CANCELADO DEL TRABAJO
-            if ($trabajo->saldo == 0) {
-                $trabajo->estado_pago = "COMPLETO";
-            } else {
-                $trabajo->estado_pago = "PENDIENTE";
-            }
-            $trabajo->save();
+            Trabajo::actualizaSaldoTrabajoPorPago($nuevo_pago, $trabajo);
+
             DB::commit();
             return redirect()->route('pagos.index')->with('msj', 'Pago registrado con éxito');
         } catch (\Exception $e) {
@@ -143,19 +134,7 @@ class PagoController extends Controller
 
     public function edit(Pago $pago)
     {
-        $trabajos = Trabajo::select("trabajos.*")
-            ->join("proyectos", "proyectos.id", "=", "trabajos.proyecto_id")
-            ->orderBy("proyectos.alias", "asc")
-            ->get();
-        $moneda_principal = Moneda::where("principal", 1)->get()->first();
-        return Inertia::render(
-            'pagos/edit',
-            [
-                'pago' => $pago,
-                'trabajos' => $trabajos,
-                'moneda_principal' => $moneda_principal,
-            ]
-        );
+        return Inertia::render('Admin/Pagos/Edit', ['pago' => $pago]);
     }
 
     public function show(Pago $pago)
@@ -180,15 +159,20 @@ class PagoController extends Controller
         DB::beginTransaction();
         try {
             $trabajo = $pago->trabajo;
-            // actualizar los saldos de las columnas correspondientes antes del pago
-            $trabajo->cancelado = (float)$trabajo->cancelado - (float)$pago->monto;
-            $trabajo->saldo  = (float)$trabajo->saldo + (float)$pago->monto;
-            $trabajo->cancelado_cambio = (float)$trabajo->cancelado_cambio - (float)$pago->monto_cambio;
-            $trabajo->saldo_cambio = (float)$trabajo->saldo_cambio + (float)$pago->monto_cambio;
-            $trabajo->save();
+            $datos_pago = [
+                "trabajo_id" => $trabajo->id,
+                "cliente_id" => $trabajo->cliente_id,
+                "monto" => $request->monto,
+                "moneda_id" => $trabajo->moneda_id,
+                "monto_cambio" => $trabajo->tipo_cambio_id != 0 ? $request->monto_cambio : $request->monto,
+                "moneda_cambio_id" => $trabajo->tipo_cambio_id != 0 ? $trabajo->moneda_cambio_id : 0,
+                "descripcion" => $request->descripcion,
+                "fecha_pago" => $request->fecha_pago,
+                "descripcion_archivo" => $request->descripcion_archivo,
+            ];
 
             // ACTUALIZAR EL REGISTRO
-            $pago->update(array_map('mb_strtoupper', $request->except("foto_comprobante", "archivo_comprobante")));
+            $pago->update($datos_pago);
 
             if ($request->hasFile("foto_comprobante")) {
                 if ($pago->foto_comprobante) {
@@ -212,14 +196,9 @@ class PagoController extends Controller
             }
             $pago->save();
 
-            $monto_cancelado = $pago->monto;
-            $monto_cancelado_cambio = $pago->monto_cambio;
-            // actualizar los saldos de las columnas correspondientes
-            $trabajo->cancelado = (float)$trabajo->cancelado + (float)$monto_cancelado;
-            $trabajo->saldo  = (float)$trabajo->saldo - (float)$monto_cancelado;
-            $trabajo->cancelado_cambio = (float)$trabajo->cancelado_cambio + (float)$monto_cancelado_cambio;
-            $trabajo->saldo_cambio = (float)$trabajo->saldo_cambio - (float)$monto_cancelado_cambio;
-            $trabajo->save();
+            // reestablecer pagos del trabajo
+            Trabajo::reestablecerPagosTrabajo($trabajo->id);
+
             DB::commit();
             return redirect()->route('pagos.index')->with('msj', 'Registro actualizado con éxito');
         } catch (\Exception $e) {
@@ -233,17 +212,21 @@ class PagoController extends Controller
         try {
             $trabajo = $pago->trabajo;
             $pago->delete();
-            $total_pagos = Trabajo::getTotalCanceladoSinPago($trabajo->id, false);
-            $trabajo->cancelado = $total_pagos["suma_pagos"];
-            $trabajo->saldo = (float)($trabajo->costo) - (float)$trabajo->cancelado;
-            $trabajo->cancelado_cambio = $total_pagos["suma_pagos_cambio"];
-            $trabajo->saldo_cambio = (float)($trabajo->costo_cambio) - (float)$trabajo->cancelado_cambio;
-            $trabajo->save();
+            // reestablecer pagos
+            Trabajo::reestablecerPagosTrabajo($trabajo->id);
             DB::commit();
-            return redirect()->route('pagos.index')->with('msj', 'Registro eliminado con éxito');
+            return response()->JSON([
+                "sw" => true,
+                "message" => "Registro eliminado con éxito"
+            ]);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->route('pagos.index')->with('error', 'Error al eliminar. ' . $e->getMessage());
+            // Log::debug("ERROR " . $e->getCode() . ": " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
         }
     }
 }

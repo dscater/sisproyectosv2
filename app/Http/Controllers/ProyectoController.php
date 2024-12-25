@@ -123,7 +123,7 @@ class ProyectoController extends Controller
         try {
             $existe_trabajos = Trabajo::where("proyecto_id", $proyecto->id)->get();
             if (count($existe_trabajos) > 0) {
-                throw new Exception("No es posible eliminar eliminar el registro porque esta siendo utiliado", 422);
+                throw new Exception("No es posible eliminar el registro porque esta siendo utiliado", 422);
             }
             $proyecto->delete();
             DB::commit();

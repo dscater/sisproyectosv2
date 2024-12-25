@@ -1,8 +1,9 @@
 <script setup>
 import MiModal from "@/Components/MiModal.vue";
 import { useForm, usePage } from "@inertiajs/vue3";
-import { useProyectos } from "@/composables/proyectos/useProyectos";
+import { useTipoCambios } from "@/composables/tipo_cambios/useTipoCambios";
 import { watch, ref, computed, defineEmits } from "vue";
+import axios from "axios";
 const props = defineProps({
     estado_formulario: {
         type: Boolean,
@@ -14,20 +15,25 @@ const props = defineProps({
     },
 });
 
-const { oProyecto, limpiarProyecto } = useProyectos();
+const { oTipoCambio, limpiarTipoCambio } = useTipoCambios();
 const accion_form = ref(props.accion_formulario);
 const estado_form = ref(props.estado_formulario);
 const enviando = ref(false);
-let form = useForm(oProyecto.value);
+const oMonedaPrincipal = ref(null);
+const listMonedas = ref([]);
+let form = useForm(oTipoCambio.value);
 watch(
     () => props.estado_formulario,
-    (newValue) => {
+    async (newValue) => {
         estado_form.value = newValue;
         if (estado_form.value) {
+            form.errors = null;
+            getMonedas();
+            await getMonedaPrincipal();
             document
                 .getElementsByTagName("body")[0]
                 .classList.add("modal-open");
-            form = useForm(oProyecto.value);
+            form = useForm(oTipoCambio.value);
         } else {
             document
                 .getElementsByTagName("body")[0]
@@ -61,8 +67,8 @@ const enviarFormulario = () => {
     enviando.value = true;
     let url =
         form["_method"] == "POST"
-            ? route("proyectos.store")
-            : route("proyectos.update", form.id);
+            ? route("tipo_cambios.store")
+            : route("tipo_cambios.update", form.id);
 
     form.post(url, {
         preserveScroll: true,
@@ -75,10 +81,11 @@ const enviarFormulario = () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonText: `Aceptar`,
             });
-            limpiarProyecto();
+            limpiarTipoCambio();
             emits("envio-formulario");
         },
         onError: (err) => {
+            console.log(err);
             Swal.fire({
                 icon: "info",
                 title: "Error",
@@ -110,6 +117,26 @@ watch(estado_form, (newVal) => {
 const cerrarFormulario = () => {
     estado_form.value = false;
 };
+
+const getMonedaPrincipal = async () => {
+    const resp = await axios.get(route("monedas.getMonedaPrincipal"));
+    if (resp) {
+        oMonedaPrincipal.value = resp.data;
+        oTipoCambio.value.moneda1_id = oMonedaPrincipal.value.id;
+    }
+};
+
+const getMonedas = () => {
+    axios
+        .get(route("monedas.listado"), {
+            params: {
+                sin_principal: true,
+            },
+        })
+        .then((response) => {
+            listMonedas.value = response.data.monedas;
+        });
+};
 </script>
 
 <template>
@@ -121,7 +148,7 @@ const cerrarFormulario = () => {
         :footer-class="'justify-content-end'"
     >
         <template #header>
-            <h4 class="modal-title">Nuevo proyecto</h4>
+            <h4 class="modal-title">Nuevo tipo de cambio</h4>
             <button
                 type="button"
                 class="close"
@@ -133,54 +160,82 @@ const cerrarFormulario = () => {
         <template #body>
             <form>
                 <div class="row">
-                    <div class="col-md-8 mt-3">
-                        <label>Nombre del proyecto*</label>
+                    <div class="col-12" v-if="form.errors && form.errors.enuso">
+                        <div class="alert alert-danger">
+                            {{ form.errors.enuso }}
+                        </div>
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <label>Moneda principal*</label>
                         <input
                             class="form-control"
                             :class="{
-                                'is-invalid': form.errors?.nombre,
+                                'is-invalid': form.errors?.moneda1_id,
                             }"
-                            required
-                            v-model="form.nombre"
+                            :value="`${oMonedaPrincipal?.nombre} | ${oMonedaPrincipal?.descripcion}`"
+                            readonly
                         />
                         <span
-                            v-if="form.errors?.nombre"
+                            v-if="form.errors?.moneda1_id"
                             class="error invalid-feedback"
-                            >{{ form.errors.nombre }}</span
+                            >{{ form.errors.moneda1_id }}</span
                         >
                     </div>
-                    <div class="col-md-4 mt-3">
-                        <label>Alias*</label>
+                    <div class="col-md-6 mt-3">
+                        <label>Valor Moneda principal*</label>
                         <input
+                            type="number"
+                            step="0.01"
                             class="form-control"
                             :class="{
-                                'is-invalid': form.errors?.alias,
+                                'is-invalid': form.errors?.valor1,
                             }"
-                            required
-                            v-model="form.alias"
+                            v-model="form.valor1"
                         />
-
                         <span
-                            v-if="form.errors?.alias"
+                            v-if="form.errors?.valor1"
                             class="error invalid-feedback"
-                            >{{ form.errors.alias }}</span
+                            >{{ form.errors.valor1 }}</span
                         >
                     </div>
-                    <div class="col-12 mt-3">
-                        <label>Descripción*</label>
-                        <textarea
+                    <div class="col-md-6 mt-3">
+                        <label>Seleccionar moneda 2*</label>
+                        <select
                             class="form-control"
                             :class="{
-                                'is-invalid': form.errors?.descripcion,
+                                'is-invalid': form.errors?.moneda2_id,
                             }"
-                            required
-                            rows="1"
-                            v-model="form.descripcion"
-                        ></textarea>
+                            v-model="form.moneda2_id"
+                        >
+                            <option value="">- Seleccione -</option>
+                            <option
+                                v-for="item in listMonedas"
+                                :value="item.id"
+                            >
+                                {{ item.nombre }}
+                            </option>
+                        </select>
                         <span
-                            v-if="form.errors?.descripcion"
+                            v-if="form.errors?.moneda2_id"
                             class="error invalid-feedback"
-                            >{{ form.errors.descripcion }}</span
+                            >{{ form.errors.moneda2_id }}</span
+                        >
+                    </div>
+                    <div class="col-md-6 mt-3">
+                        <label>Valor Moneda 2*</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            class="form-control"
+                            :class="{
+                                'is-invalid': form.errors?.valor2,
+                            }"
+                            v-model="form.valor2"
+                        />
+                        <span
+                            v-if="form.errors?.valor2"
+                            class="error invalid-feedback"
+                            >{{ form.errors.valor2 }}</span
                         >
                     </div>
                 </div>

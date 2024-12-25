@@ -103,7 +103,7 @@ Route::middleware(['auth'])->prefix("admin")->group(function () {
     Route::get("/tipo_cambios/paginado", [TipoCambioController::class, 'paginado'])->name("tipo_cambios.paginado");
     Route::get("/tipo_cambios/listado", [TipoCambioController::class, 'listado'])->name("tipo_cambios.listado");
     Route::resource("tipo_cambios", TipoCambioController::class)->only(
-        ["index", "create", "store", "edit", "update", "show", "destroy"]
+        ["index", "store", "update", "show", "destroy"]
     );
 
     // REPORTES

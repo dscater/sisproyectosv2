@@ -184,6 +184,8 @@ onMounted(() => {
                     :url="route('proyectos.paginado')"
                     :numPages="5"
                     :search="search"
+                    :syncOrderBy="'fecha_registro'"
+                    :syncOrderAsc="'DESC'"
                 >
                     <template #accion="{ item }">
                         <button

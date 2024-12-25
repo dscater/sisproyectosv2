@@ -35,9 +35,7 @@ limpiarPago();
                             <Link :href="route('inicio')">Inicio</Link>
                         </li>
                         <li class="breadcrumb-item">
-                            <Link :href="route('pagos.index')"
-                                >Pagos</Link
-                            >
+                            <Link :href="route('pagos.index')">Pagos</Link>
                         </li>
                         <li class="breadcrumb-item active">Nuevo</li>
                     </ol>
@@ -46,14 +44,7 @@ limpiarPago();
             </div>
             <!-- /.row -->
         </template>
-        <div class="row mb-1">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <Formulario></Formulario>
-                    </div>
-                </div>
-            </div>
-        </div>
+
+        <Formulario></Formulario>
     </Content>
 </template>

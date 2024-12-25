@@ -3,19 +3,36 @@
 namespace App\Http\Controllers;
 
 use App\Models\Moneda;
+use App\Models\Pago;
 use App\Models\TipoCambio;
+use App\Models\Trabajo;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class MonedaController extends Controller
 {
+    public $validacion = [
+        "nombre" => 'required|min:2|unique:monedas,nombre|regex:/^[\pL\s\.\'\",0-9áéíóúÁÉÍÓÚñÑ\$€]+$/u',
+        "descripcion" => 'required|min:2|unique:monedas,nombre|regex:/^[\pL\s\.\'\",0-9áéíóúÁÉÍÓÚñÑ\$€]+$/u',
+
+    ];
+
+    public $mensajes = [
+        "nombre.required" => "Este campo es obligatorio",
+        'nombre.regex' => 'Debes ingresar solo texto',
+        "nombre.min" => "Debes ingresar al menos :min caracteres",
+        "descripcion.required" => "Este campo es obligatorio",
+        'descripcion.regex' => 'Debes ingresar solo texto',
+        "descripcion.min" => "Debes ingresar al menos :min caracteres",
+    ];
+
     public function index()
     {
-        $list_monedas = Moneda::where("principal", 0)->get();
-        $monedas = Moneda::all();
-        $principal = Moneda::where("principal", 1)->first();
-        $tipo_cambios = TipoCambio::with("moneda_1", "moneda_2", "moneda_menor_valor")->orderBy("created_at", "desc")->get();
-        return Inertia::render('monedas/index', ['monedas' => $monedas, 'tipo_cambios' => $tipo_cambios, "principal" => $principal, "list_monedas" => $list_monedas]);
+        return Inertia::render("Admin/Monedas/Index");
     }
 
     public function listado(Request $request)
@@ -24,63 +41,122 @@ class MonedaController extends Controller
         if ($request->order && $request->order == "desc") {
             $monedas->orderBy("monedas.id", $request->order);
         }
+        if ($request->sin_principal && $request->sin_principal == true) {
+            $monedas->where("principal", 0);
+        }
+
         $monedas = $monedas->get();
         return response()->JSON([
             "monedas" => $monedas
         ]);
     }
 
-    public function listaMonedas()
+    public function getMonedaPrincipal()
     {
-        $monedas = Moneda::all();
-        return response()->JSON($monedas);
+        $moneda = Moneda::where("principal", 1)->get()->first();
+        return response()->JSON($moneda);
     }
 
-    public function create()
+    public function paginado(Request $request)
     {
-        return Inertia::render(
-            'monedas/create'
-        );
+        $perPage = $request->input('perPage', 5);
+        $search = $request->search;
+        $monedas = Moneda::select("monedas.*");
+        if (trim($search) != "") {
+            $monedas->where("nombre", "LIKE", "%$search%");
+        }
+
+        if ($request->orderBy && $request->orderAsc) {
+            $monedas->orderBy($request->orderBy, $request->orderAsc);
+        }
+
+        $monedas = $monedas->paginate($perPage);
+        return response()->JSON([
+            'data' => $monedas->items(),
+            'total' => $monedas->total(),
+            'lastPage' => $monedas->lastPage(),
+        ]);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            "nombre" => "required",
-        ]);
-        $request["fecha_registro"] = date("Y-m-d");
-        Moneda::create(array_map('mb_strtoupper', $request->all()));
-        return response()->JSON(true);
-    }
-
-    public function edit(Moneda $moneda)
-    {
-        return Inertia::render(
-            'monedas/edit',
-            [
-                'moneda' => $moneda
-            ]
-        );
-    }
-
-    public function getMonedaPrincipal()
-    {
-        $moneda_principal = Moneda::where("principal", 1)->get()->first();
-        return response()->JSON($moneda_principal);
+        DB::beginTransaction();
+        try {
+            $request->validate($this->validacion, $this->mensajes);
+            $request["principal"] = 0;
+            Moneda::create($request->all());
+            DB::commit();
+            return redirect()->route('monedas.index')->with('message', 'Moneda registrado con éxito');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::debug("ERROR: " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
+        }
     }
 
     public function update(Request $request, Moneda $moneda)
     {
-        $request->validate([
-            "nombre" => "required",
-        ]);
-        $moneda->update(array_map('mb_strtoupper', $request->all()));
-        return redirect()->route('monedas.index')->with('msj', 'Registro actualizado con éxito');
+        DB::beginTransaction();
+        try {
+
+            $this->validacion["nombre"] = "required|min:2|unique:monedas,nombre,$moneda->id|regex:/^[\pL\s\.\'\",0-9áéíóúÁÉÍÓÚñÑ\$€]+$/u";
+            $request->validate($this->validacion, $this->mensajes);
+            $moneda->update($request->all());
+            DB::commit();
+            return redirect()->route('monedas.index')->with('message', 'Registro actualizado con éxito');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::debug("ERROR: " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
+        }
     }
 
     public function destroy(Moneda $moneda)
     {
-        $moneda->delete();
-        return response()->JSON(true);
+        DB::beginTransaction();
+        try {
+            $existe_trabajos = Trabajo::where("moneda_id", $moneda->id)->get();
+            if (count($existe_trabajos) > 0) {
+                throw new Exception("No es posible eliminar el registro porque esta siendo utiliado", 422);
+            }
+            $existe_trabajos = Trabajo::where("moneda_seleccionada_id", $moneda->id)->get();
+            if (count($existe_trabajos) > 0) {
+                throw new Exception("No es posible eliminar el registro porque esta siendo utiliado", 422);
+            }
+            $existe_trabajos = Trabajo::where("moneda_cambio_id", $moneda->id)->get();
+            if (count($existe_trabajos) > 0) {
+                throw new Exception("No es posible eliminar el registro porque esta siendo utiliado", 422);
+            }
+            $existe_pagos = Pago::where("moneda_id", $moneda->id)->get();
+            if (count($existe_pagos) > 0) {
+                throw new Exception("No es posible eliminar el registro porque esta siendo utiliado", 422);
+            }
+            $existe_pagos = Pago::where("moneda_cambio_id", $moneda->id)->get();
+            if (count($existe_pagos) > 0) {
+                throw new Exception("No es posible eliminar el registro porque esta siendo utiliado", 422);
+            }
+            $moneda->delete();
+            DB::commit();
+            return response()->JSON([
+                "sw" => true,
+                "message" => "Registro eliminado con éxito"
+            ]);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            // Log::debug("ERROR " . $e->getCode() . ": " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
+        }
     }
 }

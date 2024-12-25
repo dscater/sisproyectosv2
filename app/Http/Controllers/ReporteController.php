@@ -9,7 +9,6 @@ use App\Models\Proyecto;
 use App\Models\Trabajo;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Symfony\Component\HttpFoundation\Response;
 use PDF;
 
 class ReporteController extends Controller
@@ -22,7 +21,7 @@ class ReporteController extends Controller
         $moneda_principal = Moneda::where("principal", 1)->get()->first();
 
         return Inertia::render(
-            "reportes/trabajos",
+            "Admin/Reportes/Trabajos",
             [
                 "clientes" => $clientes,
                 "trabajos" => $trabajos,
@@ -48,7 +47,7 @@ class ReporteController extends Controller
         $o_proyecto = null;
         $o_trabajo = null;
 
-        $trabajos = Trabajo::select("trabajos.*");
+        $trabajos = Trabajo::with(["proyecto", "cliente"])->select("trabajos.*");
         if ($cliente_id != "todos") {
             $trabajos->where("cliente_id", $cliente_id);
             $o_cliente = Cliente::find($cliente_id);
@@ -101,7 +100,7 @@ class ReporteController extends Controller
         $proyectos = Proyecto::orderBy("created_at", "desc")->get();
         $moneda_principal = Moneda::where("principal", 1)->get()->first();
         return Inertia::render(
-            "reportes/pagos",
+            "Admin/Reportes/Pagos",
             [
                 "clientes" => $clientes,
                 "trabajos" => $trabajos,
