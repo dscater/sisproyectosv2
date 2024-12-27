@@ -2,7 +2,7 @@
 import axios from "axios";
 import MiPaginacion from "@/Components/MiPaginacion.vue";
 import { ref, onMounted, watch, nextTick, useSlots } from "vue";
-
+import { debounce } from "lodash";
 const props = defineProps({
     cols: {
         type: Array,
@@ -11,6 +11,10 @@ const props = defineProps({
     data: {
         type: Array,
         default: [],
+    },
+    conPaginacion: {
+        type: Boolean,
+        default: true,
     },
     api: {
         type: Boolean,
@@ -23,6 +27,27 @@ const props = defineProps({
     sinRegistros: {
         type: String,
         default: "No se encontrarón registros",
+    },
+    tableResponsive: {
+        type: Boolean,
+        default: false,
+    },
+    tableHeight: {
+        type: [String, Number],
+        default: null,
+    },
+    tableWidth: {
+        type: [String, Number],
+        default: null,
+    },
+    fixCols: {
+        // para habilitar los fixs de columnas
+        type: Boolean,
+        default: false,
+    },
+    fixedHeader: {
+        type: Boolean,
+        default: false,
     },
     tableClass: {
         type: String,
@@ -108,8 +133,9 @@ const cARegistros = ref(per_page.value);
 const totalPages = ref(0);
 const pLoading = ref(false);
 const eTbody = ref(null);
+const eContentTable = ref(null);
 const intervalSearch = ref(null);
-
+const widthColumnsFix = ref([]);
 const apiRegistros = async () => {
     try {
         let dataParams = {
@@ -200,6 +226,13 @@ watch(
     }
 );
 
+// watch(
+//     () => listItems.value,
+//     () => {
+
+//     }
+// );
+
 const cargarDatos = async () => {
     pLoading.value = true;
     if (props.api) {
@@ -209,14 +242,31 @@ const cargarDatos = async () => {
         totalPages.value = resp.lastPage;
         muestraCantidadRegistros();
     } else {
-        listItems.value = await filtrarDatosEstaticos();
+        listItems.value = await generarDatosPorLista();
         // Actualiza los contadores de registros
         muestraCantidadRegistros();
     }
-    await nextTick();
-    if (eTbody.value) {
-        eTbody.value.style.minHeight = `${eTbody.value.offsetHeight}px`;
-    }
+    await nextTick(() => {
+        if (eContentTable.value) {
+            setTimeout(() => {
+                eContentTable.value.style.height = `${eContentTable.value.offsetHeight}px`;
+                eContentTable.value.style.minHeight = `${eContentTable.value.offsetHeight}px`;
+            }, 200);
+        }
+        // if (eTbody.value) {
+        //     setTimeout(() => {
+        //         eTbody.value.style.height = `${eTbody.value.offsetHeight}px`;
+        //         eTbody.value.style.minHeight = `${eTbody.value.offsetHeight}px`;
+        //     }, 200);
+        // }
+    });
+
+    const table = miTableRef.value;
+    nextTick(() => {
+        if (props.fixCols) {
+            renderColumnsStyleFixed();
+        }
+    });
     pLoading.value = false;
 };
 
@@ -252,13 +302,14 @@ const cambioDePagina = async (value) => {
     if (props.api) {
         await cargarDatos();
     } else {
-        listItems.value = await filtrarDatosEstaticos();
+        listItems.value = await generarDatosPorLista();
         // Actualiza los contadores de registros
         muestraCantidadRegistros();
     }
 };
 
-const filtrarDatosEstaticos = async () => {
+const generarDatosPorLista = async () => {
+    pLoading.value = true;
     const page = parseInt(currentPage.value);
     const pageSize = parseInt(per_page.value);
     const vOrderBy = orderBy.value;
@@ -302,10 +353,10 @@ const filtrarDatosEstaticos = async () => {
     const startIndex = (page - 1) * pageSize;
 
     // Realiza la paginación
-    const listaFiltrada = filteredArray.slice(
-        startIndex,
-        startIndex + pageSize
-    );
+    let listaFiltrada = filteredArray;
+    if (props.conPaginacion) {
+        listaFiltrada = filteredArray.slice(startIndex, startIndex + pageSize);
+    }
 
     // Actualiza los contadores de registros
     // cDeRegistros.value = startIndex + 1; // Primer registro de la página
@@ -323,13 +374,26 @@ const muestraCantidadRegistros = () => {
     cARegistros.value = cDeRegistros.value + total_reg; // Último registro de la página
 };
 
+// obtener le ancho pasado por la propiedad width de las columnas
 const getColumnStyle = (item) => {
-    const width = item.width
-        ? `${item.width + (item.wp ? item.wp : "%")}`
-        : "auto"; // Puedes calcular o definir el valor base para el ancho
-    return {
-        width: width,
-    };
+    let width = null;
+
+    if (item.width) {
+        width = item.width
+            ? /\d+%$/.test(item.width) ||
+              /\d+px$/.test(item.width) ||
+              /\d+vw$/.test(item.width)
+                ? item.width
+                : `${item.width}%`
+            : "";
+    }
+    let styles_column = {};
+
+    if (width) {
+        styles_column["width"] = width;
+    }
+
+    return styles_column;
 };
 
 function getColumnValue(obj, key) {
@@ -349,9 +413,102 @@ function getRowClass(item) {
     return classes.join(" ");
 }
 
+const thtdRefs = ref({});
+const miTableRef = ref(null);
+// Funcion para renderizar las columnas con position sticky|posicion fixeada
+const renderColumnsStyleFixed = debounce(async () => {
+    pLoading.value = true;
+    const table = miTableRef.value;
+    // Configurar estilos iniciales para la tabla
+    const cols = listCols.value;
+    const rows = listItems.value;
+    const thRefs = thtdRefs.value;
+
+    // Estilo para columnas definidas por clase
+    ["fixed-column-ext", "fixed-column-ext-right"].forEach((className, dir) => {
+        let offset = 0;
+        const elements = table.querySelectorAll(`.${className}`);
+        const iter = dir === 0 ? elements : [...elements].reverse();
+
+        iter.forEach((el) => {
+            if (el) {
+                el.style.position = "sticky";
+                el.style[dir === 0 ? "left" : "right"] = `${offset}px`;
+                if (el.classList.contains("footer-fixed")) {
+                    el.style.bottom = 0;
+                }
+                if (el.classList.contains("header-fixed")) {
+                    el.style.top = 0;
+                }
+
+                if (el.classList.contains("fixed-width")) {
+                    // el.style.width = el.getBoundingClientRect().width;
+                }
+                offset += el.offsetWidth;
+            }
+        });
+    });
+
+    // Calcula posiciones y aplica estilos
+    let arrayWidths = [];
+    rows.forEach((_, rowIndex) => {
+        let leftOffset = 0;
+        let rightOffset = 0;
+
+        // Iterar sobre columnas de izquierda a derecha
+        cols.forEach((_, colIndex) => {
+            // TH
+            if (rowIndex === 0) {
+                const th = thRefs[`th-${colIndex}`];
+                if (th) {
+                    arrayWidths[colIndex] = th.getBoundingClientRect().width;
+                }
+                if (th && th.classList.contains("fixed-column")) {
+                    th.style.position = "sticky";
+                    th.style.left = `${leftOffset}px`;
+                }
+            }
+
+            // TD
+            const td = thRefs[`td-${rowIndex}-${colIndex}`];
+            if (td && td.classList.contains("fixed-column")) {
+                td.style.position = "sticky";
+                td.style.left = `${leftOffset}px`;
+            }
+
+            leftOffset += arrayWidths[colIndex] ? arrayWidths[colIndex] : 0;
+        });
+
+        // Iterar sobre columnas de derecha a izquierda
+        for (let colIndex = cols.length - 1; colIndex >= 0; colIndex--) {
+            const th = thRefs[`th-${colIndex}`];
+            if (
+                rowIndex === 0 &&
+                th?.classList.contains("fixed-column-right")
+            ) {
+                th.style.position = "sticky";
+                th.style.right = `${rightOffset}px`;
+            }
+
+            const td = thRefs[`td-${rowIndex}-${colIndex}`];
+            if (td?.classList.contains("fixed-column-right")) {
+                td.style.position = "sticky";
+                td.style.right = `${rightOffset}px`;
+            }
+
+            rightOffset += arrayWidths[colIndex] ? arrayWidths[colIndex] : 0;
+        }
+    });
+    pLoading.value = false;
+}, 300);
+
 function getClassActiveSort(item) {
     return orderBy.value == (item.keySortable ? item.keySortable : item.key);
 }
+
+const setLoading = (value) => {
+    pLoading.value = value;
+};
 
 const slots = useSlots();
 
@@ -363,173 +520,253 @@ onMounted(() => {
 
 defineExpose({
     cargarDatos,
+    setLoading,
 });
 </script>
 <template>
-    <table
-        class="table table-bordered mb-0"
-        :class="[tableClass, $attrs.class]"
-    >
-        <thead :class="[headerClass]">
-            <template v-if="$slots.tableHeader">
-                <slot name="tableHeader"></slot>
-            </template>
-            <template v-else>
-                <tr>
-                    <th v-for="item in listCols" :style="getColumnStyle(item)">
-                        <div
-                            class="iheader sortable"
-                            v-if="item.sortable"
-                            @click="
-                                changeOrderBy(
-                                    item.keySortable
-                                        ? item.keySortable
-                                        : item.key
-                                )
-                            "
-                        >
-                            <div class="label">{{ item.label }}</div>
-                            <div
-                                class="accion"
-                                :class="{
-                                    active: getClassActiveSort(item),
-                                }"
-                            >
-                                <i
-                                    class="fa"
-                                    :class="{
-                                        'fa-sort-amount-up-alt':
-                                            orderAsc == 'asc' &&
-                                            orderBy ==
-                                                (item.keySortable
-                                                    ? item.keySortable
-                                                    : item.key),
-                                        'fa-sort-amount-down':
-                                            orderAsc == 'desc' &&
-                                            orderBy ==
-                                                (item.keySortable
-                                                    ? item.keySortable
-                                                    : item.key),
-                                        'fa-sort':
-                                            !orderAsc ||
-                                            orderBy !=
-                                                (item.keySortable
-                                                    ? item.keySortable
-                                                    : item.key),
-                                    }"
-                                ></i>
-                            </div>
-                        </div>
-                        <div class="iheader" v-else>
-                            <div class="label">{{ item.label }}</div>
-                        </div>
-                    </th>
-                </tr>
-            </template>
-        </thead>
-        <tbody :class="[bodyClass, pLoading ? 'loading' : '']" ref="eTbody">
-            <div class="loading" v-show="pLoading">
-                <div>
-                    <template v-if="$slots.loading">
-                        <slot name="loading"></slot>
+    <div class="mi-table" :class="[$attrs.class]">
+        <div
+            class="content-table"
+            :style="{
+                height: tableHeight ? tableHeight : '',
+                width: tableWidth ? tableWidth : '',
+            }"
+            :class="[pLoading ? 'mi-loading-table' : '']"
+            ref="eContentTable"
+        >
+            <table
+                class="table table-bordered mb-0"
+                :class="[
+                    tableClass,
+                    tableResponsive ? 'table-resposive' : '',
+                    fixedHeader ? 'tablaFixeada' : '',
+                ]"
+                ref="miTableRef"
+            >
+                <thead :class="[headerClass]">
+                    <template v-if="$slots.tableHeader">
+                        <slot name="tableHeader"></slot>
                     </template>
-                    <template v-else> {{ textCargando }} </template>
+                    <template v-else>
+                        <tr>
+                            <th
+                                v-for="(item, index) in listCols"
+                                :colspan="`${item.colspan ? item.colspan : 1}`"
+                                :style="getColumnStyle(item)"
+                                :class="[
+                                    item.fixed
+                                        ? item.fixed == 'right'
+                                            ? 'fixed-column-right'
+                                            : 'fixed-column'
+                                        : '',
+                                    fixedHeader ? 'fixed-header' : '',
+                                ]"
+                                :ref="(el) => (thtdRefs[`th-${index}`] = el)"
+                            >
+                                <div
+                                    class="iheader sortable"
+                                    v-if="item.sortable"
+                                    @click="
+                                        changeOrderBy(
+                                            item.keySortable
+                                                ? item.keySortable
+                                                : item.key
+                                        )
+                                    "
+                                >
+                                    <div class="label">{{ item.label }}</div>
+                                    <div
+                                        class="accion"
+                                        :class="{
+                                            active: getClassActiveSort(item),
+                                        }"
+                                    >
+                                        <i
+                                            class="fa"
+                                            :class="{
+                                                'fa-sort-amount-up-alt':
+                                                    orderAsc == 'asc' &&
+                                                    orderBy ==
+                                                        (item.keySortable
+                                                            ? item.keySortable
+                                                            : item.key),
+                                                'fa-sort-amount-down':
+                                                    orderAsc == 'desc' &&
+                                                    orderBy ==
+                                                        (item.keySortable
+                                                            ? item.keySortable
+                                                            : item.key),
+                                                'fa-sort':
+                                                    !orderAsc ||
+                                                    orderBy !=
+                                                        (item.keySortable
+                                                            ? item.keySortable
+                                                            : item.key),
+                                            }"
+                                        ></i>
+                                    </div>
+                                </div>
+                                <div class="iheader" v-else>
+                                    <div class="label">{{ item.label }}</div>
+                                </div>
+                            </th>
+                        </tr>
+                    </template>
+                </thead>
+                <tbody
+                    :class="[bodyClass, pLoading ? 'mi-loading-table' : '']"
+                    ref="eTbody"
+                >
+                    <div class="mi-loading-table" v-show="pLoading">
+                        <div>
+                            <template v-if="$slots.loading">
+                                <slot name="loading"></slot>
+                            </template>
+                            <template v-else> {{ textCargando }} </template>
+                        </div>
+                    </div>
+                    <template v-if="listItems.length > 0">
+                        <tr
+                            v-for="(item, index_row) in listItems"
+                            :class="getRowClass(item)"
+                        >
+                            <td
+                                v-for="(i_col, index_col) in listCols"
+                                :data-label="i_col.label"
+                                :class="[
+                                    i_col.classTd ? i_col.classTd(item) : '',
+                                    i_col.fixed
+                                        ? i_col.fixed == 'right'
+                                            ? 'fixed-column-right'
+                                            : 'fixed-column'
+                                        : '',
+                                ]"
+                                :colspan="`${item.colspan ? item.colspan : 1}`"
+                                :style="getColumnStyle(item)"
+                                :ref="
+                                    (el) =>
+                                        (thtdRefs[
+                                            `td-${index_row}-${index_col}`
+                                        ] = el)
+                                "
+                            >
+                                <template v-if="$slots[i_col.key]">
+                                    <slot
+                                        :name="i_col.key"
+                                        :item="item"
+                                        v-bind="$attrs"
+                                    ></slot>
+                                </template>
+                                <template v-else>
+                                    {{ getColumnValue(item, i_col.key) }}
+                                </template>
+                            </td>
+                        </tr>
+                    </template>
+                    <template v-else>
+                        <tr>
+                            <td :colspan="listCols.length">
+                                {{ textSinRegistros }}
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+                <tfoot>
+                    <template v-if="$slots.tableFooter">
+                        <slot name="tableFooter"></slot>
+                    </template>
+                </tfoot>
+            </table>
+        </div>
+        <div class="content-foot px-3 pt-2" v-if="conPaginacion">
+            <div class="row mt-1">
+                <div class="my-1 col-md-3">
+                    <select class="form-control rounded-0" v-model="per_page">
+                        <option v-for="item in filter_page" :value="item">
+                            Mostrar {{ item }} registros
+                        </option>
+                    </select>
+                </div>
+                <div class="my-1 col-md-6 d-flex justify-content-center">
+                    <MiPaginacion
+                        :current-page="currentPage"
+                        :total-data="total"
+                        :per-page="per_page"
+                        @updatePage="cambioDePagina"
+                    />
+                </div>
+                <div class="my-1 col-md-3 text-right">
+                    Mostrando {{ cDeRegistros }} a {{ cARegistros }} registros -
+                    Total {{ total }} registros
                 </div>
             </div>
-            <template v-if="listItems.length > 0">
-                <tr
-                    v-for="(item, index) in listItems"
-                    :class="getRowClass(item)"
-                >
-                    <td
-                        v-for="(i_col, index) in listCols"
-                        :data-label="i_col.label"
-                        :class="i_col.classTd ? i_col.classTd(item) : ''"
-                    >
-                        <template v-if="$slots[i_col.key]">
-                            <slot
-                                :name="i_col.key"
-                                :item="item"
-                                v-bind="$attrs"
-                            ></slot>
-                        </template>
-                        <template v-else>
-                            {{ getColumnValue(item, i_col.key) }}
-                        </template>
-                    </td>
-                </tr>
-            </template>
-            <template v-else>
-                <tr>
-                    <td :colspan="listCols.length">
-                        {{ textSinRegistros }}
-                    </td>
-                </tr>
-            </template>
-        </tbody>
-        <tfoot></tfoot>
-    </table>
-    <div class="row mt-1">
-        <div class="my-1 col-md-3">
-            <select class="form-control rounded-0" v-model="per_page">
-                <option v-for="item in filter_page" :value="item">
-                    Mostrar {{ item }} registros
-                </option>
-            </select>
+            <div v-if="error" class="alert alert-danger">
+                Ocurrió un error al intentar obtener los registros
+            </div>
         </div>
-        <div class="my-1 col-md-6 d-flex justify-content-center">
-            <MiPaginacion
-                :current-page="currentPage"
-                :total-data="total"
-                :per-page="per_page"
-                @updatePage="cambioDePagina"
-            />
-        </div>
-        <div class="my-1 col-md-3 text-right">
-            Mostrando {{ cDeRegistros }} a {{ cARegistros }} registros - Total
-            {{ total }} registros
-        </div>
-    </div>
-    <div v-if="error" class="alert alert-danger">
-        Ocurrió un error al intentar obtener los registros
     </div>
 </template>
 <style scoped>
-table thead tr th .iheader {
+.mi-table {
+    width: 100%;
+}
+
+.mi-table .content-table {
+    overflow: auto;
+    position: relative;
+}
+.mi-table .content-table table {
+    height: 100%;
+    margin: 0px;
+}
+
+.mi-table .content-table tbody {
+    position: relative;
+}
+
+.mi-table .content-foot {
+    border-top: solid 1px rgb(216, 216, 216);
+}
+
+.mi-table table thead {
+    transition: all 0.3s;
+}
+
+.mi-table table thead tr th .iheader {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     gap: 3px;
 }
 
-table thead tr th .iheader.sortable {
+.mi-table table thead tr th .iheader.sortable {
     cursor: pointer;
 }
-table thead tr th .iheader .accion {
+.mi-table table thead tr th .iheader .accion {
     color: rgba(0, 0, 0, 0.3);
 }
-table thead tr th .iheader .accion.active {
+.mi-table table thead tr th .iheader .accion.active {
     color: black;
     display: block;
 }
 
-tbody {
-    position: relative;
+.mi-table .content-table.mi-loading-table {
+    overflow: hidden;
 }
 
-tbody .loading {
+.mi-table .content-table .mi-loading-table {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 200;
+    z-index: 10;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-tbody .loading::before {
+.mi-table .content-table .mi-loading-table::before {
     content: "";
     position: absolute;
     top: 0;
@@ -541,21 +778,78 @@ tbody .loading::before {
     z-index: -1; /* Envía el fondo detrás del contenido */
 }
 
+/* FIXEDS */
+.mi-table .content-table table.tablaFixeada {
+    border-collapse: separate;
+    border-spacing: 0;
+    white-space: nowrap;
+}
+
+.mi-table .content-table table.tablaFixeada td,
+.mi-table .content-table table.tablaFixeada th {
+    border: solid 1px rgb(250, 250, 250);
+    border-bottom: solid 1px rgb(211, 211, 211);
+}
+
+.mi-table .fixed-column-ext,
+.mi-table .fixed-column-ext-right,
+.mi-table .fixed-column,
+.mi-table .fixed-column-right {
+    position: sticky;
+    z-index: 1;
+    background-color: white;
+}
+
+.mi-table .fixed-header,
+.mi-table .footer-fixed {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: white;
+}
+
+/* .mi-table .fixed-header,
+.mi-table .fixed-header.fixed-column,
+.mi-table .fixed-header.fixed-column-right {
+    -webkit-box-shadow: 0px 3px 10px 1px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: 0px 3px 10px 1px rgba(0, 0, 0, 0.32);
+    box-shadow: 0px 3px 10px 1px rgba(0, 0, 0, 0.32);
+} */
+
+.mi-table .fixed-header.fixed-column,
+.mi-table .fixed-header.fixed-column-right,
+.mi-table th.fixed-column,
+.mi-table th.fixed-column-right {
+    z-index: 4;
+}
+
+/* .mi-table .fixed-column-right {
+    -webkit-box-shadow: -2px 2px 12px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: -2px 2px 12px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: -2px 2px 12px 0px rgba(0, 0, 0, 0.32);
+}
+
+.mi-table .fixed-column {
+    -webkit-box-shadow: 2px 2px 12px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: 2px 2px 12px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: 2px 2px 12px 0px rgba(0, 0, 0, 0.32);
+} */
+
 @media screen and (max-width: 790px) {
-    table thead {
+    .mi-table table.table-resposive thead {
         display: none;
     }
 
-    table tbody tr:nth-child(odd) {
+    .mi-table table.table-resposive tbody tr:nth-child(odd) {
         background-color: rgb(233, 233, 233);
     }
 
-    table tbody tr td {
+    .mi-table table.table-resposive tbody tr td {
         display: block;
         font-size: 0.8rem;
     }
 
-    table tbody tr td::before {
+    .mi-table table.table-resposive tbody tr td::before {
         content: attr(data-label) ": ";
         width: 40%;
         float: left;

@@ -23,12 +23,14 @@ const headers = ref([
         label: "ID",
         key: "id",
         sortable: true,
+        fixed: true,
     },
     {
         label: "NOMBRE PROYECTO",
-        key: "proyecto.nombre",
+        key: "proyecto_nombre",
         keySortable: "proyectos.nombre",
         sortable: true,
+        fixed: true,
     },
     {
         label: "CLIENTE",
@@ -51,7 +53,7 @@ const headers = ref([
         key: "saldo",
         sortable: true,
         classTd: (item) => {
-            return item.estado_pago == 'COMPLETO' ? "bg-cancelado" : "bg-red";
+            return item.estado_pago == "COMPLETO" ? "bg-cancelado" : "bg-red";
         },
     },
     {
@@ -69,8 +71,9 @@ const headers = ref([
         key: "fecha_registro_t",
         keySortable: "fecha_registro",
         sortable: true,
+        fixed: "right",
     },
-    { label: "ACCIÓN", key: "accion" },
+    { label: "ACCIÓN", key: "accion", fixed: "right" },
 ]);
 
 const search = ref("");
@@ -206,7 +209,7 @@ onMounted(() => {
         <div class="row">
             <div class="col-12">
                 <MiTable
-                    class="bg-white mitabla"
+                    :tableClass="'bg-white mitabla'"
                     ref="miTable"
                     :cols="headers"
                     :api="true"
@@ -215,23 +218,42 @@ onMounted(() => {
                     :multiSearch="multiSearch"
                     :syncOrderBy="'fecha_registro'"
                     :syncOrderAsc="'DESC'"
+                    table-responsive
+                    fix-cols
+                    fixed-header
+                    table-height="80vh"
                 >
+                    <template #proyecto_nombre="{ item }">
+                        <p
+                            style="
+                                width: 120px;
+                                word-wrap: break-word;
+                                white-space: wrap;
+                            "
+                        >
+                            {{ item.proyecto.nombre }}
+                        </p>
+                    </template>
                     <template #costo="{ item }">
                         <div class="w-100">
                             <div
-                                class="badge badge-primary text-md rounded-0 w-100 text-center"
+                                class="badge badge-primary text-md rounded-0 d-block text-center"
                             >
                                 {{ item.moneda.nombre }}
                                 {{ item.costo }}
                             </div>
                             <div
                                 v-if="item.tipo_cambio_id != 0"
-                                class="badge badge-success text-md rounded-0 w-100 text-center"
+                                class="badge badge-success text-md rounded-0 d-block text-center"
                             >
                                 {{ item.moneda_cambio.nombre }}
                                 {{ item.costo_cambio }}
                             </div>
                         </div>
+                    </template>
+
+                    <template #descripcion="{ item }">
+                        <div class="w-100" v-html="item.descripcion"></div>
                     </template>
 
                     <template #cancelado="{ item }">

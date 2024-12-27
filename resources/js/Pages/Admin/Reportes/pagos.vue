@@ -1,10 +1,16 @@
 <script setup>
-import BreezeAuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head } from "@inertiajs/vue3";
+import Content from "@/Components/Content.vue";
+import { Head, Link } from "@inertiajs/vue3";
 import BreezeButton from "@/Components/PrimaryButton.vue";
 import { useForm } from "@inertiajs/vue3";
-import { computed, inject, onMounted, ref, watch } from "vue";
+import { computed, inject, onMounted, ref, watch, onBeforeMount } from "vue";
 import axios from "axios";
+import MiTable from "@/Components/MiTable.vue";
+import { useAppStore } from "@/stores/aplicacion/appStore";
+const appStore = useAppStore();
+onBeforeMount(() => {
+    appStore.startLoading();
+});
 const props = defineProps({
     moneda_principal: {
         type: Object,
@@ -23,7 +29,79 @@ const props = defineProps({
         default: () => ({}),
     },
 });
-const Swal = inject("$swal");
+
+const miTable = ref(null);
+
+const headers = ref([
+    {
+        label: "ID",
+        key: "id",
+        sortable: true,
+        fixed: true,
+        classTd: () => {
+            let class_fixed = "bg__fixed";
+            return class_fixed;
+        },
+    },
+    {
+        label: "FECHA PAGO",
+        key: "fecha_pago",
+        sortable: true,
+        fixed: true,
+        classTd: () => {
+            let class_fixed = "bg__fixed";
+            return class_fixed;
+        },
+    },
+    {
+        label: "NOMBRE PROYECTO",
+        key: "proyecto_nombre",
+        keySortable: "proyectos.nombre",
+        sortable: true,
+        fixed: true,
+        classTd: () => {
+            let class_fixed = "bg__fixed";
+            return class_fixed;
+        },
+    },
+    {
+        label: "DESCRIPCIÓN",
+        key: "trabajo.descripcion",
+        keySortable: "trabajos.descripcion",
+        sortable: true,
+    },
+    {
+        label: "CLIENTE",
+        key: "cliente.nombre",
+        keySortable: "clientes.nombre",
+        sortable: true,
+    },
+    {
+        label: "COMPROBANTE",
+        key: "foto_comprobante",
+        sortable: true,
+    },
+    {
+        label: "ARCHIVO",
+        key: "archivo_comprobante",
+        sortable: true,
+    },
+    {
+        label: "DESCRIPCIÓN ARCHIVOS",
+        key: "descripcion_archivo",
+        sortable: true,
+    },
+    {
+        label: "MONTO",
+        key: "monto",
+        sortable: true,
+        fixed: "right",
+        classTd: () => {
+            let class_fixed = "bg__fixed";
+            return class_fixed;
+        },
+    },
+]);
 
 const form = useForm({
     filtro: "todos",
@@ -61,6 +139,7 @@ const cambioValoresFiltros = () => {
 
 onMounted(() => {
     cargaDatos();
+    appStore.stopLoading();
 });
 
 const total_pagos = computed(() => {
@@ -81,433 +160,395 @@ function obtenerFechaActual() {
 </script>
 <template>
     <Head title="Reportes-Pagos" />
-    <BreezeAuthenticatedLayout>
+    <Content>
         <template #header>
-            <h2 class="text-xl font-semibold leading-tight">Reportes</h2>
-        </template>
-        <div class="py-5">
-            <div class="mx-auto w-full grid sm:grid-cols-1 px-5 gap-2">
-                <div
-                    class="block w-full overflow-hidden bg-white shadow-sm sm:rounded-lg"
-                >
-                    <div class="p-6 bg-white border-b border-gray-200">
-                        <div class="mb-2">
-                            <h4
-                                class="w-full text-center font-bold text-lg uppercase"
-                            >
-                                Pagos
-                            </h4>
-                        </div>
-                        <div
-                            class="relative overflow-x-auto shadow-md sm:rounded-lg"
-                        >
-                            <form @submit.prevent="submit" target="_blank">
-                                <div class="w-2/4 block p-2 m-auto">
-                                    <label
-                                        for="Title"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                        >Filtro*</label
-                                    >
-                                    <select
-                                        v-model="form.filtro"
-                                        name="filtro"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                        placeholder=""
-                                        @change="cambioValoresFiltros"
-                                    >
-                                        <option value="todos">Todos</option>
-                                        <option value="proyecto">
-                                            Por proyecto
-                                        </option>
-                                        <option value="trabajo">
-                                            Por trabajo
-                                        </option>
-                                        <option value="estado_pago">
-                                            Estado de trabajo
-                                        </option>
-                                    </select>
-                                    <div
-                                        v-if="form.errors.bs"
-                                        class="text-sm text-red-600"
-                                    >
-                                        {{ form.errors.bs }}
-                                    </div>
-                                </div>
-                                <div
-                                    class="w-2/4 block p-2 m-auto"
-                                    v-if="form.filtro == 'proyecto'"
-                                >
-                                    <label
-                                        for="Title"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                        >Seleccione el proyecto*</label
-                                    >
-                                    <select
-                                        v-model="form.proyecto"
-                                        name="proyecto"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                        placeholder=""
-                                        @change="cambioValoresFiltros"
-                                    >
-                                        <option value="todos">Todos</option>
-                                        <option
-                                            v-for="item in proyectos"
-                                            :value="item.id"
-                                        >
-                                            {{ item.nombre }} ({{ item.alias }})
-                                        </option>
-                                    </select>
-                                    <div
-                                        v-if="form.errors.proyecto"
-                                        class="text-sm text-red-600"
-                                    >
-                                        {{ form.errors.proyecto }}
-                                    </div>
-                                </div>
-                                <div
-                                    class="w-2/4 block p-2 m-auto"
-                                    v-if="form.filtro == 'trabajo'"
-                                >
-                                    <label
-                                        for="Title"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                        >Seleccione el trabajo*</label
-                                    >
-                                    <select
-                                        v-model="form.trabajo"
-                                        name="trabajo"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                        placeholder=""
-                                        @change="cambioValoresFiltros"
-                                    >
-                                        <option value="todos">Todos</option>
-                                        <option
-                                            v-for="item in trabajos"
-                                            :value="item.id"
-                                        >
-                                            ({{ item.proyecto.alias }})
-                                            {{ item.descripcion }}
-                                        </option>
-                                    </select>
-                                    <div
-                                        v-if="form.errors.trabajo"
-                                        class="text-sm text-red-600"
-                                    >
-                                        {{ form.errors.trabajo }}
-                                    </div>
-                                </div>
-                                <div
-                                    class="w-2/4 block p-2 m-auto"
-                                    v-if="form.filtro == 'estado_trabajo'"
-                                >
-                                    <label
-                                        for="Title"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                        >Estado de pago*</label
-                                    >
-                                    <select
-                                        v-model="form.estado_trabajo"
-                                        name="estado_trabajo"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                        placeholder=""
-                                        @change="cambioValoresFiltros"
-                                    >
-                                        <option value="todos">Todos</option>
-                                        <option value="EN PROCESO">
-                                            EN PROCESO
-                                        </option>
-                                        <option value="ENVIADO">ENVIADO</option>
-                                        <option value="CONCLUIDO">
-                                            CONCLUIDO
-                                        </option>
-                                    </select>
-                                    <div
-                                        v-if="form.errors.estado_trabajo"
-                                        class="text-sm text-red-600"
-                                    >
-                                        {{ form.errors.estado_trabajo }}
-                                    </div>
-                                </div>
-                                <div class="w-2/4 block p-2 m-auto">
-                                    <label
-                                        for="Title"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                        >Cliente*</label
-                                    >
-                                    <select
-                                        v-model="form.cliente_id"
-                                        name="cliente_id"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                        placeholder=""
-                                        @change="cambioValoresFiltros"
-                                    >
-                                        <option value="todos">Todos</option>
-                                        <option
-                                            v-for="item in clientes"
-                                            :value="item.id"
-                                        >
-                                            {{ item.nombre }}
-                                        </option>
-                                    </select>
-                                    <div
-                                        v-if="form.errors.cliente_id"
-                                        class="text-sm text-red-600"
-                                    >
-                                        {{ form.errors.cliente_id }}
-                                    </div>
-                                </div>
-                                <div class="w-2/4 block p-2 m-auto">
-                                    <label
-                                        for="Title"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                        >Fechas*</label
-                                    >
-                                    <select
-                                        v-model="form.filtro_fecha"
-                                        name="filtro_fecha"
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                        placeholder=""
-                                        @change="cambioValoresFiltros"
-                                        @keyup="cambioValoresFiltros"
-                                    >
-                                        <option value="todos">Todos</option>
-                                        <option value="fechas">
-                                            Filtrar fechas
-                                        </option>
-                                    </select>
-                                </div>
-                                <div
-                                    class="w-full sm:flex sm:center"
-                                    v-if="form.filtro_fecha != 'todos'"
-                                >
-                                    <div class="w-1/4 inline-block p-2 ml-auto">
-                                        <label
-                                            for="Title"
-                                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                            >Fecha inicial*</label
-                                        >
-                                        <input
-                                            v-model="form.fecha_ini"
-                                            type="date"
-                                            name="fecha_ini"
-                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                            placeholder=""
-                                            @change="cambioValoresFiltros"
-                                            @keyup="cambioValoresFiltros"
-                                        />
-                                    </div>
-                                    <div class="w-1/4 inline-block p-2 mr-auto">
-                                        <label
-                                            for="Title"
-                                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                            >Fecha final*</label
-                                        >
-                                        <input
-                                            v-model="form.fecha_fin"
-                                            type="date"
-                                            name="fecha_fin"
-                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                            placeholder=""
-                                            @change="cambioValoresFiltros"
-                                            @keyup="cambioValoresFiltros"
-                                        />
-                                    </div>
-                                </div>
-                                <div class="w-full text-center p-2">
-                                    <button
-                                        type="submit"
-                                        class="w-2/4 text-white bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5"
-                                        :disabled="form.processing"
-                                        :class="{
-                                            'opacity-25': form.processing,
-                                        }"
-                                    >
-                                        Generar reporte
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Reporte Trabajos</h1>
                 </div>
-                <div
-                    class="block w-full overflow-hidden bg-white shadow-sm sm:rounded-lg"
-                >
-                    <div class="p-6 bg-white border-b border-gray-200">
-                        <div class="mb-2">
-                            <h4 class="font-bold text-lg uppercase">
-                                Resultado
-                            </h4>
-                        </div>
-                        <div class="h-screen flex flex-col">
-                            <div
-                                class="overflow-y-auto"
-                                style="height: calc(70vh - 2rem)"
-                            >
-                                <table
-                                    class="w-full max-w-full text-sm text-left text-gray-500 dark:text-gray-400"
+                <!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item">
+                            <Link :href="route('inicio')">Inicio</Link>
+                        </li>
+                        <li class="breadcrumb-item active">Reporte Trabajos</li>
+                    </ol>
+                </div>
+                <!-- /.col -->
+            </div>
+            <!-- /.row -->
+        </template>
+        <div class="row">
+            <div class="col-12">
+                <div class="row">
+                    <div class="col-md-6 offset-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <h4
+                                        class="w-full text-center font-bold text-lg uppercase"
+                                    >
+                                        Pagos
+                                    </h4>
+                                </div>
+                                <div
+                                    class="relative overflow-x-auto shadow-md sm:rounded-lg"
                                 >
-                                    <thead
-                                        class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0"
+                                    <form
+                                        @submit.prevent="submit"
+                                        target="_blank"
                                     >
-                                        <tr>
-                                            <th
-                                                scope="col"
-                                                class="px-6 py-3"
-                                                width="20px"
+                                        <div class="w-2/4 block p-2 m-auto">
+                                            <label
+                                                >Filtro*</label
                                             >
-                                                #
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-6 py-3"
-                                                width="80px"
+                                            <select
+                                                v-model="form.filtro"
+                                                name="filtro"
+                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                placeholder=""
+                                                @change="cambioValoresFiltros"
                                             >
-                                                Fecha
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Proyecto
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Trabajo
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Cliente
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Foto Comprobante
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Archivo Comprobante
-                                            </th>
-                                            <th scope="col" class="px-6 py-3">
-                                                Descripción Archivos
-                                            </th>
-                                            <th
-                                                scope="col"
-                                                class="px-6 py-3 text-center w-60"
+                                                <option value="todos">
+                                                    Todos
+                                                </option>
+                                                <option value="proyecto">
+                                                    Por proyecto
+                                                </option>
+                                                <option value="trabajo">
+                                                    Por trabajo
+                                                </option>
+                                                <option value="estado_pago">
+                                                    Estado de trabajo
+                                                </option>
+                                            </select>
+                                            <div
+                                                v-if="form.errors.bs"
+                                                class="text-sm text-red-600"
                                             >
-                                                Monto
-                                                {{ moneda_principal.nombre }}
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody
-                                        class="flex-grow overflow-y-auto"
-                                        style="max-height: 30vh"
-                                        v-if="!cargando"
-                                    >
-                                        <tr
-                                            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
-                                            v-for="(item, index) in listPagos"
+                                                {{ form.errors.bs }}
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="w-2/4 block p-2 m-auto"
+                                            v-if="form.filtro == 'proyecto'"
                                         >
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
+                                            <label
+                                                for="Title"
+                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                                                >Seleccione el proyecto*</label
                                             >
-                                                {{ index + 1 }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
+                                            <select
+                                                v-model="form.proyecto"
+                                                name="proyecto"
+                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                placeholder=""
+                                                @change="cambioValoresFiltros"
                                             >
-                                                {{ item.fecha_pago }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
+                                                <option value="todos">
+                                                    Todos
+                                                </option>
+                                                <option
+                                                    v-for="item in proyectos"
+                                                    :value="item.id"
+                                                >
+                                                    {{ item.nombre }} ({{
+                                                        item.alias
+                                                    }})
+                                                </option>
+                                            </select>
+                                            <div
+                                                v-if="form.errors.proyecto"
+                                                class="text-sm text-red-600"
                                             >
-                                                {{ item.trabajo.proyecto.nombre
-                                                }}<br />
-                                                {{
-                                                    item.trabajo.proyecto.alias
-                                                }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.trabajo.descripcion }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.cliente.nombre }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{
-                                                    item.foto_comprobante
-                                                        ? "SI"
-                                                        : "NO"
-                                                }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{
-                                                    item.archivo_comprobante
-                                                        ? "SI"
-                                                        : "NO"
-                                                }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap"
-                                            >
-                                                {{ item.descripcion_archivo }}
-                                            </td>
-                                            <td
-                                                scope="row"
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-center"
-                                            >
-                                                {{ item.monto }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                    <tbody
-                                        class="flex-grow overflow-y-auto"
-                                        style="max-height: 30vh"
-                                        v-else
-                                    >
-                                        <tr>
-                                            <td
-                                                colspan="9"
-                                                class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 text-center text-xl"
-                                            >
-                                                CARGANDO...
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                    <tfoot
-                                        class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-200 dark:text-gray-400 sticky bottom-0"
-                                    >
-                                        <tr
-                                            class="bg-white border-b dark:bg-gray-700 dark:border-solid border-white"
+                                                {{ form.errors.proyecto }}
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="w-2/4 block p-2 m-auto"
+                                            v-if="form.filtro == 'trabajo'"
                                         >
-                                            <td
-                                                colspan="8"
-                                                class="px-6 py-4 font-large text-gray-900 dark:text-white whitespace-wrap text-right text-xl"
+                                            <label
+                                                for="Title"
+                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                                                >Seleccione el trabajo*</label
                                             >
-                                                TOTAL
-                                            </td>
-                                            <td
-                                                class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-wrap text-xl"
+                                            <select
+                                                v-model="form.trabajo"
+                                                name="trabajo"
+                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                placeholder=""
+                                                @change="cambioValoresFiltros"
                                             >
-                                                {{ moneda_principal.nombre }}
-                                                {{ total_pagos }}
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                                                <option value="todos">
+                                                    Todos
+                                                </option>
+                                                <option
+                                                    v-for="item in trabajos"
+                                                    :value="item.id"
+                                                >
+                                                    ({{
+                                                        item.trabajo.proyecto
+                                                            .alias
+                                                    }})
+                                                    {{ item.descripcion }}
+                                                </option>
+                                            </select>
+                                            <div
+                                                v-if="form.errors.trabajo"
+                                                class="text-sm text-red-600"
+                                            >
+                                                {{ form.errors.trabajo }}
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="w-2/4 block p-2 m-auto"
+                                            v-if="
+                                                form.filtro == 'estado_trabajo'
+                                            "
+                                        >
+                                            <label
+                                                for="Title"
+                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                                                >Estado de pago*</label
+                                            >
+                                            <select
+                                                v-model="form.estado_trabajo"
+                                                name="estado_trabajo"
+                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                placeholder=""
+                                                @change="cambioValoresFiltros"
+                                            >
+                                                <option value="todos">
+                                                    Todos
+                                                </option>
+                                                <option value="EN PROCESO">
+                                                    EN PROCESO
+                                                </option>
+                                                <option value="ENVIADO">
+                                                    ENVIADO
+                                                </option>
+                                                <option value="CONCLUIDO">
+                                                    CONCLUIDO
+                                                </option>
+                                            </select>
+                                            <div
+                                                v-if="
+                                                    form.errors.estado_trabajo
+                                                "
+                                                class="text-sm text-red-600"
+                                            >
+                                                {{ form.errors.estado_trabajo }}
+                                            </div>
+                                        </div>
+                                        <div class="w-2/4 block p-2 m-auto">
+                                            <label
+                                                for="Title"
+                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                                                >Cliente*</label
+                                            >
+                                            <select
+                                                v-model="form.cliente_id"
+                                                name="cliente_id"
+                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                placeholder=""
+                                                @change="cambioValoresFiltros"
+                                            >
+                                                <option value="todos">
+                                                    Todos
+                                                </option>
+                                                <option
+                                                    v-for="item in clientes"
+                                                    :value="item.id"
+                                                >
+                                                    {{ item.nombre }}
+                                                </option>
+                                            </select>
+                                            <div
+                                                v-if="form.errors.cliente_id"
+                                                class="text-sm text-red-600"
+                                            >
+                                                {{ form.errors.cliente_id }}
+                                            </div>
+                                        </div>
+                                        <div class="w-2/4 block p-2 m-auto">
+                                            <label
+                                                for="Title"
+                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                                                >Fechas*</label
+                                            >
+                                            <select
+                                                v-model="form.filtro_fecha"
+                                                name="filtro_fecha"
+                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                placeholder=""
+                                                @change="cambioValoresFiltros"
+                                                @keyup="cambioValoresFiltros"
+                                            >
+                                                <option value="todos">
+                                                    Todos
+                                                </option>
+                                                <option value="fechas">
+                                                    Filtrar fechas
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div
+                                            class="w-full sm:flex sm:center"
+                                            v-if="form.filtro_fecha != 'todos'"
+                                        >
+                                            <div
+                                                class="w-1/4 inline-block p-2 ml-auto"
+                                            >
+                                                <label
+                                                    for="Title"
+                                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                                                    >Fecha inicial*</label
+                                                >
+                                                <input
+                                                    v-model="form.fecha_ini"
+                                                    type="date"
+                                                    name="fecha_ini"
+                                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                    placeholder=""
+                                                    @change="
+                                                        cambioValoresFiltros
+                                                    "
+                                                    @keyup="
+                                                        cambioValoresFiltros
+                                                    "
+                                                />
+                                            </div>
+                                            <div
+                                                class="w-1/4 inline-block p-2 mr-auto"
+                                            >
+                                                <label
+                                                    for="Title"
+                                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+                                                    >Fecha final*</label
+                                                >
+                                                <input
+                                                    v-model="form.fecha_fin"
+                                                    type="date"
+                                                    name="fecha_fin"
+                                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                                    placeholder=""
+                                                    @change="
+                                                        cambioValoresFiltros
+                                                    "
+                                                    @keyup="
+                                                        cambioValoresFiltros
+                                                    "
+                                                />
+                                            </div>
+                                        </div>
+                                        <div class="w-full text-center p-2">
+                                            <button
+                                                type="submit"
+                                                class="w-2/4 text-white bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5"
+                                                :disabled="form.processing"
+                                                :class="{
+                                                    'opacity-25':
+                                                        form.processing,
+                                                }"
+                                            >
+                                                Generar reporte
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-12">
+                        <h4 class="w-100 text-center font-weight-bold">RESULTADO</h4>
+                        <h6 class="w-100 text-center">Expresado en bolivianos</h6>
+                    </div>
+                    <div class="col-12">
+                        <MiTable
+                            :tableClass="'bg-white'"
+                            ref="miTable"
+                            :class-header="'bg-dark'"
+                            :cols="headers"
+                            :data="listPagos"
+                            :con-paginacion="false"
+                            fix-cols
+                            fixed-header
+                            table-height="50vh"
+                        >
+                            <template #proyecto_nombre="{ item }">
+                                <p
+                                    style="
+                                        width: 120px;
+                                        word-wrap: break-word;
+                                        white-space: wrap;
+                                    "
+                                >
+                                    {{ item.trabajo.proyecto.nombre }}
+                                </p>
+                            </template>
+                            <template #costo="{ item }">
+                                <div class="w-100">
+                                    {{ item.moneda.nombre }}
+                                    {{ item.costo }}
+                                </div>
+                            </template>
+
+                            <template #cancelado="{ item }">
+                                <div class="w-100">
+                                    <div class="w-100 text-center">
+                                        {{ item.moneda.nombre }}
+                                        {{ item.cancelado }}
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template #descripcion="{ item }">
+                                <p
+                                    style="
+                                        width: 120px;
+                                        word-wrap: break-word;
+                                        white-space: wrap;
+                                    "
+                                    v-html="item.descripcion"
+                                ></p>
+                            </template>
+
+                            <template
+                                #tableFooter
+                                class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-200 dark:text-gray-400 sticky bottom-0"
+                            >
+                                <tr
+                                    class="bg-white border-b dark:bg-gray-700 dark:border-solid border-white"
+                                >
+                                    <td
+                                        colspan="3"
+                                        class="bg-dark footer-fixed fixed-column-ext text-right"
+                                    >
+                                        TOTAL
+                                    </td>
+                                    <td
+                                        colspan="5"
+                                        class="bg-dark"
+                                        style="position: sticky; bottom: 0"
+                                    >
+                                        <div>&nbsp;</div>
+                                    </td>
+                                    <td
+                                        class="bg-dark footer-fixed fixed-column-ext-right"
+                                    >
+                                        {{ moneda_principal.nombre }}
+                                        {{ total_pagos }}
+                                    </td>
+                                </tr>
+                            </template>
+                        </MiTable>
+                    </div>
+                </div>
             </div>
         </div>
-    </BreezeAuthenticatedLayout>
+    </Content>
 </template>

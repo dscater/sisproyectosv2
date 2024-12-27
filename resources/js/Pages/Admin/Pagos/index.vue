@@ -175,7 +175,7 @@ onMounted(() => {
         <div class="row">
             <div class="col-12">
                 <MiTable
-                    class="bg-white mitabla"
+                    :tableClass="'bg-white mitabla'"
                     ref="miTable"
                     :cols="headers"
                     :api="true"

@@ -4,7 +4,7 @@ import MiTable from "@/Components/MiTable.vue";
 import { Head, usePage, Link } from "@inertiajs/vue3";
 import { useProyectos } from "@/composables/proyectos/useProyectos";
 import { useCrudAxios } from "@/composables/curdAxios/useCrudAxios";
-import { ref, onMounted,onBeforeMount } from "vue";
+import { ref, onMounted, onBeforeMount } from "vue";
 import Formulario from "./Formulario.vue";
 import axios from "axios";
 import { useAppStore } from "@/stores/aplicacion/appStore";
@@ -177,7 +177,7 @@ onMounted(() => {
         <div class="row">
             <div class="col-12">
                 <MiTable
-                    class="bg-white"
+                    :tableClass="'bg-white mitabla'"
                     ref="miTable"
                     :cols="headers"
                     :api="true"

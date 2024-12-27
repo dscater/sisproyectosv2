@@ -88,6 +88,28 @@ body table.table.mitabla thead {
     color: white;
 }
 
+.mi-table .fixed-column-ext,
+.mi-table .footer-fixed,
+.mi-table .fixed-column-ext-right {
+    z-index: 2;
+    background-color: white;
+}
+
+.mi-table .content-table table tbody td.bg__fixed {
+    background-color: rgb(240, 240, 240);
+}
+
+.mi-table .content-table table tbody td.bg-cancelado {
+    background-color: rgb(159, 247, 166);
+}
+
+body table.table.mitabla .fixed-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: var(--principal);
+}
+
 body table.table.mitabla thead tr th .accion {
     color: white;
     opacity: 50%;
@@ -112,7 +134,7 @@ body table.table tbody tr td {
     position: fixed;
     top: -200vh;
     left: 0;
-    z-index: 1050;
+    z-index: 6050;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -142,6 +164,7 @@ body table.table tbody tr td {
 
 .loading.show {
     top: 0;
+    height: 100vh;
 }
 
 .loading.show::before {

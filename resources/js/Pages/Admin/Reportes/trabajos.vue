@@ -1,13 +1,132 @@
 <script setup>
 import Content from "@/Components/Content.vue";
 import { Head, useForm, Link } from "@inertiajs/vue3";
-import { inject, onMounted, onBeforeMount, computed, ref, nextTick } from "vue";
+import {
+    inject,
+    onMounted,
+    onBeforeMount,
+    computed,
+    ref,
+    nextTick,
+    watch,
+} from "vue";
 import axios from "axios";
 import { useAppStore } from "@/stores/aplicacion/appStore";
+import MiTable from "@/Components/MiTable.vue";
 const appStore = useAppStore();
 onBeforeMount(() => {
     appStore.startLoading();
 });
+
+const miTable = ref(null);
+
+const headers = ref([
+    {
+        label: "ID",
+        key: "id",
+        sortable: true,
+        fixed: true,
+        classTd: () => {
+            let class_fixed = "bg__fixed";
+            return class_fixed;
+        },
+    },
+    {
+        label: "NOMBRE PROYECTO",
+        key: "proyecto_nombre",
+        keySortable: "proyectos.nombre",
+        sortable: true,
+        fixed: true,
+        classTd: () => {
+            let class_fixed = "bg__fixed";
+            return class_fixed;
+        },
+    },
+    {
+        label: "CLIENTE",
+        key: "cliente.nombre",
+        keySortable: "clientes.nombre",
+        sortable: true,
+    },
+    {
+        label: "DESCRIPCIÓN",
+        key: "descripcion",
+        sortable: true,
+    },
+    {
+        label: "FECHA INICIO",
+        key: "fecha_inicio",
+        sortable: true,
+    },
+    {
+        label: "DÍAS PLAZO",
+        key: "dias_plazo",
+        sortable: true,
+    },
+    {
+        label: "FECHA ENTREGA",
+        key: "fecha_entrega",
+        sortable: true,
+    },
+    {
+        label: "ESTADO/TRABAJO",
+        key: "estado_trabajo",
+        sortable: true,
+    },
+    {
+        label: "FECHA ENVÍO",
+        key: "fecha_envio",
+        sortable: true,
+    },
+    {
+        label: "FECHA CONCLUSIÓN",
+        key: "fecha_conclucion",
+        sortable: true,
+    },
+    {
+        label: "COSTO",
+        key: "costo",
+        sortable: true,
+        fixed: "right",
+        classTd: () => {
+            let class_fixed = "bg__fixed";
+            return class_fixed;
+        },
+    },
+    {
+        label: "CANCELADO",
+        key: "cancelado",
+        sortable: true,
+        fixed: "right",
+        classTd: () => {
+            let class_fixed = "bg__fixed";
+            return class_fixed;
+        },
+    },
+    {
+        label: "SALDO",
+        key: "saldo",
+        sortable: true,
+        fixed: "right",
+        classTd: () => {
+            let class_fixed = "bg__fixed";
+            return class_fixed;
+        },
+    },
+    {
+        label: "ESTADO/PAGO",
+        key: "estado_pago",
+        sortable: true,
+        fixed: "right",
+        classTd: (item) => {
+            let class_fixed = "bg-danger";
+            if (item.estado_pago == "COMPLETO") {
+                class_fixed = " bg-cancelado";
+            }
+            return class_fixed;
+        },
+    },
+]);
 
 const props = defineProps({
     moneda_principal: {
@@ -48,11 +167,22 @@ const submit = () => {
 const listTrabajos = ref([]);
 let time_out_filtros = null;
 const cargando = ref(true);
+
+watch(
+    () => cargando.value,
+    (newVal) => {
+        miTable.value.setLoading(newVal);
+    }
+);
+
 const cargaDatos = () => {
     axios
         .get(route("reportes.trabajos_pdf"), { params: form.data() })
         .then((response) => {
             listTrabajos.value = response.data;
+        })
+        .catch((error) => {})
+        .finally(() => {
             cargando.value = false;
         });
 };
@@ -128,49 +258,9 @@ const total_pagos_pendientes = computed(() => {
     return pagoscompletos.length;
 });
 
-const renderizaFixedColumns = () => {
-    nextTick(() => {
-        const listRows = document.querySelectorAll("table tr");
-        listRows.forEach((row, index_row) => {
-            let ancho_anterior = 0; // Desplazamiento acumulado
-            const listTds = row.querySelectorAll("td");
-            listTds.forEach((td) => {
-                const ancho_elem = td.offsetWidth; // Obtener ancho del elemento actual
-
-                if (td.classList.contains("fixed-column")) {
-                    td.classList.add("xd"); // Agregar clase
-                    td.style.position = "sticky"; // Hacerlo sticky
-                    td.style.left = `${ancho_anterior}px`; // Posicionarlo con left
-                }
-
-                ancho_anterior += ancho_elem; // Sumar ancho actual al acumulado
-            });
-
-            ancho_anterior = 0; // Desplazamiento acumulado
-            const listThs = row.querySelectorAll("th");
-            listThs.forEach((th) => {
-                if (index_row == 0) {
-                    console.log("content:", th.innerHTML);
-                    console.log("WIDTH:", th.offsetWidth);
-                }
-                const ancho_elem = th.offsetWidth; // Obtener ancho del elemento actual
-
-                if (th.classList.contains("fixed-column")) {
-                    th.classList.add("xd"); // Agregar clase
-                    th.style.position = "sticky"; // Hacerlo sticky
-                    th.style.left = `${ancho_anterior}px`; // Posicionarlo con left
-                }
-
-                ancho_anterior += ancho_elem; // Sumar ancho actual al acumulado
-            });
-        });
-    });
-};
-
 onMounted(async () => {
     cargaDatos();
     appStore.stopLoading();
-    renderizaFixedColumns();
 });
 </script>
 <template>
@@ -449,169 +539,138 @@ onMounted(async () => {
                         {{ listTrabajos.length }} Registros encontrados
                     </p>
                 </div>
-                <div
-                    class="h-screen flex"
-                    :style="[
-                        listTrabajos.length > 5
-                            ? 'height: calc(75vh - 2rem)'
-                            : 'height:auto',
-                    ]"
-                >
-                    <div
-                        style="overflow: auto"
-                        :style="[
-                            listTrabajos.length > 5
-                                ? 'height: calc(70vh - 2rem)'
-                                : 'height:auto',
-                        ]"
-                    >
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th class="fixed-column">#</th>
-                                    <th class="fixed-column">Proyecto</th>
-                                    <th class="fixed-column">Cliente</th>
-                                    <th>Descripción</th>
-                                    <th>Fecha Inicio</th>
-                                    <th>Plazo días</th>
-                                    <th>Fecha Entrega</th>
-                                    <th>Estado/Trabajo</th>
-                                    <th>Fecha de envío</th>
-                                    <th>Fecha de conclusión</th>
-                                    <th>Costo</th>
-                                    <th>Cancelado</th>
-                                    <th>Saldo</th>
-                                    <th class="fixed-column">Estado/Pago</th>
-                                </tr>
-                            </thead>
-                            <tbody style="max-height: 30vh" v-if="!cargando">
-                                <tr v-for="(item, index) in listTrabajos">
-                                    <td class="fixed-column">
-                                        {{ index + 1 }}
-                                    </td>
-                                    <td class="fixed-column">
-                                        {{ item.proyecto?.nombre }}<br />({{
-                                            item.proyecto?.alias
-                                        }})
-                                    </td>
-                                    <td class="fixed-column">
-                                        {{ item.cliente?.nombre }}
-                                    </td>
-                                    <td>
-                                        {{ item.descripcion }}
-                                    </td>
-                                    <td>
-                                        {{ item.fecha_inicio }}
-                                    </td>
-                                    <td>
-                                        {{ item.dias_plazo }}
-                                    </td>
-                                    <td>
-                                        {{ item.fecha_entrega }}
-                                    </td>
-                                    <td>
-                                        {{ item.estado_trabajo }}
-                                    </td>
-                                    <td>
-                                        {{ item.fecha_envio }}
-                                    </td>
-                                    <td>
-                                        {{ item.fecha_conclusion }}
-                                    </td>
-                                    <td>
-                                        {{ item.costo }}
-                                    </td>
-                                    <td>
-                                        {{ item.cancelado }}
-                                    </td>
-                                    <td>
-                                        {{ item.saldo }}
-                                    </td>
-                                    <td
-                                        class="fixed-column"
-                                        :class="[
-                                            item.estado_pago == 'COMPLETO'
-                                                ? 'bg-green-600'
-                                                : 'bg-red-700',
-                                        ]"
-                                    >
-                                        {{ item.estado_pago }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tbody
-                                class="flex-grow overflow-y-auto"
-                                style="max-height: 30vh"
-                                v-else
-                            >
-                                <tr>
-                                    <td
-                                        colspan="14"
-                                        class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 text-center text-xl"
-                                    >
-                                        CARGANDO...
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="10">TOTALES</td>
-                                    <td>
-                                        {{ total_costo }}
-                                    </td>
-                                    <td>
-                                        {{ total_cancelado }}
-                                    </td>
-                                    <td>
-                                        {{ total_saldos }}
-                                    </td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
 
-                <table class="table table-bordered">
-                    <thead class="">
+                <MiTable
+                    :tableClass="'bg-white'"
+                    ref="miTable"
+                    :class-header="'bg-dark'"
+                    :cols="headers"
+                    :data="listTrabajos"
+                    :con-paginacion="false"
+                    fix-cols
+                    fixed-header
+                    table-height="50vh"
+                >
+                    <template #proyecto_nombre="{ item }">
+                        <p
+                            style="
+                                width: 120px;
+                                word-wrap: break-word;
+                                white-space: wrap;
+                            "
+                        >
+                            {{ item.proyecto.nombre }}
+                        </p>
+                    </template>
+                    <template #costo="{ item }">
+                        <div class="w-100">
+                            {{ item.moneda.nombre }}
+                            {{ item.costo }}
+                        </div>
+                    </template>
+
+                    <template #cancelado="{ item }">
+                        <div class="w-100">
+                            <div class="w-100 text-center">
+                                {{ item.moneda.nombre }}
+                                {{ item.cancelado }}
+                            </div>
+                        </div>
+                    </template>
+
+                    <template #descripcion="{ item }">
+                        <p
+                            style="
+                                width: 120px;
+                                word-wrap: break-word;
+                                white-space: wrap;
+                            "
+                            v-html="item.descripcion"
+                        ></p>
+                    </template>
+
+                    <template #tableFooter>
                         <tr>
-                            <th colspan="8">TOTALES</th>
-                        </tr>
-                        <tr>
-                            <th>COSTOS</th>
-                            <th>CANCELADO</th>
-                            <th>SALDO</th>
-                            <th>EN PROCESO</th>
-                            <th>ENVIADOS</th>
-                            <th>CONCLUIDOS</th>
-                            <th>PAGOS COMPLETOS</th>
-                            <th>PAGOS PENDIENTES</th>
-                        </tr>
-                    </thead>
-                    <tbody v-if="!cargando">
-                        <tr>
-                            <td>
+                            <td
+                                colspan="2"
+                                class="bg-dark footer-fixed fixed-column-ext text-right"
+                            >
+                                TOTALES
+                            </td>
+                            <td
+                                colspan="8"
+                                class="bg-dark"
+                                style="position: sticky; bottom: 0"
+                            >
+                                <div>&nbsp;</div>
+                            </td>
+                            <td
+                                class="bg-dark footer-fixed fixed-column-ext-right"
+                            >
                                 {{ total_costo }}
                             </td>
-                            <td>
+                            <td
+                                class="bg-dark footer-fixed fixed-column-ext-right"
+                            >
                                 {{ total_cancelado }}
                             </td>
-                            <td>
+                            <td
+                                class="bg-dark footer-fixed fixed-column-ext-right"
+                            >
                                 {{ total_saldos }}
                             </td>
-                            <td>
+                            <td
+                                class="bg-dark footer-fixed fixed-column-ext-right"
+                            ></td>
+                        </tr>
+                    </template>
+                </MiTable>
+
+                <table class="table table-bordered mt-5">
+                    <thead class="">
+                        <tr>
+                            <th
+                                colspan="8"
+                                class="w-100 text-center h4 font-weight-bold"
+                            >
+                                RESUMEN
+                            </th>
+                        </tr>
+                        <tr>
+                            <th class="">COSTOS</th>
+                            <th class="">CANCELADO</th>
+                            <th class="">SALDO</th>
+                            <th class="">EN PROCESO</th>
+                            <th class="">ENVIADOS</th>
+                            <th class="">CONCLUIDOS</th>
+                            <th class="">PAGOS COMPLETOS</th>
+                            <th class="">PAGOS PENDIENTES</th>
+                        </tr>
+                    </thead>
+                    <tbody v-if="!cargando" class="bg-white">
+                        <tr>
+                            <td class="text-center">
+                                {{ total_costo }}
+                            </td>
+                            <td class="text-center">
+                                {{ total_cancelado }}
+                            </td>
+                            <td class="text-center">
+                                {{ total_saldos }}
+                            </td>
+                            <td class="text-center">
                                 {{ total_proceso }}
                             </td>
-                            <td>
+                            <td class="text-center">
                                 {{ total_enviado }}
                             </td>
-                            <td>
+                            <td class="text-center">
                                 {{ total_concluidos }}
                             </td>
-                            <td>
+                            <td class="text-center">
                                 {{ total_pagos_completos }}
                             </td>
-                            <td>
+                            <td class="text-center">
                                 {{ total_pagos_pendientes }}
                             </td>
                         </tr>

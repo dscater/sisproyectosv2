@@ -47,7 +47,7 @@ class ReporteController extends Controller
         $o_proyecto = null;
         $o_trabajo = null;
 
-        $trabajos = Trabajo::with(["proyecto", "cliente"])->select("trabajos.*");
+        $trabajos = Trabajo::with(["proyecto", "cliente", "moneda", "moneda_cambio"])->select("trabajos.*");
         if ($cliente_id != "todos") {
             $trabajos->where("cliente_id", $cliente_id);
             $o_cliente = Cliente::find($cliente_id);
@@ -125,7 +125,8 @@ class ReporteController extends Controller
         $o_proyecto = null;
         $o_trabajo = null;
 
-        $pagos = Pago::select("pagos.*");
+        $pagos = Pago::with(["trabajo.proyecto", "cliente", "moneda", "moneda_cambio"])
+            ->select("pagos.*");
         if ($filtro != "todos") {
             if ($filtro == "proyecto" && $proyecto != "todos") {
                 $pagos->join("trabajos", "trabajos.id", "=", "pagos.trabajo_id")
