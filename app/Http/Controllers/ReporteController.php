@@ -96,7 +96,7 @@ class ReporteController extends Controller
     public function pagos()
     {
         $clientes = Cliente::all();
-        $trabajos = Trabajo::orderBy("created_at", "desc")->get();
+        $trabajos = Trabajo::with(["proyecto"])->orderBy("created_at", "desc")->get();
         $proyectos = Proyecto::orderBy("created_at", "desc")->get();
         $moneda_principal = Moneda::where("principal", 1)->get()->first();
         return Inertia::render(

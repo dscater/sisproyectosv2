@@ -95,8 +95,53 @@ body table.table.mitabla thead {
     background-color: white;
 }
 
+.mi-table .content-table table tr .fixed-header {
+    -webkit-box-shadow: 0px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: 0px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: 0px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+}
+.mi-table
+    .content-table
+    table
+    tr
+    .fixed-column:nth-last-child(1 of .fixed-column) {
+    -webkit-box-shadow: 3px 0px 3px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: 3px 0px 3px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: 3px 0px 3px 0px rgba(0, 0, 0, 0.32);
+}
+
+.mi-table
+    .content-table
+    table
+    tr
+    .fixed-header.fixed-column:nth-last-child(1 of .fixed-column) {
+    -webkit-box-shadow: 3px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: 3px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: 3px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+}
+
+.mi-table
+    .content-table
+    table
+    tr
+    .fixed-column-right:nth-child(1 of .fixed-column-right) {
+    -webkit-box-shadow: -3px 0px 3px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: -3px 0px 3px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: -3px 0px 3px 0px rgba(0, 0, 0, 0.32);
+}
+
+.mi-table
+    .content-table
+    table
+    tr
+    .fixed-header.fixed-column-right:nth-child(1 of .fixed-column-right) {
+    -webkit-box-shadow: -3px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: -3px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: -3px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+}
+
 .mi-table .content-table table tbody td.bg__fixed {
-    background-color: rgb(240, 240, 240);
+    /* background-color: rgb(240, 240, 240); */
 }
 
 .mi-table .content-table table tbody td.bg-cancelado {

@@ -65,6 +65,7 @@ const headers = ref([
         label: "DESCRIPCIÓN",
         key: "descripcion",
         sortable: true,
+        width: "200px",
     },
     {
         label: "FECHAS",

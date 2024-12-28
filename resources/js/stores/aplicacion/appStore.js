@@ -12,13 +12,19 @@ export const useAppStore = defineStore("app_store", {
         startLoading() {
             this.loading = true;
         },
-        stopLoading() {
+        async stopLoading() {
+            await this.esperarCargaElementos();
             setTimeout(() => {
                 this.loading = false;
             }, this.delayLoading);
         },
         setDelayLoading(value) {
             this.delayLoading = value;
+        },
+        async esperarCargaElementos() {
+            return new Promise((resolve) =>
+                window.requestAnimationFrame(resolve)
+            );
         },
     },
     getters: {

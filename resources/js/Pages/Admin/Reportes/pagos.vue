@@ -120,17 +120,18 @@ const submit = () => {
 
 const listPagos = ref([]);
 let time_out_filtros = null;
-const cargando = ref(true);
 const cargaDatos = () => {
     axios
         .get(route("reportes.pagos_pdf"), { params: form.data() })
         .then((response) => {
             listPagos.value = response.data;
-            cargando.value = false;
+        })
+        .finally(() => {
+            miTable.value.setLoading(true);
         });
 };
 const cambioValoresFiltros = () => {
-    cargando.value = true;
+    miTable.value.setLoading(true);
     clearInterval(time_out_filtros);
     time_out_filtros = setTimeout(() => {
         cargaDatos();
@@ -164,7 +165,7 @@ function obtenerFechaActual() {
         <template #header>
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0">Reporte Trabajos</h1>
+                    <h1 class="m-0">Reporte Pagos</h1>
                 </div>
                 <!-- /.col -->
                 <div class="col-sm-6">
@@ -172,7 +173,7 @@ function obtenerFechaActual() {
                         <li class="breadcrumb-item">
                             <Link :href="route('inicio')">Inicio</Link>
                         </li>
-                        <li class="breadcrumb-item active">Reporte Trabajos</li>
+                        <li class="breadcrumb-item active">Reporte Pagos</li>
                     </ol>
                 </div>
                 <!-- /.col -->
@@ -185,233 +186,186 @@ function obtenerFechaActual() {
                     <div class="col-md-6 offset-md-3">
                         <div class="card">
                             <div class="card-body">
-                                <div class="mb-2">
-                                    <h4
-                                        class="w-full text-center font-bold text-lg uppercase"
-                                    >
-                                        Pagos
-                                    </h4>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h4
+                                            class="w-full text-center font-bold text-lg uppercase"
+                                        >
+                                            Pagos
+                                        </h4>
+                                    </div>
                                 </div>
-                                <div
-                                    class="relative overflow-x-auto shadow-md sm:rounded-lg"
+                                <form
+                                    @submit.prevent="submit"
+                                    target="_blank"
+                                    class="row"
                                 >
-                                    <form
-                                        @submit.prevent="submit"
-                                        target="_blank"
+                                    <div class="col-md-6">
+                                        <label>Filtro*</label>
+                                        <select
+                                            v-model="form.filtro"
+                                            name="filtro"
+                                            class="form-control"
+                                            placeholder=""
+                                            @change="cambioValoresFiltros"
+                                        >
+                                            <option value="todos">Todos</option>
+                                            <option value="proyecto">
+                                                Por proyecto
+                                            </option>
+                                            <option value="trabajo">
+                                                Por trabajo
+                                            </option>
+                                            <option value="estado_trabajo">
+                                                Estado de trabajo
+                                            </option>
+                                        </select>
+                                        <div
+                                            v-if="form.errors.bs"
+                                            class="text-sm text-red-600"
+                                        >
+                                            {{ form.errors.bs }}
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="col-md-6"
+                                        v-if="form.filtro == 'proyecto'"
                                     >
-                                        <div class="w-2/4 block p-2 m-auto">
-                                            <label
-                                                >Filtro*</label
-                                            >
-                                            <select
-                                                v-model="form.filtro"
-                                                name="filtro"
-                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                placeholder=""
-                                                @change="cambioValoresFiltros"
-                                            >
-                                                <option value="todos">
-                                                    Todos
-                                                </option>
-                                                <option value="proyecto">
-                                                    Por proyecto
-                                                </option>
-                                                <option value="trabajo">
-                                                    Por trabajo
-                                                </option>
-                                                <option value="estado_pago">
-                                                    Estado de trabajo
-                                                </option>
-                                            </select>
-                                            <div
-                                                v-if="form.errors.bs"
-                                                class="text-sm text-red-600"
-                                            >
-                                                {{ form.errors.bs }}
-                                            </div>
-                                        </div>
-                                        <div
-                                            class="w-2/4 block p-2 m-auto"
-                                            v-if="form.filtro == 'proyecto'"
+                                        <label>Seleccione el proyecto*</label>
+                                        <select
+                                            v-model="form.proyecto"
+                                            name="proyecto"
+                                            class="form-control"
+                                            placeholder=""
+                                            @change="cambioValoresFiltros"
                                         >
-                                            <label
-                                                for="Title"
-                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                                >Seleccione el proyecto*</label
+                                            <option value="todos">Todos</option>
+                                            <option
+                                                v-for="item in proyectos"
+                                                :value="item.id"
                                             >
-                                            <select
-                                                v-model="form.proyecto"
-                                                name="proyecto"
-                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                placeholder=""
-                                                @change="cambioValoresFiltros"
-                                            >
-                                                <option value="todos">
-                                                    Todos
-                                                </option>
-                                                <option
-                                                    v-for="item in proyectos"
-                                                    :value="item.id"
-                                                >
-                                                    {{ item.nombre }} ({{
-                                                        item.alias
-                                                    }})
-                                                </option>
-                                            </select>
-                                            <div
-                                                v-if="form.errors.proyecto"
-                                                class="text-sm text-red-600"
-                                            >
-                                                {{ form.errors.proyecto }}
-                                            </div>
-                                        </div>
+                                                {{ item.nombre }} ({{
+                                                    item.alias
+                                                }})
+                                            </option>
+                                        </select>
                                         <div
-                                            class="w-2/4 block p-2 m-auto"
-                                            v-if="form.filtro == 'trabajo'"
+                                            v-if="form.errors.proyecto"
+                                            class="text-sm text-red-600"
                                         >
-                                            <label
-                                                for="Title"
-                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                                >Seleccione el trabajo*</label
-                                            >
-                                            <select
-                                                v-model="form.trabajo"
-                                                name="trabajo"
-                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                placeholder=""
-                                                @change="cambioValoresFiltros"
-                                            >
-                                                <option value="todos">
-                                                    Todos
-                                                </option>
-                                                <option
-                                                    v-for="item in trabajos"
-                                                    :value="item.id"
-                                                >
-                                                    ({{
-                                                        item.trabajo.proyecto
-                                                            .alias
-                                                    }})
-                                                    {{ item.descripcion }}
-                                                </option>
-                                            </select>
-                                            <div
-                                                v-if="form.errors.trabajo"
-                                                class="text-sm text-red-600"
-                                            >
-                                                {{ form.errors.trabajo }}
-                                            </div>
+                                            {{ form.errors.proyecto }}
                                         </div>
+                                    </div>
+                                    <div
+                                        class="col-md-6"
+                                        v-if="form.filtro == 'trabajo'"
+                                    >
+                                        <label>Seleccione el trabajo*</label>
+                                        <select
+                                            v-model="form.trabajo"
+                                            name="trabajo"
+                                            class="form-control"
+                                            placeholder=""
+                                            @change="cambioValoresFiltros"
+                                        >
+                                            <option value="todos">Todos</option>
+                                            <option
+                                                v-for="item in trabajos"
+                                                :value="item.id"
+                                            >
+                                                ({{ item.proyecto.alias }})
+                                                {{ item.descripcion }}
+                                            </option>
+                                        </select>
                                         <div
-                                            class="w-2/4 block p-2 m-auto"
-                                            v-if="
-                                                form.filtro == 'estado_trabajo'
-                                            "
+                                            v-if="form.errors.trabajo"
+                                            class="text-sm text-red-600"
                                         >
-                                            <label
-                                                for="Title"
-                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                                >Estado de pago*</label
-                                            >
-                                            <select
-                                                v-model="form.estado_trabajo"
-                                                name="estado_trabajo"
-                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                placeholder=""
-                                                @change="cambioValoresFiltros"
-                                            >
-                                                <option value="todos">
-                                                    Todos
-                                                </option>
-                                                <option value="EN PROCESO">
-                                                    EN PROCESO
-                                                </option>
-                                                <option value="ENVIADO">
-                                                    ENVIADO
-                                                </option>
-                                                <option value="CONCLUIDO">
-                                                    CONCLUIDO
-                                                </option>
-                                            </select>
-                                            <div
-                                                v-if="
-                                                    form.errors.estado_trabajo
-                                                "
-                                                class="text-sm text-red-600"
-                                            >
-                                                {{ form.errors.estado_trabajo }}
-                                            </div>
+                                            {{ form.errors.trabajo }}
                                         </div>
-                                        <div class="w-2/4 block p-2 m-auto">
-                                            <label
-                                                for="Title"
-                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                                >Cliente*</label
-                                            >
-                                            <select
-                                                v-model="form.cliente_id"
-                                                name="cliente_id"
-                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                placeholder=""
-                                                @change="cambioValoresFiltros"
-                                            >
-                                                <option value="todos">
-                                                    Todos
-                                                </option>
-                                                <option
-                                                    v-for="item in clientes"
-                                                    :value="item.id"
-                                                >
-                                                    {{ item.nombre }}
-                                                </option>
-                                            </select>
-                                            <div
-                                                v-if="form.errors.cliente_id"
-                                                class="text-sm text-red-600"
-                                            >
-                                                {{ form.errors.cliente_id }}
-                                            </div>
-                                        </div>
-                                        <div class="w-2/4 block p-2 m-auto">
-                                            <label
-                                                for="Title"
-                                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                                >Fechas*</label
-                                            >
-                                            <select
-                                                v-model="form.filtro_fecha"
-                                                name="filtro_fecha"
-                                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                placeholder=""
-                                                @change="cambioValoresFiltros"
-                                                @keyup="cambioValoresFiltros"
-                                            >
-                                                <option value="todos">
-                                                    Todos
-                                                </option>
-                                                <option value="fechas">
-                                                    Filtrar fechas
-                                                </option>
-                                            </select>
-                                        </div>
+                                    </div>
+                                    <div
+                                        class="col-md-6"
+                                        v-if="form.filtro == 'estado_trabajo'"
+                                    >
+                                        <label>Estado de trabajo*</label>
+                                        <select
+                                            v-model="form.estado_trabajo"
+                                            name="estado_trabajo"
+                                            class="form-control"
+                                            placeholder=""
+                                            @change="cambioValoresFiltros"
+                                        >
+                                            <option value="todos">Todos</option>
+                                            <option value="EN PROCESO">
+                                                EN PROCESO
+                                            </option>
+                                            <option value="ENVIADO">
+                                                ENVIADO
+                                            </option>
+                                            <option value="CONCLUIDO">
+                                                CONCLUIDO
+                                            </option>
+                                        </select>
                                         <div
-                                            class="w-full sm:flex sm:center"
-                                            v-if="form.filtro_fecha != 'todos'"
+                                            v-if="form.errors.estado_trabajo"
+                                            class="text-sm text-red-600"
                                         >
-                                            <div
-                                                class="w-1/4 inline-block p-2 ml-auto"
+                                            {{ form.errors.estado_trabajo }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label>Cliente*</label>
+                                        <select
+                                            v-model="form.cliente_id"
+                                            name="cliente_id"
+                                            class="form-control"
+                                            placeholder=""
+                                            @change="cambioValoresFiltros"
+                                        >
+                                            <option value="todos">Todos</option>
+                                            <option
+                                                v-for="item in clientes"
+                                                :value="item.id"
                                             >
-                                                <label
-                                                    for="Title"
-                                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                                    >Fecha inicial*</label
-                                                >
+                                                {{ item.nombre }}
+                                            </option>
+                                        </select>
+                                        <div
+                                            v-if="form.errors.cliente_id"
+                                            class="text-sm text-red-600"
+                                        >
+                                            {{ form.errors.cliente_id }}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label>Fechas*</label>
+                                        <select
+                                            v-model="form.filtro_fecha"
+                                            name="filtro_fecha"
+                                            class="form-control"
+                                            placeholder=""
+                                            @change="cambioValoresFiltros"
+                                            @keyup="cambioValoresFiltros"
+                                        >
+                                            <option value="todos">Todos</option>
+                                            <option value="fechas">
+                                                Filtrar fechas
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div
+                                        class="col-12"
+                                        v-if="form.filtro_fecha != 'todos'"
+                                    >
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label>Fecha inicial*</label>
                                                 <input
                                                     v-model="form.fecha_ini"
                                                     type="date"
                                                     name="fecha_ini"
-                                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                    placeholder=""
+                                                    class="form-control"
                                                     @change="
                                                         cambioValoresFiltros
                                                     "
@@ -420,20 +374,13 @@ function obtenerFechaActual() {
                                                     "
                                                 />
                                             </div>
-                                            <div
-                                                class="w-1/4 inline-block p-2 mr-auto"
-                                            >
-                                                <label
-                                                    for="Title"
-                                                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
-                                                    >Fecha final*</label
-                                                >
+                                            <div class="col-md-6">
+                                                <label>Fecha final*</label>
                                                 <input
                                                     v-model="form.fecha_fin"
                                                     type="date"
                                                     name="fecha_fin"
-                                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                                                    placeholder=""
+                                                    class="form-control"
                                                     @change="
                                                         cambioValoresFiltros
                                                     "
@@ -443,29 +390,33 @@ function obtenerFechaActual() {
                                                 />
                                             </div>
                                         </div>
-                                        <div class="w-full text-center p-2">
-                                            <button
-                                                type="submit"
-                                                class="w-2/4 text-white bg-blue-700 focus:outline-none font-medium rounded-lg text-sm px-5 py-2.5"
-                                                :disabled="form.processing"
-                                                :class="{
-                                                    'opacity-25':
-                                                        form.processing,
-                                                }"
-                                            >
-                                                Generar reporte
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
+                                    </div>
+                                    <div class="col-12 mt-3">
+                                        <button
+                                            type="submit"
+                                            class="btn btn-primary btn-block"
+                                            :disabled="form.processing"
+                                            :class="{
+                                                'opacity-25': form.processing,
+                                            }"
+                                        >
+                                            Generar reporte
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-12">
-                        <h4 class="w-100 text-center font-weight-bold">RESULTADO</h4>
-                        <h6 class="w-100 text-center">Expresado en bolivianos</h6>
+                        <h4 class="w-100 text-center font-weight-bold">
+                            RESULTADO
+                        </h4>
+                        <h6 class="w-100 text-center">
+                            Expresado en bolivianos
+                        </h6>
+                        <p class="w-100 text-center">Resultado: {{ listPagos.length }} registros</p>
                     </div>
                     <div class="col-12">
                         <MiTable

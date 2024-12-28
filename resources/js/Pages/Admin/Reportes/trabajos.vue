@@ -698,14 +698,14 @@ table tbody tr td {
 table thead tr {
     position: sticky;
     top: -1px;
-    z-index: 10000000;
+    z-index: 1;
     background-color: white;
     box-shadow: 0 3px 3px -3px rgb(216, 216, 216);
 }
 table tfoot tr {
     position: sticky;
     bottom: -2px;
-    z-index: 10000000;
+    z-index: 1;
     background-color: white;
     box-shadow: 3px 0px 0px 0px rgb(216, 216, 216);
 }
