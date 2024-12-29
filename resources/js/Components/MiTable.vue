@@ -812,17 +812,7 @@ defineExpose({
 
 .mi-table .content-table table.tablaFixeada td,
 .mi-table .content-table table.tablaFixeada th {
-    border: solid 1px rgb(250, 250, 250);
-    border-bottom: solid 1px rgb(211, 211, 211);
-}
-
-.mi-table .fixed-column-ext,
-.mi-table .fixed-column-ext-right,
-.mi-table .fixed-column,
-.mi-table .fixed-column-right {
-    position: sticky;
-    z-index: 2;
-    background-color: white;
+    border: solid 1px rgb(233, 233, 233);
 }
 
 .mi-table .fixed-header,
@@ -833,6 +823,16 @@ defineExpose({
     background-color: white;
 }
 
+.mi-table .fixed-column,
+.mi-table .fixed-column-right {
+    position: sticky;
+    z-index: 2;
+    background-color: white;
+}
+
+.mi-table .fixed-column-ext,
+.mi-table .footer-fixed,
+.mi-table .mi .mi-table .fixed-column-ext-right,
 .mi-table .fixed-header.fixed-column,
 .mi-table .fixed-header.fixed-column-right,
 .mi-table th.fixed-column,

@@ -541,7 +541,7 @@ onMounted(async () => {
                 </div>
 
                 <MiTable
-                    :tableClass="'bg-white'"
+                    :tableClass="'bg-white mitabla'"
                     ref="miTable"
                     :class-header="'bg-dark'"
                     :cols="headers"
@@ -590,7 +590,7 @@ onMounted(async () => {
                     </template>
 
                     <template #tableFooter>
-                        <tr>
+                        <tr class="footer-fixed">
                             <td
                                 colspan="2"
                                 class="bg-dark footer-fixed fixed-column-ext text-right"
