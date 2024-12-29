@@ -65,7 +65,7 @@ const headers = ref([
         label: "DESCRIPCIÓN",
         key: "descripcion",
         sortable: true,
-        width: "200px",
+        width: "400px",
     },
     {
         label: "FECHAS",
@@ -222,7 +222,7 @@ onMounted(() => {
                     table-responsive
                     fix-cols
                     fixed-header
-                    table-height="80vh"
+                    table-height="70vh"
                 >
                     <template #proyecto_nombre="{ item }">
                         <p

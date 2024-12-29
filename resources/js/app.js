@@ -8,6 +8,7 @@ import "./assets/css/config.css";
 import "./assets/css/datatables.css";
 import "./assets/css/form.css";
 import "./assets/css/icheck-bootstrap.min.css";
+import "./assets/css/miTable.css"; // mi-table
 
 // mis scripts
 import "./assets/js/jquery.min.js";

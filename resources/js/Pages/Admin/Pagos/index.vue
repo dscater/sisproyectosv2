@@ -23,6 +23,7 @@ const headers = ref([
         label: "ID",
         key: "id",
         sortable: true,
+        width: "60px",
     },
     {
         label: "NOMBRE PROYECTO",
@@ -59,7 +60,7 @@ const headers = ref([
         keySortable: "pagos.created_at",
         sortable: true,
     },
-    { label: "ACCIÓN", key: "accion" },
+    { label: "ACCIÓN", key: "accion", width: 1 },
 ]);
 
 const search = ref("");
@@ -94,9 +95,7 @@ const eliminarPago = (item) => {
     }).then(async (result) => {
         /* Read more about isConfirmed, isDenied below */
         if (result.isConfirmed) {
-            let respuesta = await axiosDelete(
-                route("pagos.destroy", item.id)
-            );
+            let respuesta = await axiosDelete(route("pagos.destroy", item.id));
             if (respuesta && respuesta.sw) {
                 updateDatos();
             }
@@ -150,7 +149,7 @@ onMounted(() => {
                             <i class="fa fa-plus"></i> Nuevo Pago
                         </Link>
                     </div>
-                    <div class="col-md-4  my-1 d-flex pl-4">
+                    <div class="col-md-4 my-1 d-flex pl-4">
                         <div class="input-group" style="align-items: end">
                             <input
                                 v-model="multiSearch.search"

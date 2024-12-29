@@ -1,0 +1,312 @@
+.no-select {
+    user-select: none;
+    cursor: grabbing; /* Opcional, para mejorar la experiencia */
+}
+
+.mi-table {
+    position: relative;
+    width: 100%;
+}
+.mi-table .mi-content-header th {
+    padding: 0;
+}
+
+.mi-table.tablaFixeada .mi-content-header,
+.mi-table.tablaFixeada .content-table {
+    overflow: scroll; /* Permite desplazamiento, pero oculta los scrollbars */
+    scrollbar-width: none; /* Firefox */
+    position: relative;
+}
+
+.mi-table .content-table table,
+.mi-table .mi-content-header table {
+    width: 100%;
+    max-width: 100%;
+}
+
+.mi-table .content-table .mi-celda {
+    width: 100%; /* Asegura que el div ocupe todo el ancho de la celda */
+    height: 100%; /* Asegura que el div ocupe todo el alto de la celda */
+    display: block; /* Estilo básico del div */
+    white-space: normal; /* Permite que el texto haga saltos de línea */
+    word-wrap: break-word; /* Ajusta palabras largas al ancho del contenedor */
+    word-break: break-word; /* Rompe palabras largas */
+    overflow-wrap: break-word; /* Alternativa moderna */
+}
+
+.mi-table .content-table table thead.headInit tr th {
+    height: 0px;
+}
+
+.mi-table .content-table::-webkit-scrollbar {
+    display: none; /* Webkit */
+}
+
+.mi-table .content-table table {
+    margin: 0px;
+}
+
+.mi-table .content-table tbody {
+    position: relative;
+}
+
+.mi-table .content-table td,
+.mi-table .content-table th {
+    transition: left 0.1s ease-in, right 0.1s ease-out;
+}
+
+.mi-table .content-foot {
+    border-top: solid 1px rgb(216, 216, 216);
+}
+
+.mi-table table thead {
+    transition: all 0.3s;
+}
+
+.mi-table table thead tr th .iheader {
+    display: flex;
+    justify-content: space-between;
+    align-items: middle;
+    width: 100%;
+    min-height: 100%;
+    padding: 10px;
+}
+
+.mi-table.tablaFixeada thead tr th .iheader {
+    min-width: max-content;
+}
+
+.mi-table table thead tr th .iheader.sortable {
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.mi-table table thead tr th .iheader .label {
+    display: flex;
+    align-items: center;
+}
+
+.mi-table table thead tr th .iheader .accion {
+    display: block;
+    align-content: end;
+    color: rgba(0, 0, 0, 0.3);
+}
+.mi-table table thead tr th .iheader .accion.active {
+    color: black;
+}
+
+.mi-table .mi-content-header thead tr th .accion {
+    opacity: 50%;
+}
+
+.mi-table .mi-content-header thead tr th .accion.active {
+    opacity: 100%;
+}
+
+.mi-table .content-table {
+    position: relative;
+    overflow: hidden;
+}
+
+.mi-table .content-table .mi-loading-table {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mi-table .content-table .mi-loading-table::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(255, 255, 255);
+    filter: blur(5px);
+    z-index: -1; /* Envía el fondo detrás del contenido */
+}
+
+/* FIXEDS */
+.mi-table.tablaFixeada .content-table table {
+    height: 100%;
+}
+
+.mi-table .content-table table.tablaFixeada,
+.mi-table .mi-content-header table.tablaFixeada {
+    border-collapse: separate;
+    border-spacing: 0;
+    border: none;
+}
+
+.mi-table .mi-content-header table.tablaFixeada td,
+.mi-table .content-table table.tablaFixeada td,
+.mi-table .mi-content-header table.tablaFixeada th {
+    border: solid 1px rgb(233, 233, 233);
+}
+
+.mi-table .fixed-column,
+.mi-table .fixed-column-right {
+    position: sticky;
+    z-index: 1;
+    background-color: white;
+}
+
+.mi-table .fixed-header,
+.mi-table .footer-fixed {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background-color: white;
+}
+
+.mi-table .fixed-column-ext,
+.mi-table .footer-fixed,
+.mi-table .mi-table .fixed-column-ext-right,
+.mi-table .fixed-header.fixed-column,
+.mi-table .fixed-header.fixed-column-right,
+.mi-table th.fixed-column,
+.mi-table th.fixed-column-right {
+    z-index: 3;
+}
+
+.mi-table thead tr th,
+.mi-table th.fixed-header,
+.mi-table th.fixed-column,
+.mi-table th.fixed-column-right,
+.mi-table .footer-fixed {
+    background-color: rgb(240, 240, 240);
+    border-bottom: none;
+}
+
+.mi-table .footer-fixed {
+    z-index: 3;
+}
+
+.mi-table .mi-content-header table {
+    margin-bottom: 2px;
+}
+.mi-table .mi-content-header table tr {
+    -webkit-box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: 0px 2px 3px 0px rgba(0, 0, 0, 0.32);
+}
+
+.mi-table
+    .mi-content-header
+    table
+    tr
+    .fixed-column:nth-last-child(1 of .fixed-column),
+.mi-table
+    .content-table
+    table
+    tr
+    .fixed-column:nth-last-child(1 of .fixed-column) {
+    -webkit-box-shadow: 2px 0px 3px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: 2px 0px 3px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: 2px 0px 3px 0px rgba(0, 0, 0, 0.32);
+}
+.mi-table
+    .mi-content-header
+    table
+    tr
+    .fixed-header.fixed-column:nth-last-child(1 of .fixed-column),
+.mi-table
+    .content-table
+    table
+    tr
+    .fixed-header.fixed-column:nth-last-child(1 of .fixed-column) {
+    -webkit-box-shadow: 3px 2px 3px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: 3px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: 3px 1.3px 3px 0px rgba(0, 0, 0, 0.32);
+}
+
+.mi-table
+    .mi-content-header
+    table
+    tr
+    .fixed-column-right:nth-child(1 of .fixed-column-right),
+.mi-table
+    .content-table
+    table
+    tr
+    .fixed-column-right:nth-child(1 of .fixed-column-right) {
+    -webkit-box-shadow: -2px 0px 3px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: -2px 0px 3px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: -2px 0px 3px 0px rgba(0, 0, 0, 0.32);
+}
+
+.mi-table
+    .mi-content-header
+    table
+    tr
+    .fixed-header.fixed-column-right:nth-child(1 of .fixed-column-right),
+.mi-table
+    .content-table
+    table
+    tr
+    .fixed-header.fixed-column-right:nth-child(1 of .fixed-column-right) {
+    -webkit-box-shadow: -3px 2px 3px 0px rgba(0, 0, 0, 0.32);
+    -moz-box-shadow: -3px 2px 3px 0px rgba(0, 0, 0, 0.32);
+    box-shadow: -3px 2px 3px 0px rgba(0, 0, 0, 0.32);
+}
+
+.mi-table .content-table table tbody td.bg-cancelado {
+    background-color: rgb(159, 247, 166);
+}
+
+/* SCROLL */
+/* width */
+.mi-table .content-table::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+/* Track */
+.mi-table .content-table::-webkit-scrollbar-track {
+    background: #ebebeb;
+}
+
+/* Handle */
+.mi-table .content-table::-webkit-scrollbar-thumb {
+    background: #a8a8a8;
+    border-radius: 20px;
+}
+
+/* Handle on hover */
+.mi-table .content-table::-webkit-scrollbar-thumb:hover {
+    cursor: pointer;
+    background: #8b8b8b;
+}
+
+@media screen and (max-width: 790px) {
+    .mi-table table.table-resposive thead {
+        display: none;
+    }
+
+    .mi-table table.table-resposive tbody tr:nth-child(odd) {
+        background-color: rgb(233, 233, 233);
+    }
+
+    .mi-table table.table-resposive tbody tr td {
+        display: block;
+        font-size: 0.8rem;
+    }
+
+    .mi-table table.table-resposive tbody tr td::before {
+        content: attr(data-label) ": ";
+        width: 40%;
+        float: left;
+        text-align: right;
+        overflow-wrap: break-word;
+        font-weight: 700;
+        font-style: normal;
+        padding: 0 0.5rem 0 0;
+        margin: 0;
+    }
+}

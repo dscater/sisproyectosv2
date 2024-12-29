@@ -134,6 +134,9 @@ const totalPages = ref(0);
 const pLoading = ref(false);
 const eTbody = ref(null);
 const eContentTable = ref(null);
+const eContentHeader = ref(null);
+const tableHeaderGroup = ref(null);
+const tableContentGroup = ref(null);
 const intervalSearch = ref(null);
 const widthColumnsFix = ref([]);
 const apiRegistros = async () => {
@@ -232,7 +235,6 @@ watch(
         await nextTick();
         await esperarCargaElementos();
         actualizaAltoAnchoTablaColumnas();
-        pLoading.value = false;
     }
 );
 
@@ -240,17 +242,32 @@ watch(
 const actualizaAltoAnchoTablaColumnas = () => {
     setTimeout(() => {
         if (eContentTable.value) {
-            const altura = eContentTable.value.getBoundingClientRect().height;
-            eContentTable.value.style.height = `${altura}px`;
-            eContentTable.value.style.minHeight = `${altura}px`;
-        }
-
-        if (miTheadRef.value) {
-            initColsWidth();
+            if (props.fixCols) {
+                initColsWidthFixed();
+            } else {
+                initColsWidthNotFixed();
+            }
         }
         if (props.fixCols) {
             renderColumnsStyleFixed();
         }
+        if (eContentTable.value) {
+            let altura = 0;
+            let ancho = 0;
+            if (props.tableHeight) {
+                eContentTable.value.style.height = `${props.tableHeight}`;
+                eContentTable.value.style.minHeight = `${props.tableHeight}`;
+                altura = eContentTable.value.getBoundingClientRect().height;
+                ancho = eContentTable.value.getBoundingClientRect().width;
+            } else {
+                altura = miTableRef.value.getBoundingClientRect().height;
+                ancho = miTableRef.value.getBoundingClientRect().width;
+            }
+            eContentTable.value.style.height = `${altura}px`;
+            eContentTable.value.style.minHeight = `${altura}px`;
+        }
+        resetPositionScroll();
+        updateScrollbars();
     }, 200);
 };
 
@@ -274,13 +291,20 @@ const cargarDatos = async () => {
         // Actualiza los contadores de registros
         muestraCantidadRegistros();
     }
+
+    setTimeout(() => {
+        pLoading.value = false;
+    }, 100);
 };
 
-// generar anchos de celdas
-const initColsWidth = () => {
+// generar anchos de celdas con propiedad de columnas fixedas
+const initColsWidthFixed = () => {
     widthColumnsFix.value = [];
     miTableRef.value.style.tableLayout = "auto";
-    const cols = miTheadRef.value.querySelectorAll("th");
+    miTableHeaderRef.value.style.tableLayout = "auto";
+    const cols = miTableHeaderRef.value
+        .querySelector("thead tr")
+        .querySelectorAll("th");
     cols.forEach((elem, index) => {
         let contentWidth = 0;
         const data_width = elem.getAttribute("data-width");
@@ -288,15 +312,75 @@ const initColsWidth = () => {
             const regex = /px|%|vw/; // Busca px, %, o vw
             const unidad = data_width.match(regex); // Encuentra la unidad en el valor
             if (unidad == "px") {
-                contentWidth = data_width;
+                contentWidth = data_width.replace("px", "");
+            } else {
+                contentWidth = elem.getBoundingClientRect().width + 15;
+            }
+        } else {
+            contentWidth = elem.getBoundingClientRect().width + 15;
+        }
+        widthColumnsFix.value[index] = contentWidth;
+        const colsContentHeader =
+            tableHeaderGroup.value.querySelectorAll("col");
+        colsContentHeader[index].style.width = contentWidth + "px";
+        const colsContentBody = tableContentGroup.value.querySelectorAll("col");
+        colsContentBody[index].style.width = contentWidth + "px";
+    });
+
+    miTableRef.value.style.tableLayout = "fixed";
+    miTableHeaderRef.value.style.tableLayout = "fixed";
+};
+
+// generar anchos de celdas con columnas sin fixear
+const initColsWidthNotFixed = () => {
+    widthColumnsFix.value = [];
+    miTableRef.value.style.tableLayout = "auto";
+    miTableHeaderRef.value.style.tableLayout = "auto";
+    const cols = miTableHeaderRef.value
+        .querySelector("thead tr")
+        .querySelectorAll("th");
+    let acumulados_no_fixed = 0;
+    let contador_cols_data_width = 0;
+    cols.forEach((elem, index) => {
+        let contentWidth = 0;
+        const data_width = elem.getAttribute("data-width");
+        if (data_width) {
+            const regex = /px|%|vw/; // Busca px, %, o vw
+            const unidad = data_width.match(regex); // Encuentra la unidad en el valor
+            if (unidad == "px") {
+                contentWidth = data_width.replace("px", "");
             } else {
                 contentWidth = elem.getBoundingClientRect().width;
             }
-        } else {
-            contentWidth = elem.getBoundingClientRect().width;
+            acumulados_no_fixed += parseFloat(contentWidth);
+            widthColumnsFix.value[index] = contentWidth;
+            contador_cols_data_width++;
+            const colsContentHeader =
+                tableHeaderGroup.value.querySelectorAll("col");
+            colsContentHeader[index].style.width = contentWidth + "px";
+            const colsContentBody =
+                tableContentGroup.value.querySelectorAll("col");
+            colsContentBody[index].style.width = contentWidth + "px";
         }
-        widthColumnsFix.value[index] = contentWidth;
     });
+
+    const restanteWidth = eContentTable.value.offsetWidth - acumulados_no_fixed;
+    const restantes = cols.length - contador_cols_data_width;
+    const widthCols = Math.fround(restanteWidth / restantes) - 1;
+    cols.forEach((elem, index) => {
+        const data_width = elem.getAttribute("data-width");
+        if (!data_width) {
+            widthColumnsFix.value[index] = widthCols;
+            const colsContentHeader =
+                tableHeaderGroup.value.querySelectorAll("col");
+            colsContentHeader[index].style.width = widthCols + "px";
+            const colsContentBody =
+                tableContentGroup.value.querySelectorAll("col");
+            colsContentBody[index].style.width = widthCols + "px";
+        }
+    });
+    miTableRef.value.style.tableLayout = "fixed";
+    miTableHeaderRef.value.style.tableLayout = "fixed";
 };
 
 // obtener la distancia right o left del elemento stick
@@ -325,9 +409,10 @@ const getRightLetfStick = (indexCol, item, head = false, indexRow = -1) => {
         lefright = listFill.reduce((a, b) => {
             return a + b;
         }, 0);
-        pStyle["left"] = `${lefright}px`;
         if (item.fixed == "right") {
             pStyle["right"] = `${lefright}px`;
+        } else {
+            pStyle["left"] = `${lefright}px`;
         }
     }
 
@@ -340,7 +425,7 @@ const getRightLetfStick = (indexCol, item, head = false, indexRow = -1) => {
                 : `${item.width}%`
             : "";
         pStyle["width"] = `${width}`;
-        pStyle["max-width"] = `${width}!important`;
+        pStyle["max-width"] = `${width}`;
     }
 
     return pStyle;
@@ -486,15 +571,12 @@ function getRowClass(item) {
 
 const thtdRefs = ref({});
 const miTableRef = ref(null);
+const miTableHeaderRef = ref(null);
 const miTheadRef = ref(null);
 // Funcion para renderizar las columnas con position sticky|posicion fixeada
+// adjuntadas por un slot (thead,tfooter)
 const renderColumnsStyleFixed = () => {
     const table = miTableRef.value;
-    // Configurar estilos iniciales para la tabla
-    const cols = listCols.value;
-    const rows = listItems.value;
-    const thRefs = thtdRefs.value;
-
     // Estilo para columnas definidas por clase
     ["fixed-column-ext", "fixed-column-ext-right"].forEach((className, dir) => {
         let offset = 0;
@@ -531,6 +613,143 @@ const setLoading = (value) => {
 
 const slots = useSlots();
 
+/***********
+ * SCROLL
+ **********/
+const scrollX = ref(null);
+const scrollY = ref(null);
+
+// Variables para el drag
+const isDragging = ref(false);
+const dragAxis = ref(null);
+const startPos = ref(0);
+const startScroll = ref(0);
+const originalScrollYpx = ref(-1);
+
+// Actualizar el tamaño y la posición de los scrollbars
+const resetPositionScroll = () => {
+    originalScrollYpx.value = -1;
+    startPos.value = 0;
+    eContentTable.value.scrollLeft = 0;
+    eContentTable.value.scrollTop = 0;
+    scrollX.value.style.left = 0 + "px";
+    scrollY.value.style.top = 0 + "px";
+};
+const updateScrollbars = () => {
+    if (eContentTable.value.scrollWidth > eContentTable.value.offsetWidth) {
+        // El ancho de la barra de scroll visible en X
+        let anchoScrollX =
+            eContentTable.value.offsetWidth / eContentTable.value.scrollWidth;
+        anchoScrollX *= 100;
+        scrollX.value.style.width = anchoScrollX + "%";
+        scrollX.value.parentElement.style.display = "block";
+    } else {
+        scrollX.value.parentElement.style.display = "none";
+    }
+
+    if (eContentTable.value.scrollHeight > eContentTable.value.offsetHeight) {
+        // El ancho de la barra de scroll visible en Y
+        let altoScrollY =
+            eContentTable.value.offsetHeight / eContentTable.value.scrollHeight;
+        altoScrollY *= 100;
+        scrollY.value.style.height = altoScrollY + "%";
+        originalScrollYpx.value = scrollY.value.offsetHeight;
+        if (originalScrollYpx.value < 15) {
+            scrollY.value.style.height = "16px";
+        }
+        scrollY.value.parentElement.style.display = "block";
+    } else {
+        scrollY.value.parentElement.style.display = "none";
+    }
+    syncScrollBodyHeader();
+};
+
+const syncScrollBodyHeader = () => {
+    eContentTable.value.addEventListener("scroll", (e) => {
+        // Verifica si el contenedor tiene un scroll horizontal
+        if (e.target.scrollWidth > e.target.clientWidth) {
+            // Solo sincroniza el scroll si el contenedor tiene desplazamiento
+            eContentHeader.value.scrollLeft = e.target.scrollLeft;
+            let positionLeftScroll =
+                e.target.scrollLeft / eContentTable.value.scrollWidth;
+            scrollX.value.style.left =
+                positionLeftScroll * (eContentTable.value.offsetWidth - 5) +
+                "px";
+        } else {
+            eContentTable.value.removeEventListener(
+                "scroll",
+                syncScrollBodyHeader
+            );
+        }
+
+        // Verifica si el contenedor tiene un scroll vertical
+        if (e.target.scrollHeight > e.target.clientHeight) {
+            // Solo sincroniza el scroll si el contenedor tiene desplazamiento
+            eContentHeader.value.scrollTop = e.target.scrollTop;
+            let positionTopScroll =
+                e.target.scrollTop / eContentTable.value.scrollHeight;
+            scrollY.value.style.top =
+                positionTopScroll *
+                    (eContentTable.value.offsetHeight -
+                        (originalScrollYpx.value > -1 ? 16 : 5)) +
+                "px";
+        } else {
+            eContentTable.value.removeEventListener(
+                "scroll",
+                syncScrollBodyHeader
+            );
+        }
+    });
+};
+
+const startDrag = (axis, event) => {
+    isDragging.value = true;
+    dragAxis.value = axis;
+    startPos.value = axis === "x" ? event.pageX : event.pageY;
+    const container = eContentTable.value;
+    startScroll.value =
+        axis === "x" ? container.scrollLeft : container.scrollTop;
+
+    document.body.classList.add("no-select");
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", stopDrag);
+};
+
+const handleMouseMove = (event) => {
+    if (isDragging.value === true) {
+        dragAxis.value === "x";
+        const mouseDifferential =
+            (dragAxis.value === "x" ? event.pageX : event.pageY) -
+            startPos.value;
+        const container = eContentTable.value;
+
+        let scrollEquivalent = 0;
+
+        if (dragAxis.value === "x") {
+            scrollEquivalent =
+                mouseDifferential *
+                (container.scrollWidth / container.offsetWidth);
+            container.scrollLeft = startScroll.value + scrollEquivalent;
+        } else {
+            scrollEquivalent =
+                mouseDifferential *
+                (container.scrollHeight / container.offsetHeight);
+            container.scrollTop = startScroll.value + scrollEquivalent;
+        }
+    }
+};
+
+const stopDrag = () => {
+    // Habilitar la selección de texto nuevamente
+    document.body.classList.remove("no-select");
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", stopDrag);
+};
+
+/***********
+ * fin SCROLL
+ **********/
+
 onMounted(async () => {
     if (props.api) {
         cargarDatos();
@@ -543,26 +762,23 @@ defineExpose({
 });
 </script>
 <template>
-    <div class="mi-table" :class="[$attrs.class]">
-        <div
-            class="content-table"
-            :style="{
-                maxHeight: tableHeight ? tableHeight : '',
-                width: tableWidth ? tableWidth : '',
-            }"
-            :class="[pLoading ? 'mi-loading-table' : '']"
-            ref="eContentTable"
-        >
+    <div
+        class="mi-table"
+        :class="[$attrs.class, fixedHeader ? 'tablaFixeada' : '']"
+    >
+        <div class="mi-content-header" ref="eContentHeader">
             <table
-                class="table table-bordered mb-0"
+                class="table table-bordered"
                 :class="[
-                    tableClass,
                     tableResponsive ? 'table-resposive' : '',
                     fixedHeader ? 'tablaFixeada' : '',
                 ]"
-                ref="miTableRef"
+                ref="miTableHeaderRef"
             >
-                <thead :class="[headerClass]" ref="miTheadRef">
+                <colgroup ref="tableHeaderGroup">
+                    <col v-for="item in listCols" />
+                </colgroup>
+                <thead :class="[headerClass]">
                     <template v-if="$slots.tableHeader">
                         <slot name="tableHeader"></slot>
                     </template>
@@ -579,7 +795,6 @@ defineExpose({
                                         : '',
                                     fixedHeader ? 'fixed-header' : '',
                                 ]"
-                                :ref="(el) => (thtdRefs[`th-${index}`] = el)"
                                 :data-width="item.width ? item.width : ''"
                                 :style="getRightLetfStick(index, item, true)"
                             >
@@ -594,7 +809,9 @@ defineExpose({
                                         )
                                     "
                                 >
-                                    <div class="label">{{ item.label }}</div>
+                                    <div class="label">
+                                        {{ item.label }}
+                                    </div>
                                     <div
                                         class="accion"
                                         :class="{
@@ -627,77 +844,126 @@ defineExpose({
                                     </div>
                                 </div>
                                 <div class="iheader" v-else>
-                                    <div class="label">{{ item.label }}</div>
+                                    <div class="label">
+                                        {{ item.label }}
+                                    </div>
                                 </div>
                             </th>
                         </tr>
                     </template>
                 </thead>
-                <tbody
-                    :class="[bodyClass, pLoading ? 'mi-loading-table' : '']"
-                    ref="eTbody"
-                >
-                    <div class="mi-loading-table" v-show="pLoading">
-                        <div>
-                            <template v-if="$slots.loading">
-                                <slot name="loading"></slot>
-                            </template>
-                            <template v-else> {{ textCargando }} </template>
-                        </div>
-                    </div>
-                    <template v-if="listItems.length > 0">
-                        <tr
-                            v-for="(item, index_row) in listItems"
-                            :class="getRowClass(item)"
-                        >
-                            <td
-                                v-for="(i_col, index_col) in listCols"
-                                :data-label="i_col.label"
-                                :class="[
-                                    i_col.classTd ? i_col.classTd(item) : '',
-                                    i_col.fixed
-                                        ? i_col.fixed == 'right'
-                                            ? 'fixed-column-right'
-                                            : 'fixed-column'
-                                        : '',
-                                ]"
-                                :colspan="`${item.colspan ? item.colspan : 1}`"
-                                :style="getRightLetfStick(index_col, i_col)"
-                                :ref="
-                                    (el) =>
-                                        (thtdRefs[
-                                            `td-${index_row}-${index_col}`
-                                        ] = el)
-                                "
-                            >
-                                <template v-if="$slots[i_col.key]">
-                                    <slot
-                                        :name="i_col.key"
-                                        :item="item"
-                                        v-bind="$attrs"
-                                    ></slot>
-                                </template>
-                                <template v-else>
-                                    {{ getColumnValue(item, i_col.key) }}
-                                </template>
-                            </td>
-                        </tr>
-                    </template>
-                    <template v-else>
-                        <tr>
-                            <td :colspan="listCols.length" class="text-center">
-                                {{ textSinRegistros }}
-                            </td>
-                        </tr>
-                    </template>
-                </tbody>
-                <tfoot>
-                    <template v-if="$slots.tableFooter">
-                        <slot name="tableFooter"></slot>
-                    </template>
-                </tfoot>
             </table>
         </div>
+        <div class="mi-content-scroll">
+            <div
+                class="content-table"
+                :style="{
+                    maxHeight: tableHeight ? tableHeight : '',
+                    width: tableWidth ? tableWidth : '',
+                }"
+                ref="eContentTable"
+            >
+                <div class="mi-loading-table" v-show="pLoading">
+                    <div>
+                        <template v-if="$slots.loading">
+                            <slot name="loading"></slot>
+                        </template>
+                        <template v-else> {{ textCargando }} </template>
+                    </div>
+                </div>
+                <table
+                    class="table table-bordered mb-0"
+                    :class="[
+                        tableClass,
+                        tableResponsive ? 'table-resposive' : '',
+                        fixedHeader ? 'tablaFixeada' : '',
+                    ]"
+                    ref="miTableRef"
+                >
+                    <colgroup ref="tableContentGroup">
+                        <col v-for="item in listCols" />
+                    </colgroup>
+                    <tbody :class="[bodyClass]" ref="eTbody" v-show="!pLoading">
+                        <template v-if="listItems.length > 0">
+                            <tr
+                                v-for="(item, index_row) in listItems"
+                                :class="getRowClass(item)"
+                            >
+                                <td
+                                    v-for="(i_col, index_col) in listCols"
+                                    :data-label="i_col.label"
+                                    :class="[
+                                        i_col.classTd
+                                            ? i_col.classTd(item)
+                                            : '',
+                                        i_col.fixed
+                                            ? i_col.fixed == 'right'
+                                                ? 'fixed-column-right'
+                                                : 'fixed-column'
+                                            : '',
+                                    ]"
+                                    :colspan="`${
+                                        item.colspan ? item.colspan : 1
+                                    }`"
+                                    :style="getRightLetfStick(index_col, i_col)"
+                                    :ref="
+                                        (el) =>
+                                            (thtdRefs[
+                                                `td-${index_row}-${index_col}`
+                                            ] = el)
+                                    "
+                                >
+                                    <div class="mi-celda">
+                                        <template v-if="$slots[i_col.key]">
+                                            <slot
+                                                :name="i_col.key"
+                                                :item="item"
+                                                v-bind="$attrs"
+                                            ></slot>
+                                        </template>
+                                        <template v-else>
+                                            {{
+                                                getColumnValue(item, i_col.key)
+                                            }}
+                                        </template>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                        <template v-else>
+                            <tr>
+                                <td
+                                    :colspan="listCols.length"
+                                    class="text-center"
+                                >
+                                    {{ textSinRegistros }}
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                    <tfoot>
+                        <template v-if="$slots.tableFooter">
+                            <slot name="tableFooter"></slot>
+                        </template>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="content-scroll-x">
+                <div
+                    class="mi-custom-scroll-x"
+                    @mousedown="startDrag('x', $event)"
+                    ref="scrollX"
+                ></div>
+            </div>
+            <div class="content-scroll-y">
+                <div
+                    class="mi-custom-scroll-y"
+                    @mousedown="startDrag('y', $event)"
+                    ref="scrollY"
+                ></div>
+            </div>
+        </div>
+
         <div class="content-foot px-3 pt-2" v-if="conPaginacion">
             <div class="row mt-1">
                 <div class="my-1 col-md-3">
@@ -727,143 +993,51 @@ defineExpose({
     </div>
 </template>
 <style scoped>
-.mi-table {
-    width: 100%;
-}
-
-.mi-table .content-table {
-    overflow: auto;
-    position: relative;
-}
-.mi-table .content-table table {
-    margin: 0px;
-}
-
-.mi-table .content-table tbody {
+.mi-content-scroll {
     position: relative;
 }
 
-.mi-table .content-table td,
-.mi-table .content-table th {
-    transition: left 0.1s ease-in, right 0.1s ease-out;
-}
-
-.mi-table .content-foot {
-    border-top: solid 1px rgb(216, 216, 216);
-}
-
-.mi-table table thead {
-    transition: all 0.3s;
-}
-
-.mi-table table thead tr th .iheader {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    gap: 3px;
-}
-
-.mi-table table thead tr th .iheader.sortable {
-    cursor: pointer;
-}
-.mi-table table thead tr th .iheader .accion {
-    color: rgba(0, 0, 0, 0.3);
-}
-.mi-table table thead tr th .iheader .accion.active {
-    color: black;
-    display: block;
-}
-
-.mi-table .content-table.mi-loading-table {
-    overflow: hidden;
-}
-
-.mi-table .content-table .mi-loading-table {
+.content-scroll-x,
+.content-scroll-y {
+    opacity: 70%;
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 10;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.mi-table .content-table .mi-loading-table::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.8);
-    filter: blur(1px);
-    z-index: -1; /* Envía el fondo detrás del contenido */
-}
-
-/* FIXEDS */
-.mi-table .content-table table.tablaFixeada {
-    border-collapse: separate;
-    border-spacing: 0;
-    white-space: nowrap;
-    table-layout: fixed;
-}
-
-.mi-table .content-table table.tablaFixeada td,
-.mi-table .content-table table.tablaFixeada th {
-    border: solid 1px rgb(233, 233, 233);
-}
-
-.mi-table .fixed-header,
-.mi-table .footer-fixed {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    background-color: white;
-}
-
-.mi-table .fixed-column,
-.mi-table .fixed-column-right {
-    position: sticky;
-    z-index: 2;
-    background-color: white;
-}
-
-.mi-table .fixed-column-ext,
-.mi-table .footer-fixed,
-.mi-table .mi .mi-table .fixed-column-ext-right,
-.mi-table .fixed-header.fixed-column,
-.mi-table .fixed-header.fixed-column-right,
-.mi-table th.fixed-column,
-.mi-table th.fixed-column-right {
+    background-color: transparent;
     z-index: 3;
 }
+.mi-table .mi-content-scroll:hover .content-scroll-x,
+.mi-table .mi-content-scroll:hover .content-scroll-y {
+    opacity: 100%;
+}
+.content-scroll-x {
+    height: 10px;
+    width: 100%;
+    bottom: 0px;
+}
+.content-scroll-y {
+    height: 100%;
+    width: 10px;
+    top: 0;
+    right: 0;
+}
 
-@media screen and (max-width: 790px) {
-    .mi-table table.table-resposive thead {
-        display: none;
-    }
+.mi-custom-scroll-y,
+.mi-custom-scroll-x {
+    position: absolute;
+    background: #cacaca;
+    cursor: pointer;
+    border-radius: 10px;
+}
 
-    .mi-table table.table-resposive tbody tr:nth-child(odd) {
-        background-color: rgb(233, 233, 233);
-    }
+.mi-custom-scroll-y {
+    margin-left: 2px;
+    width: 8px;
+    top: 0;
+    right: 0px;
+}
 
-    .mi-table table.table-resposive tbody tr td {
-        display: block;
-        font-size: 0.8rem;
-    }
-
-    .mi-table table.table-resposive tbody tr td::before {
-        content: attr(data-label) ": ";
-        width: 40%;
-        float: left;
-        text-align: right;
-        overflow-wrap: break-word;
-        font-weight: 700;
-        font-style: normal;
-        padding: 0 0.5rem 0 0;
-        margin: 0;
-    }
+.mi-custom-scroll-x {
+    margin-top: 2px;
+    height: 8px;
+    left: 0px;
 }
 </style>
