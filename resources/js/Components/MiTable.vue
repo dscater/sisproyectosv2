@@ -133,6 +133,7 @@ const cARegistros = ref(per_page.value);
 const totalPages = ref(0);
 const pLoading = ref(false);
 const eTbody = ref(null);
+const contentScroll = ref(null);
 const eContentTable = ref(null);
 const eContentHeader = ref(null);
 const tableHeaderGroup = ref(null);
@@ -231,52 +232,114 @@ watch(
 
 watch(
     () => listItems.value,
-    async () => {
-        if (listItems.value.length > 0) await renderMiTable();
+    async (newVal) => {
+        if (newVal.length > 0) {
+            // console.log("render");
+            await renderMiTable();
+        }
+        await determinarAltoContenedor();
     }
 );
 
 // FUNCION QUE CONTIENE LAS FUNCIONES PARA RENDERIZAR LA TABLA
 const renderMiTable = async () => {
-    await nextTick();
-    await esperarCargaElementos();
-    actualizaAltoAnchoTablaColumnas();
+    return new Promise(async (resolve, reject) => {
+        try {
+            await nextTick();
+            await esperarCargaElementos();
+            if (miTableRef.value) miTableRef.value.style.tableLayout = "auto";
+            if (miTableHeaderRef.value)
+                miTableHeaderRef.value.style.tableLayout = "auto";
+
+            if (props.fixCols) {
+                await initColsWidthFixed();
+            } else {
+                await initColsWidthNotFixed();
+            }
+            setTimeout(async () => {
+                await renderColumnsStyleFixed();
+            }, 300);
+
+            if (miTableRef.value) miTableRef.value.style.tableLayout = "fixed";
+            if (miTableHeaderRef.value)
+                miTableHeaderRef.value.style.tableLayout = "fixed";
+
+            resolve();
+        } catch (error) {
+            reject(error);
+        } finally {
+            pLoading.value = false;
+        }
+    });
 };
 
 // funcion para otener los datos de renderizado, alto tabla y ancho columnas
-const actualizaAltoAnchoTablaColumnas = () => {
-    if (listItems.value.length == 0) return;
-    if (eContentTable.value) {
-        if (props.fixCols) {
-            initColsWidthFixed();
-        } else {
-            initColsWidthNotFixed();
+const determinarAltoContenedor = async () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            removerEventosScroll();
+            if (eContentTable.value && miTableRef.value) {
+                let altura = 0;
+                let ancho = 0;
+                setTimeout(() => {
+                    if (props.tableHeight) {
+                        eContentTable.value.style.height = `${props.tableHeight}`;
+                        eContentTable.value.style.minHeight = `${props.tableHeight}`;
+                        altura =
+                            eContentTable.value.getBoundingClientRect().height;
+                        ancho =
+                            eContentTable.value.getBoundingClientRect().width;
+                    } else {
+                        if (
+                            miTableRef.value.scrollHeight >
+                            miTableRef.value.offsetHeight
+                        ) {
+                            altura = miTableRef.value.scrollHeight;
+                        } else {
+                            altura =
+                                miTableRef.value.getBoundingClientRect().height;
+                        }
+                        ancho = miTableRef.value.getBoundingClientRect().width;
+                    }
+                    eContentTable.value.style.height = `${altura}px`;
+                    eContentTable.value.style.minHeight = `${altura}px`;
+
+                    resetPositionScroll();
+                    updateScrollbars();
+                }, 300);
+            }
+
+            // resetPositionScroll();
+            // updateScrollbars();
+            resolve();
+        } catch (error) {
+            reject(error);
         }
-    }
-    if (props.fixCols) {
-        renderColumnsStyleFixed();
-    }
-    if (eContentTable.value) {
-        let altura = 0;
-        let ancho = 0;
-        if (props.tableHeight) {
-            eContentTable.value.style.height = `${props.tableHeight}`;
-            eContentTable.value.style.minHeight = `${props.tableHeight}`;
-            altura = eContentTable.value.getBoundingClientRect().height;
-            ancho = eContentTable.value.getBoundingClientRect().width;
-        } else {
-            altura = miTableRef.value.getBoundingClientRect().height;
-            ancho = miTableRef.value.getBoundingClientRect().width;
+    });
+};
+
+// funcion para ajustar el ancho final de columnas en la tabla
+const ajustaAnchoContentYHeader = () => {
+    return new Promise((resolve, reject) => {
+        try {
+            if (eContentTable.value) {
+                setTimeout(() => {
+                    if (contentScroll.value) {
+                        const width = contentScroll.value.offsetWidth;
+                        eContentTable.value.style.width = `${width}px`;
+                        eContentTable.value.style.maxWidth = `${width}px`;
+                        eContentHeader.value.style.width = `${width}px`;
+                        eContentHeader.value.style.maxWidth = `${width}px`;
+                    }
+                    resolve(); // Marca la promesa como resuelta
+                }, 300);
+            } else {
+                resolve(); // Si no hay tabla, igual resolvemos
+            }
+        } catch (error) {
+            reject(error); // En caso de error, rechaza la promesa
         }
-        eContentTable.value.style.height = `${altura}px`;
-        eContentTable.value.style.minHeight = `${altura}px`;
-        eContentTable.value.style.width = `${eContentTable.value.offsetWidth}px`;
-        eContentTable.value.style.maxWidth = `${eContentTable.value.offsetWidth}px`;
-        eContentHeader.value.style.width = `${eContentTable.value.offsetWidth}px`;
-        eContentHeader.value.style.maxWidth = `${eContentTable.value.offsetWidth}px`;
-    }
-    resetPositionScroll();
-    updateScrollbars();
+    });
 };
 
 // funcion para determinar si se cargaron todos los elementos
@@ -287,6 +350,7 @@ const esperarCargaElementos = () => {
 // funcion general para generar los datos que se muestran en la tabla
 // ya sea via URL o el Listado pasado en propiedades
 const cargarDatos = async () => {
+    listItems.value = [];
     pLoading.value = true;
     if (props.api) {
         const resp = await apiRegistros();
@@ -299,104 +363,124 @@ const cargarDatos = async () => {
         // Actualiza los contadores de registros
         muestraCantidadRegistros();
     }
-
-    pLoading.value = false;
 };
 
 // generar anchos de celdas con propiedad de columnas fixedas
-const initColsWidthFixed = () => {
-    widthColumnsFix.value = [];
-    miTableRef.value.style.tableLayout = "auto";
-    miTableHeaderRef.value.style.tableLayout = "auto";
-    const cols = miTableHeaderRef.value
-        .querySelector("thead tr")
-        .querySelectorAll("th");
-    cols.forEach((elem, index) => {
-        let contentWidth = 0;
-        const data_width = elem.getAttribute("data-width");
-        if (data_width) {
-            const regex = /px/; // Busca px, %, o vw
-            const unidad = data_width.match(regex); // Encuentra la unidad en el valor
-            contentWidth = data_width;
-            if (unidad == "px") {
-                contentWidth = data_width.replace("px", "");
-            } else {
-                contentWidth = getAnchoPorcentajeAPx(
-                    eContentTable.value.getBoundingClientRect().width,
-                    contentWidth
-                );
+const initColsWidthFixed = async () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            widthColumnsFix.value = [];
+            let cols = [];
+            if (miTableHeaderRef.value) {
+                cols = miTableHeaderRef.value
+                    .querySelector("thead tr")
+                    .querySelectorAll("th");
             }
-        } else {
-            contentWidth = elem.getBoundingClientRect().width + 15;
-        }
-        widthColumnsFix.value[index] = contentWidth;
-        const colsContentHeader =
-            tableHeaderGroup.value.querySelectorAll("col");
-        colsContentHeader[index].style.width = contentWidth + "px";
-        const colsContentBody = tableContentGroup.value.querySelectorAll("col");
-        colsContentBody[index].style.width = contentWidth + "px";
-    });
+            await ajustaAnchoContentYHeader();
 
-    miTableRef.value.style.tableLayout = "fixed";
-    miTableHeaderRef.value.style.tableLayout = "fixed";
+            cols.forEach((elem, index) => {
+                let contentWidth = 0;
+                const data_width = elem.getAttribute("data-width");
+                if (data_width) {
+                    const regex = /px/; // Busca px, %, o vw
+                    const unidad = data_width.match(regex); // Encuentra la unidad en el valor
+                    contentWidth = data_width;
+                    if (unidad == "px") {
+                        contentWidth = data_width.replace("px", "");
+                    } else {
+                        contentWidth = getAnchoPorcentajeAPx(
+                            eContentTable.value.getBoundingClientRect().width,
+                            contentWidth
+                        );
+                    }
+                } else {
+                    contentWidth = elem.getBoundingClientRect().width + 15;
+                }
+                widthColumnsFix.value[index] = contentWidth;
+                const colsContentHeader =
+                    tableHeaderGroup.value.querySelectorAll("col");
+                colsContentHeader[index].style.width = contentWidth + "px";
+                const colsContentBody =
+                    tableContentGroup.value.querySelectorAll("col");
+                colsContentBody[index].style.width = contentWidth + "px";
+            });
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
 };
 
 // generar anchos de celdas con columnas sin fixear
-const initColsWidthNotFixed = () => {
-    widthColumnsFix.value = [];
-    miTableRef.value.style.tableLayout = "auto";
-    miTableHeaderRef.value.style.tableLayout = "auto";
-    const cols = miTableHeaderRef.value
-        .querySelector("thead tr")
-        .querySelectorAll("th");
-    let acumulados_no_fixed = 0;
-    let contador_cols_data_width = 0;
-    cols.forEach((elem, index) => {
-        let contentWidth = 0;
-        const data_width = elem.getAttribute("data-width");
-        if (data_width) {
-            const regex = /px/; // Busca px, %, o vw
-            const unidad = data_width.match(regex); // Encuentra la unidad en el valor
-
-            contentWidth = data_width;
-            if (unidad == "px") {
-                contentWidth = data_width.replace("px", "");
-            } else {
-                contentWidth = getAnchoPorcentajeAPx(
-                    eContentTable.value.getBoundingClientRect().width,
-                    contentWidth
-                );
+const initColsWidthNotFixed = async () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            widthColumnsFix.value = [];
+            if (miTableRef.value) miTableRef.value.style.tableLayout = "auto";
+            let cols = [];
+            if (miTableHeaderRef.value) {
+                cols = miTableHeaderRef.value
+                    .querySelector("thead tr")
+                    .querySelectorAll("th");
+                miTableHeaderRef.value.style.tableLayout = "auto";
             }
-            acumulados_no_fixed += parseFloat(contentWidth);
-            widthColumnsFix.value[index] = contentWidth;
-            contador_cols_data_width++;
-            const colsContentHeader =
-                tableHeaderGroup.value.querySelectorAll("col");
-            colsContentHeader[index].style.width = contentWidth + "px";
-            const colsContentBody =
-                tableContentGroup.value.querySelectorAll("col");
-            colsContentBody[index].style.width = contentWidth + "px";
-        }
-    });
+            await ajustaAnchoContentYHeader();
+            let acumulados_no_fixed = 0;
+            let contador_cols_data_width = 0;
+            cols.forEach((elem, index) => {
+                let contentWidth = 0;
+                const data_width = elem.getAttribute("data-width");
+                if (data_width) {
+                    const regex = /px/; // Busca px, %, o vw
+                    const unidad = data_width.match(regex); // Encuentra la unidad en el valor
 
-    const restanteWidth =
-        eContentTable.value.getBoundingClientRect().width - acumulados_no_fixed;
-    const restantes = cols.length - contador_cols_data_width;
-    const widthCols = Math.fround(restanteWidth / restantes) - 1;
-    cols.forEach((elem, index) => {
-        const data_width = elem.getAttribute("data-width");
-        if (!data_width) {
-            widthColumnsFix.value[index] = widthCols;
-            const colsContentHeader =
-                tableHeaderGroup.value.querySelectorAll("col");
-            colsContentHeader[index].style.width = widthCols + "px";
-            const colsContentBody =
-                tableContentGroup.value.querySelectorAll("col");
-            colsContentBody[index].style.width = widthCols + "px";
+                    contentWidth = data_width;
+                    if (unidad == "px") {
+                        contentWidth = data_width.replace("px", "");
+                    } else if (eContentTable.value) {
+                        contentWidth = getAnchoPorcentajeAPx(
+                            eContentTable.value.getBoundingClientRect().width,
+                            contentWidth
+                        );
+                    }
+                    acumulados_no_fixed += parseFloat(contentWidth);
+                    widthColumnsFix.value[index] = contentWidth;
+                    contador_cols_data_width++;
+                    const colsContentHeader =
+                        tableHeaderGroup.value.querySelectorAll("col");
+                    colsContentHeader[index].style.width = contentWidth + "px";
+                    const colsContentBody =
+                        tableContentGroup.value.querySelectorAll("col");
+                    colsContentBody[index].style.width = contentWidth + "px";
+                }
+            });
+
+            let restanteWidth = 0;
+            if (eContentTable.value) {
+                restanteWidth =
+                    eContentTable.value.getBoundingClientRect().width -
+                    acumulados_no_fixed;
+            }
+
+            const restantes = cols.length - contador_cols_data_width;
+            const widthCols = Math.fround(restanteWidth / restantes) - 1;
+            cols.forEach((elem, index) => {
+                const data_width = elem.getAttribute("data-width");
+                if (!data_width) {
+                    widthColumnsFix.value[index] = widthCols;
+                    const colsContentHeader =
+                        tableHeaderGroup.value.querySelectorAll("col");
+                    colsContentHeader[index].style.width = widthCols + "px";
+                    const colsContentBody =
+                        tableContentGroup.value.querySelectorAll("col");
+                    colsContentBody[index].style.width = widthCols + "px";
+                }
+            });
+            resolve();
+        } catch (error) {
+            reject(error);
         }
     });
-    miTableRef.value.style.tableLayout = "fixed";
-    miTableHeaderRef.value.style.tableLayout = "fixed";
 };
 
 // obtener el ancho de celda de un porcentaje en pixeles
@@ -494,82 +578,89 @@ const changeOrderBy = async (orderCol) => {
 // detectar cambio de pagina
 const cambioDePagina = async (value) => {
     currentPage.value = value;
-    if (props.api) {
-        await cargarDatos();
-    } else {
-        listItems.value = await generarDatosPorLista();
-        // Actualiza los contadores de registros
-        muestraCantidadRegistros();
-    }
+    cargarDatos();
 };
 
 // generar el listado de datos sin uso de una api
 const generarDatosPorLista = async () => {
-    pLoading.value = true;
-    const page = parseInt(currentPage.value);
-    const pageSize = parseInt(per_page.value);
-    const vOrderBy = orderBy.value;
-    const vOrderAsc = orderAsc.value;
+    return new Promise(async (resolve, reject) => {
+        try {
+            pLoading.value = true;
+            const page = parseInt(currentPage.value);
+            const pageSize = parseInt(per_page.value);
+            const vOrderBy = orderBy.value;
+            const vOrderAsc = orderAsc.value;
 
-    // Filtra el array por el valor de búsqueda en cualquier columna
-    let filteredArray = await listData.value.filter((item) => {
-        return Object.values(item).some((value) =>
-            value.toString().toLowerCase().includes(tSearch.value.toLowerCase())
-        );
+            // Filtra el array por el valor de búsqueda en cualquier columna
+            let filteredArray = await listData.value.filter((item) => {
+                return Object.values(item).some((value) =>
+                    value
+                        .toString()
+                        .toLowerCase()
+                        .includes(tSearch.value.toLowerCase())
+                );
+            });
+
+            total.value = filteredArray.length;
+            totalPages.value = Math.ceil(total.value / per_page.value);
+
+            // Aplica el ordenamiento según orderBy y orderAsc
+            if (vOrderAsc) {
+                filteredArray = filteredArray.sort((a, b) => {
+                    // Obtener la configuración de la columna por su key
+                    let columnConfig = listCols.value.find(
+                        (col) => col.key === vOrderBy
+                    );
+                    if (!columnConfig) {
+                        return 0;
+                    }
+
+                    // Obtener valores a comparar
+                    let valA = getColumnValue(a, vOrderBy);
+                    let valB = getColumnValue(b, vOrderBy);
+
+                    // Si el tipo es Number, convertir los valores
+                    if (columnConfig.type === Number) {
+                        valA = parseFloat(valA) || 0; // Asegurar que sea un número
+                        valB = parseFloat(valB) || 0;
+                    } else if (
+                        typeof valA === "string" &&
+                        typeof valB === "string"
+                    ) {
+                        // Si son cadenas, convertir a minúsculas
+                        valA = valA.toLowerCase();
+                        valB = valB.toLowerCase();
+                    }
+
+                    // Comparar valores
+                    if (valA < valB) {
+                        return vOrderAsc === "asc" ? -1 : 1;
+                    }
+                    if (valA > valB) {
+                        return vOrderAsc === "asc" ? 1 : -1;
+                    }
+                    return 0;
+                });
+            }
+
+            // Calcula el índice de inicio para la paginación
+            const startIndex = (page - 1) * pageSize;
+
+            // Realiza la paginación
+            let listaFiltrada = filteredArray;
+            if (props.conPaginacion) {
+                listaFiltrada = filteredArray.slice(
+                    startIndex,
+                    startIndex + pageSize
+                );
+            }
+
+            // Devuelve la sección del array filtrado, ordenado y paginado
+            resolve(listaFiltrada);
+        } catch (error) {
+            reject(error);
+        }
     });
-
-    total.value = filteredArray.length;
-    totalPages.value = Math.ceil(total.value / per_page.value);
-
-    // Aplica el ordenamiento según orderBy y orderAsc
-    if (vOrderAsc) {
-        filteredArray = filteredArray.sort((a, b) => {
-            // Obtener la configuración de la columna por su key
-            const columnConfig = listCols.value.find(
-                (col) => col.key === vOrderBy
-            );
-
-            if (!columnConfig) {
-                // Si no se encuentra la configuración, no ordenar
-                return 0;
-            }
-
-            // Obtener valores a comparar
-            let valA = a[vOrderBy];
-            let valB = b[vOrderBy];
-
-            // Si el tipo es Number, convertir los valores
-            if (columnConfig.type === Number) {
-                valA = parseFloat(valA) || 0; // Asegurar que sea un número
-                valB = parseFloat(valB) || 0;
-            } else if (typeof valA === "string" && typeof valB === "string") {
-                // Si son cadenas, convertir a minúsculas
-                valA = valA.toLowerCase();
-                valB = valB.toLowerCase();
-            }
-
-            // Comparar valores
-            if (valA < valB) {
-                return vOrderAsc === "asc" ? -1 : 1;
-            }
-            if (valA > valB) {
-                return vOrderAsc === "asc" ? 1 : -1;
-            }
-            return 0;
-        });
-    }
-
-    // Calcula el índice de inicio para la paginación
-    const startIndex = (page - 1) * pageSize;
-
-    // Realiza la paginación
-    let listaFiltrada = filteredArray;
-    if (props.conPaginacion) {
-        listaFiltrada = filteredArray.slice(startIndex, startIndex + pageSize);
-    }
-
-    // Devuelve la sección del array filtrado, ordenado y paginado
-    return listaFiltrada;
 };
 
 const muestraCantidadRegistros = () => {
@@ -603,35 +694,55 @@ const miTheadRef = ref(null);
 // Funcion para renderizar las columnas con position sticky|posicion fixeada
 // adjuntadas por un slot (thead,tfooter)
 const renderColumnsStyleFixed = () => {
-    const table = miTableRef.value;
-    // Estilo para columnas definidas por clase
-    ["fixed-column-ext", "fixed-column-ext-right"].forEach((className, dir) => {
-        let offset = 0;
-        const elements = table.querySelectorAll(`.${className}`);
-        const iter = dir === 0 ? elements : [...elements].reverse();
+    return new Promise((resolve, reject) => {
+        try {
+            if (miTableRef.value) {
+                const table = miTableRef.value;
+                // Estilo para columnas definidas por clase
+                ["fixed-column-ext", "fixed-column-ext-right"].forEach(
+                    (className, dir) => {
+                        let offset = 0;
+                        const elements = table.querySelectorAll(
+                            `.${className}`
+                        );
+                        const iter =
+                            dir === 0 ? elements : [...elements].reverse();
 
-        iter.forEach((el) => {
-            if (el) {
-                el.style.position = "sticky";
-                el.style[dir === 0 ? "left" : "right"] = `${offset}px`;
-                if (el.classList.contains("footer-fixed")) {
-                    el.style.bottom = 0;
-                }
-                if (el.classList.contains("header-fixed")) {
-                    el.style.top = 0;
-                }
+                        iter.forEach((el) => {
+                            if (el) {
+                                el.style.position = "sticky";
+                                el.style[
+                                    dir === 0 ? "left" : "right"
+                                ] = `${offset}px`;
+                                if (el.classList.contains("footer-fixed")) {
+                                    el.style.bottom = 0;
+                                }
+                                if (el.classList.contains("header-fixed")) {
+                                    el.style.top = 0;
+                                }
 
-                if (el.classList.contains("fixed-width")) {
-                    // el.style.width = el.getBoundingClientRect().width;
-                }
-                offset += el.offsetWidth;
+                                // el.style.width =
+                                //     el.getBoundingClientRect().width;
+                                offset += el.offsetWidth;
+                            }
+                        });
+                    }
+                );
+                resolve();
             }
-        });
+        } catch (error) {
+            reject(error);
+        }
     });
 };
 
 function getClassActiveSort(item) {
-    return orderBy.value == (item.keySortable ? item.keySortable : item.key);
+    if (props.api) {
+        return (
+            orderBy.value == (item.keySortable ? item.keySortable : item.key)
+        );
+    }
+    return orderBy.value == item.key;
 }
 
 const setLoading = (value) => {
@@ -657,38 +768,50 @@ const originalScrollYpx = ref(-1);
 const resetPositionScroll = () => {
     originalScrollYpx.value = -1;
     startPos.value = 0;
-    eContentTable.value.scrollLeft = 0;
-    eContentTable.value.scrollTop = 0;
-    scrollX.value.style.left = 0 + "px";
-    scrollY.value.style.top = 0 + "px";
+    if (eContentTable.value) {
+        eContentTable.value.scrollLeft = 0;
+        eContentTable.value.scrollTop = 0;
+    }
+    if (scrollX.value) {
+        scrollX.value.style.left = 0 + "px";
+    }
+    if (scrollY.value) {
+        scrollY.value.style.top = 0 + "px";
+    }
 };
 const updateScrollbars = () => {
-    if (eContentTable.value.scrollWidth > eContentTable.value.offsetWidth) {
-        // El ancho de la barra de scroll visible en X
-        let anchoScrollX =
-            eContentTable.value.offsetWidth / eContentTable.value.scrollWidth;
-        anchoScrollX *= 100;
-        scrollX.value.style.width = anchoScrollX + "%";
-        scrollX.value.parentElement.style.display = "block";
-    } else {
-        scrollX.value.parentElement.style.display = "none";
-    }
-
-    if (eContentTable.value.scrollHeight > eContentTable.value.offsetHeight) {
-        // El ancho de la barra de scroll visible en Y
-        let altoScrollY =
-            eContentTable.value.offsetHeight / eContentTable.value.scrollHeight;
-        altoScrollY *= 100;
-        scrollY.value.style.height = altoScrollY + "%";
-        originalScrollYpx.value = scrollY.value.offsetHeight;
-        if (originalScrollYpx.value < 15 && originalScrollYpx.value > 0) {
-            scrollY.value.style.height = "16px";
+    if (eContentTable.value) {
+        if (eContentTable.value.scrollWidth > eContentTable.value.offsetWidth) {
+            // El ancho de la barra de scroll visible en X
+            let anchoScrollX =
+                eContentTable.value.offsetWidth /
+                eContentTable.value.scrollWidth;
+            anchoScrollX *= 100;
+            scrollX.value.style.width = anchoScrollX + "%";
+            scrollX.value.parentElement.style.display = "block";
+        } else {
+            scrollX.value.parentElement.style.display = "none";
         }
-        scrollY.value.parentElement.style.display = "block";
-    } else {
-        scrollY.value.parentElement.style.display = "none";
+
+        if (
+            eContentTable.value.scrollHeight > eContentTable.value.offsetHeight
+        ) {
+            // El ancho de la barra de scroll visible en Y
+            let altoScrollY =
+                eContentTable.value.offsetHeight /
+                eContentTable.value.scrollHeight;
+            altoScrollY *= 100;
+            scrollY.value.style.height = altoScrollY + "%";
+            originalScrollYpx.value = scrollY.value.offsetHeight;
+            if (originalScrollYpx.value < 15 && originalScrollYpx.value > 0) {
+                scrollY.value.style.height = "16px";
+            }
+            scrollY.value.parentElement.style.display = "block";
+        } else {
+            scrollY.value.parentElement.style.display = "none";
+        }
+        syncScrollBodyHeader();
     }
-    syncScrollBodyHeader();
 };
 
 const syncScrollBodyHeader = () => {
@@ -769,6 +892,10 @@ const handleMouseMove = (event) => {
 const stopDrag = () => {
     // Habilitar la selección de texto nuevamente
     document.body.classList.remove("no-select");
+    removerEventosScroll();
+};
+
+const removerEventosScroll = () => {
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", stopDrag);
 };
@@ -778,12 +905,41 @@ const stopDrag = () => {
  **********/
 
 const cambioTamanioPantalla = async (e) => {
-    // console.log(window.innerWidth);
-    await renderMiTable();
+    // await renderMiTable();
 };
 
+const observerContentScroll = ref(null);
+const anchoAnteriorScroll = ref(0);
+const intervalRender = ref(null);
 onMounted(async () => {
     window.addEventListener("resize", cambioTamanioPantalla);
+    // Iniciar observer contentScroll
+    observerContentScroll.value = new ResizeObserver(async (entries) => {
+        // console.log(entries.length);
+        clearInterval(intervalRender.value);
+        if (entries.length > 0) {
+            if (anchoAnteriorScroll.value == 0) {
+                anchoAnteriorScroll.value =
+                    entries[entries.length - 1].contentRect.width;
+            }
+            if (contentScroll.value) {
+                if (
+                    anchoAnteriorScroll.value != contentScroll.value.offsetWidth
+                ) {
+                    intervalRender.value = setTimeout(async () => {
+                        anchoAnteriorScroll.value =
+                            contentScroll.value.offsetWidth;
+                        await renderMiTable();
+                        await determinarAltoContenedor();
+                        console.log("resize");
+                    }, 300);
+                }
+            }
+        }
+    });
+    if (contentScroll.value) {
+        observerContentScroll.value.observe(contentScroll.value);
+    }
     if (props.api) {
         cargarDatos();
     }
@@ -791,6 +947,12 @@ onMounted(async () => {
 
 onUnmounted(() => {
     window.removeEventListener("resize", cambioTamanioPantalla);
+    // Limpiar observer
+    if (observerContentScroll.value && contentScroll.value) {
+        observerContentScroll.value.unobserve(contentScroll.value);
+    }
+    observerContentScroll.value = null;
+    // console.log("finalizado");
 });
 
 defineExpose({
@@ -840,8 +1002,10 @@ defineExpose({
                                     v-if="item.sortable"
                                     @click="
                                         changeOrderBy(
-                                            item.keySortable
+                                            api
                                                 ? item.keySortable
+                                                    ? item.keySortable
+                                                    : item.key
                                                 : item.key
                                         )
                                     "
@@ -861,20 +1025,26 @@ defineExpose({
                                                 'fa-sort-amount-up-alt':
                                                     orderAsc == 'asc' &&
                                                     orderBy ==
-                                                        (item.keySortable
+                                                        (api
                                                             ? item.keySortable
+                                                                ? item.keySortable
+                                                                : item.key
                                                             : item.key),
                                                 'fa-sort-amount-down':
                                                     orderAsc == 'desc' &&
                                                     orderBy ==
-                                                        (item.keySortable
+                                                        (api
                                                             ? item.keySortable
+                                                                ? item.keySortable
+                                                                : item.key
                                                             : item.key),
                                                 'fa-sort':
                                                     !orderAsc ||
                                                     orderBy !=
-                                                        (item.keySortable
+                                                        (api
                                                             ? item.keySortable
+                                                                ? item.keySortable
+                                                                : item.key
                                                             : item.key),
                                             }"
                                         ></i>
@@ -891,7 +1061,7 @@ defineExpose({
                 </thead>
             </table>
         </div>
-        <div class="mi-content-scroll">
+        <div class="mi-content-scroll" ref="contentScroll">
             <div
                 class="content-table"
                 :style="{
@@ -920,7 +1090,10 @@ defineExpose({
                     <colgroup ref="tableContentGroup">
                         <col v-for="item in listCols" />
                     </colgroup>
-                    <tbody :class="[bodyClass]" ref="eTbody" v-show="!pLoading">
+                    <tbody
+                        :class="[bodyClass, pLoading ? 'loading_active' : '']"
+                        ref="eTbody"
+                    >
                         <template v-if="listItems.length > 0">
                             <tr
                                 v-for="(item, index_row) in listItems"

@@ -27,7 +27,7 @@ const headers = ref([
     },
     {
         label: "NOMBRE PROYECTO",
-        key: "proyecto_nombre",
+        key: "proyecto.nombre",
         keySortable: "proyectos.nombre",
         sortable: true,
         fixed: true,
@@ -230,7 +230,7 @@ onMounted(() => {
                     fix-cols
                     fixed-header
                 >
-                    <template #proyecto_nombre="{ item }">
+                    <template #['proyecto.nombre']="{ item }">
                         <div style="word-wrap: break-word; white-space: wrap">
                             {{ item.proyecto.nombre }}
                         </div>

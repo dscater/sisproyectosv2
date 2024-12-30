@@ -69,6 +69,7 @@ const headers = ref([
         key: "trabajo.descripcion",
         keySortable: "trabajos.descripcion",
         sortable: true,
+        width: "400px",
     },
     {
         label: "CLIENTE",
@@ -95,6 +96,7 @@ const headers = ref([
         label: "MONTO",
         key: "monto",
         sortable: true,
+        type: Number,
         fixed: "right",
         classTd: () => {
             let class_fixed = "bg__fixed";
@@ -405,7 +407,7 @@ function obtenerFechaActual() {
                                         white-space: wrap;
                                     "
                                 >
-                                    {{ item.trabajo.proyecto.nombre }}<br>
+                                    {{ item.trabajo.proyecto.nombre }}<br />
                                     <b>({{ item.trabajo.proyecto.alias }})</b>
                                 </p>
                             </template>

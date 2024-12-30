@@ -35,7 +35,7 @@ const headers = ref([
     },
     {
         label: "NOMBRE PROYECTO",
-        key: "proyecto_nombre",
+        key: "proyecto.nombre",
         keySortable: "proyectos.nombre",
         sortable: true,
         fixed: true,
@@ -509,7 +509,7 @@ onMounted(async () => {
                     fixed-header
                     table-height="50vh"
                 >
-                    <template #proyecto_nombre="{ item }">
+                    <template #['proyecto.nombre']="{ item }">
                         <p
                             style="
                                 width: 120px;
