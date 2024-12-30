@@ -74,7 +74,14 @@ const headers = ref([
         sortable: true,
         fixed: "right",
     },
-    { label: "ACCIÓN", key: "accion", fixed: "right" },
+    {
+        label: "ACCIÓN",
+        key: "accion",
+        fixed: "right",
+        classTd: () => {
+            return "accion";
+        },
+    },
 ]);
 
 const search = ref("");
@@ -165,7 +172,7 @@ onMounted(() => {
                             <i class="fa fa-plus"></i> Nuevo Trabajo
                         </Link>
                     </div>
-                    <div class="col-md-3 my-1 d-flex pl-4 align-end">
+                    <div class="col-md-3 my-1 d-flex align-end">
                         <el-select
                             class="w-100 mt-auto"
                             size="large"
@@ -185,7 +192,7 @@ onMounted(() => {
                             >
                         </el-select>
                     </div>
-                    <div class="col-md-5 my-1 d-flex pl-4">
+                    <div class="col-md-5 my-1 d-flex">
                         <div class="input-group" style="align-items: end">
                             <input
                                 v-model="multiSearch.search"
@@ -222,18 +229,11 @@ onMounted(() => {
                     table-responsive
                     fix-cols
                     fixed-header
-                    table-height="70vh"
                 >
                     <template #proyecto_nombre="{ item }">
-                        <p
-                            style="
-                                width: 120px;
-                                word-wrap: break-word;
-                                white-space: wrap;
-                            "
-                        >
+                        <div style="word-wrap: break-word; white-space: wrap">
                             {{ item.proyecto.nombre }}
-                        </p>
+                        </div>
                     </template>
                     <template #costo="{ item }">
                         <div class="w-100">

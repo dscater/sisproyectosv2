@@ -87,7 +87,11 @@ body table.table.mitabla.tablaFixeada thead tr {
     box-shadow: none;
 }
 
-body table.table tbody tr td .btn.accion_icon {
+body table.table tbody tr td.accion .mi-celda{
+    flex-direction: column;
+}
+
+body table.table tbody tr td.accion .btn.accion_icon {
     width: 37px;
     margin: 1px;
 }

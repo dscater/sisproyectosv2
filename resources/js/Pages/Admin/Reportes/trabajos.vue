@@ -10,6 +10,8 @@ import {
     nextTick,
     watch,
 } from "vue";
+import { debounce } from "lodash";
+
 import axios from "axios";
 import { useAppStore } from "@/stores/aplicacion/appStore";
 import MiTable from "@/Components/MiTable.vue";
@@ -108,6 +110,7 @@ const headers = ref([
         key: "saldo",
         sortable: true,
         fixed: "right",
+        type: Number,
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -187,13 +190,11 @@ const cargaDatos = () => {
         });
 };
 
-const cambioValoresFiltros = () => {
+const cambioValoresFiltros = debounce(() => {
     cargando.value = true;
-    clearInterval(time_out_filtros);
-    time_out_filtros = setTimeout(() => {
-        cargaDatos();
-    }, 400);
-};
+
+    cargaDatos();
+}, 300);
 
 function obtenerFechaActual() {
     const fecha = new Date();
@@ -295,38 +296,6 @@ onMounted(async () => {
                         >
                             <div class="row">
                                 <div class="col-md-6">
-                                    <label>Filtro*</label>
-                                    <select
-                                        name="filtro"
-                                        class="form-control"
-                                        v-model="form.filtro"
-                                        @change="cambioValoresFiltros"
-                                    >
-                                        <option value="todos">Todos</option>
-                                        <option value="proyecto">
-                                            Por proyecto
-                                        </option>
-                                        <option value="trabajo">
-                                            Por trabajo
-                                        </option>
-                                        <option value="estado_pago">
-                                            Estado de pago
-                                        </option>
-                                        <option value="estado_trabajo">
-                                            Estado de trabajo
-                                        </option>
-                                    </select>
-                                    <div
-                                        v-if="form.errors.bs"
-                                        class="text-sm text-red-600"
-                                    >
-                                        {{ form.errors.bs }}
-                                    </div>
-                                </div>
-                                <div
-                                    class="col-md-6"
-                                    v-if="form.filtro == 'proyecto'"
-                                >
                                     <label>Seleccione el proyecto*</label>
                                     <select
                                         name="proyecto"
@@ -349,10 +318,7 @@ onMounted(async () => {
                                         {{ form.errors.proyecto }}
                                     </div>
                                 </div>
-                                <div
-                                    class="col-md-6"
-                                    v-if="form.filtro == 'trabajo'"
-                                >
+                                <div class="col-md-6">
                                     <label>Seleccione el trabajo*</label>
                                     <select
                                         name="trabajo"
@@ -376,10 +342,7 @@ onMounted(async () => {
                                         {{ form.errors.trabajo }}
                                     </div>
                                 </div>
-                                <div
-                                    class="col-md-6"
-                                    v-if="form.filtro == 'estado_pago'"
-                                >
+                                <div class="col-md-6">
                                     <label>Estado de pago*</label>
                                     <select
                                         name="estado_pago"
@@ -402,10 +365,7 @@ onMounted(async () => {
                                         {{ form.errors.estado_pago }}
                                     </div>
                                 </div>
-                                <div
-                                    class="col-md-6"
-                                    v-if="form.filtro == 'estado_trabajo'"
-                                >
+                                <div class="col-md-6">
                                     <label>Estado de trabajo*</label>
                                     <select
                                         name="estado_trabajo"
@@ -452,24 +412,22 @@ onMounted(async () => {
                                         {{ form.errors.cliente_id }}
                                     </div>
                                 </div>
+                                <div class="col-md-6">
+                                    <label>Fechas*</label>
+                                    <select
+                                        name="filtro_fecha"
+                                        class="form-control"
+                                        v-model="form.filtro_fecha"
+                                        @change="cambioValoresFiltros"
+                                    >
+                                        <option value="todos">Todos</option>
+                                        <option value="fechas">
+                                            Filtrar fechas
+                                        </option>
+                                    </select>
+                                </div>
                                 <div class="col-12 mt-2">
                                     <div class="row">
-                                        <div class="col-md-6 offset-md-3">
-                                            <label>Fechas*</label>
-                                            <select
-                                                name="filtro_fecha"
-                                                class="form-control"
-                                                v-model="form.filtro_fecha"
-                                                @change="cambioValoresFiltros"
-                                            >
-                                                <option value="todos">
-                                                    Todos
-                                                </option>
-                                                <option value="fechas">
-                                                    Filtrar fechas
-                                                </option>
-                                            </select>
-                                        </div>
                                         <div
                                             class="col-12"
                                             v-if="form.filtro_fecha != 'todos'"
@@ -559,7 +517,8 @@ onMounted(async () => {
                                 white-space: wrap;
                             "
                         >
-                            {{ item.proyecto.nombre }}
+                            {{ item.proyecto.nombre }}<br />
+                            <b>({{ item.proyecto.alias }})</b>
                         </p>
                     </template>
                     <template #costo="{ item }">
@@ -593,7 +552,7 @@ onMounted(async () => {
                         <tr class="footer-fixed">
                             <td
                                 colspan="2"
-                                class="bg-dark footer-fixed fixed-column-ext text-right"
+                                class="bg-dark footer-fixed p-3 fixed-column-ext text-right"
                             >
                                 TOTALES
                             </td>
@@ -605,22 +564,22 @@ onMounted(async () => {
                                 <div>&nbsp;</div>
                             </td>
                             <td
-                                class="bg-dark footer-fixed fixed-column-ext-right"
+                                class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                             >
                                 {{ total_costo }}
                             </td>
                             <td
-                                class="bg-dark footer-fixed fixed-column-ext-right"
+                                class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                             >
                                 {{ total_cancelado }}
                             </td>
                             <td
-                                class="bg-dark footer-fixed fixed-column-ext-right"
+                                class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                             >
                                 {{ total_saldos }}
                             </td>
                             <td
-                                class="bg-dark footer-fixed fixed-column-ext-right"
+                                class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                             ></td>
                         </tr>
                     </template>

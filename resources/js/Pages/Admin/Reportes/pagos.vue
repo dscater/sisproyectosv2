@@ -105,6 +105,7 @@ const headers = ref([
 
 const form = useForm({
     filtro: "todos",
+    estado_trabajo: "todos",
     cliente_id: "todos",
     trabajo: "todos",
     proyecto: "todos",
@@ -201,36 +202,6 @@ function obtenerFechaActual() {
                                     class="row"
                                 >
                                     <div class="col-md-6">
-                                        <label>Filtro*</label>
-                                        <select
-                                            v-model="form.filtro"
-                                            name="filtro"
-                                            class="form-control"
-                                            placeholder=""
-                                            @change="cambioValoresFiltros"
-                                        >
-                                            <option value="todos">Todos</option>
-                                            <option value="proyecto">
-                                                Por proyecto
-                                            </option>
-                                            <option value="trabajo">
-                                                Por trabajo
-                                            </option>
-                                            <option value="estado_trabajo">
-                                                Estado de trabajo
-                                            </option>
-                                        </select>
-                                        <div
-                                            v-if="form.errors.bs"
-                                            class="text-sm text-red-600"
-                                        >
-                                            {{ form.errors.bs }}
-                                        </div>
-                                    </div>
-                                    <div
-                                        class="col-md-6"
-                                        v-if="form.filtro == 'proyecto'"
-                                    >
                                         <label>Seleccione el proyecto*</label>
                                         <select
                                             v-model="form.proyecto"
@@ -256,10 +227,7 @@ function obtenerFechaActual() {
                                             {{ form.errors.proyecto }}
                                         </div>
                                     </div>
-                                    <div
-                                        class="col-md-6"
-                                        v-if="form.filtro == 'trabajo'"
-                                    >
+                                    <div class="col-md-6">
                                         <label>Seleccione el trabajo*</label>
                                         <select
                                             v-model="form.trabajo"
@@ -284,10 +252,7 @@ function obtenerFechaActual() {
                                             {{ form.errors.trabajo }}
                                         </div>
                                     </div>
-                                    <div
-                                        class="col-md-6"
-                                        v-if="form.filtro == 'estado_trabajo'"
-                                    >
+                                    <div class="col-md-6">
                                         <label>Estado de trabajo*</label>
                                         <select
                                             v-model="form.estado_trabajo"
@@ -416,7 +381,9 @@ function obtenerFechaActual() {
                         <h6 class="w-100 text-center">
                             Expresado en bolivianos
                         </h6>
-                        <p class="w-100 text-center">Resultado: {{ listPagos.length }} registros</p>
+                        <p class="w-100 text-center">
+                            Resultado: {{ listPagos.length }} registros
+                        </p>
                     </div>
                     <div class="col-12">
                         <MiTable
@@ -438,7 +405,8 @@ function obtenerFechaActual() {
                                         white-space: wrap;
                                     "
                                 >
-                                    {{ item.trabajo.proyecto.nombre }}
+                                    {{ item.trabajo.proyecto.nombre }}<br>
+                                    <b>({{ item.trabajo.proyecto.alias }})</b>
                                 </p>
                             </template>
                             <template #costo="{ item }">
@@ -477,7 +445,7 @@ function obtenerFechaActual() {
                                 >
                                     <td
                                         colspan="3"
-                                        class="bg-dark footer-fixed fixed-column-ext text-right"
+                                        class="bg-dark footer-fixed p-3 fixed-column-ext text-right"
                                     >
                                         TOTAL
                                     </td>
@@ -489,7 +457,7 @@ function obtenerFechaActual() {
                                         <div>&nbsp;</div>
                                     </td>
                                     <td
-                                        class="bg-dark footer-fixed fixed-column-ext-right"
+                                        class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                                     >
                                         {{ moneda_principal.nombre }}
                                         {{ total_pagos }}

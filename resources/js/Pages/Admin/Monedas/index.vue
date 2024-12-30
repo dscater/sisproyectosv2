@@ -26,7 +26,7 @@ const headers = ref([
         label: "ID",
         key: "id",
         sortable: true,
-        width: 1,
+        width: "80px",
     },
     {
         label: "NOMBRE",
@@ -43,7 +43,7 @@ const headers = ref([
         key: "principal",
         sortable: true,
     },
-    { label: "Acción", key: "accion", width: "1" },
+    { label: "Acción", key: "accion", width: "100px" },
 ]);
 
 const search = ref("");

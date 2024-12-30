@@ -60,7 +60,7 @@ const headers = ref([
         keySortable: "pagos.created_at",
         sortable: true,
     },
-    { label: "ACCIÓN", key: "accion", width: 1 },
+    { label: "ACCIÓN", key: "accion", width: "110px" },
 ]);
 
 const search = ref("");

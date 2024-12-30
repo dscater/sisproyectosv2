@@ -16,7 +16,7 @@ class ReporteController extends Controller
     public function trabajos()
     {
         $clientes = Cliente::all();
-        $trabajos = Trabajo::orderBy("created_at", "desc")->get();
+        $trabajos = Trabajo::with(["proyecto"])->orderBy("created_at", "desc")->get();
         $proyectos = Proyecto::orderBy("created_at", "desc")->get();
         $moneda_principal = Moneda::where("principal", 1)->get()->first();
 
@@ -52,27 +52,26 @@ class ReporteController extends Controller
             $trabajos->where("cliente_id", $cliente_id);
             $o_cliente = Cliente::find($cliente_id);
         }
-        if ($filtro_fecha != "todos") {
+        if ($filtro_fecha != 'todos') {
             if ($fecha_ini != "" && $fecha_fin != "") {
                 $trabajos->whereBetween("fecha_registro", [$fecha_ini, $fecha_fin]);
             }
         }
-        if ($filtro != "todos") {
-            if ($filtro == "proyecto" && $proyecto != "todos") {
-                $trabajos->where("proyecto_id", $proyecto);
-                $o_proyecto = Proyecto::find($proyecto);
-            }
-            if ($filtro == "trabajo" && $trabajo != "todos") {
-                $trabajos->where("id", $trabajo);
-                $o_trabajo = Trabajo::find($trabajo);
-                $o_proyecto = Proyecto::find($o_trabajo->proyecto_id);
-            }
-            if ($filtro == "estado_pago" && $estado_pago != "todos") {
-                $trabajos->where("estado_pago", $estado_pago);
-            }
-            if ($filtro == "estado_trabajo" && $estado_trabajo != "todos") {
-                $trabajos->where("estado_trabajo", $estado_trabajo);
-            }
+
+        if ($proyecto != "todos") {
+            $trabajos->where("proyecto_id", $proyecto);
+            $o_proyecto = Proyecto::find($proyecto);
+        }
+        if ($trabajo != "todos") {
+            $trabajos->where("id", $trabajo);
+            $o_trabajo = Trabajo::find($trabajo);
+            $o_proyecto = Proyecto::find($o_trabajo->proyecto_id);
+        }
+        if ($estado_pago != "todos") {
+            $trabajos->where("estado_pago", $estado_pago);
+        }
+        if ($estado_trabajo != "todos") {
+            $trabajos->where("estado_trabajo", $estado_trabajo);
         }
         $trabajos = $trabajos->get();
 
@@ -127,21 +126,19 @@ class ReporteController extends Controller
 
         $pagos = Pago::with(["trabajo.proyecto", "cliente", "moneda", "moneda_cambio"])
             ->select("pagos.*");
-        if ($filtro != "todos") {
-            if ($filtro == "proyecto" && $proyecto != "todos") {
-                $pagos->join("trabajos", "trabajos.id", "=", "pagos.trabajo_id")
-                    ->where("trabajos.proyecto_id", $proyecto);
-                $o_proyecto = Proyecto::find($proyecto);
-            }
-            if ($filtro == "trabajo" && $trabajo != "todos") {
-                $pagos->where("trabajo_id", $trabajo);
-                $o_trabajo = Trabajo::find($trabajo);
-                $o_proyecto = Proyecto::find($o_trabajo->proyecto_id);
-            }
-            if ($filtro == "estado_trabajo" && $estado_trabajo != "todos") {
-                $pagos->join("trabajos", "trabajos.id", "=", "pagos.trabajo_id")
-                    ->where("trabajos.estado_trabajo", $estado_trabajo);
-            }
+        if ($proyecto != "todos") {
+            $pagos->join("trabajos", "trabajos.id", "=", "pagos.trabajo_id")
+                ->where("trabajos.proyecto_id", $proyecto);
+            $o_proyecto = Proyecto::find($proyecto);
+        }
+        if ($trabajo != "todos") {
+            $pagos->where("trabajo_id", $trabajo);
+            $o_trabajo = Trabajo::find($trabajo);
+            $o_proyecto = Proyecto::find($o_trabajo->proyecto_id);
+        }
+        if ($estado_trabajo != "todos") {
+            $pagos->join("trabajos", "trabajos.id", "=", "pagos.trabajo_id")
+                ->where("trabajos.estado_trabajo", $estado_trabajo);
         }
 
         if ($cliente_id != "todos") {

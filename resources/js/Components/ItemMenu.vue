@@ -37,6 +37,12 @@ watch(
 );
 
 router.on("navigate", (event) => {
+    const body = document.querySelector("body");
+    if (body.classList.contains("sidebar-open")) {
+        body.classList.remove("sidebar-open");
+        body.classList.add("sidebar-closed");
+        body.classList.add("sidebar-collapse");
+    }
     route_current.value = route().current();
 });
 
@@ -69,6 +75,7 @@ onMounted(() => {
         :class="[$attrs.class]"
     >
         <Link
+            v-if="ruta != route_current"
             :href="ruta ? route(ruta) : '/'"
             class="nav-link"
             :class="[classActive ?? '']"
@@ -78,6 +85,12 @@ onMounted(() => {
                 {{ label }}
             </p>
         </Link>
+        <div v-else class="nav-link" :class="[classActive ?? '']">
+            <i class="nav-icon fas" :class="icon ? icon : 'fa-th'"></i>
+            <p>
+                {{ label }}
+            </p>
+        </div>
     </li>
     <li class="nav-item" v-else>
         <a href="#" class="nav-link" @click.prevent="ejecutaPost()" ref="link">

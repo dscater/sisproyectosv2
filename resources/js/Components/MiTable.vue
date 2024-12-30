@@ -1,7 +1,7 @@
 <script setup>
 import axios from "axios";
 import MiPaginacion from "@/Components/MiPaginacion.vue";
-import { ref, onMounted, watch, nextTick, useSlots } from "vue";
+import { ref, onMounted, onUnmounted, watch, nextTick, useSlots } from "vue";
 import { debounce } from "lodash";
 const props = defineProps({
     cols: {
@@ -232,43 +232,51 @@ watch(
 watch(
     () => listItems.value,
     async () => {
-        await nextTick();
-        await esperarCargaElementos();
-        actualizaAltoAnchoTablaColumnas();
+        if (listItems.value.length > 0) await renderMiTable();
     }
 );
 
+// FUNCION QUE CONTIENE LAS FUNCIONES PARA RENDERIZAR LA TABLA
+const renderMiTable = async () => {
+    await nextTick();
+    await esperarCargaElementos();
+    actualizaAltoAnchoTablaColumnas();
+};
+
 // funcion para otener los datos de renderizado, alto tabla y ancho columnas
 const actualizaAltoAnchoTablaColumnas = () => {
-    setTimeout(() => {
-        if (eContentTable.value) {
-            if (props.fixCols) {
-                initColsWidthFixed();
-            } else {
-                initColsWidthNotFixed();
-            }
-        }
+    if (listItems.value.length == 0) return;
+    if (eContentTable.value) {
         if (props.fixCols) {
-            renderColumnsStyleFixed();
+            initColsWidthFixed();
+        } else {
+            initColsWidthNotFixed();
         }
-        if (eContentTable.value) {
-            let altura = 0;
-            let ancho = 0;
-            if (props.tableHeight) {
-                eContentTable.value.style.height = `${props.tableHeight}`;
-                eContentTable.value.style.minHeight = `${props.tableHeight}`;
-                altura = eContentTable.value.getBoundingClientRect().height;
-                ancho = eContentTable.value.getBoundingClientRect().width;
-            } else {
-                altura = miTableRef.value.getBoundingClientRect().height;
-                ancho = miTableRef.value.getBoundingClientRect().width;
-            }
-            eContentTable.value.style.height = `${altura}px`;
-            eContentTable.value.style.minHeight = `${altura}px`;
+    }
+    if (props.fixCols) {
+        renderColumnsStyleFixed();
+    }
+    if (eContentTable.value) {
+        let altura = 0;
+        let ancho = 0;
+        if (props.tableHeight) {
+            eContentTable.value.style.height = `${props.tableHeight}`;
+            eContentTable.value.style.minHeight = `${props.tableHeight}`;
+            altura = eContentTable.value.getBoundingClientRect().height;
+            ancho = eContentTable.value.getBoundingClientRect().width;
+        } else {
+            altura = miTableRef.value.getBoundingClientRect().height;
+            ancho = miTableRef.value.getBoundingClientRect().width;
         }
-        resetPositionScroll();
-        updateScrollbars();
-    }, 200);
+        eContentTable.value.style.height = `${altura}px`;
+        eContentTable.value.style.minHeight = `${altura}px`;
+        eContentTable.value.style.width = `${eContentTable.value.offsetWidth}px`;
+        eContentTable.value.style.maxWidth = `${eContentTable.value.offsetWidth}px`;
+        eContentHeader.value.style.width = `${eContentTable.value.offsetWidth}px`;
+        eContentHeader.value.style.maxWidth = `${eContentTable.value.offsetWidth}px`;
+    }
+    resetPositionScroll();
+    updateScrollbars();
 };
 
 // funcion para determinar si se cargaron todos los elementos
@@ -292,9 +300,7 @@ const cargarDatos = async () => {
         muestraCantidadRegistros();
     }
 
-    setTimeout(() => {
-        pLoading.value = false;
-    }, 100);
+    pLoading.value = false;
 };
 
 // generar anchos de celdas con propiedad de columnas fixedas
@@ -309,12 +315,16 @@ const initColsWidthFixed = () => {
         let contentWidth = 0;
         const data_width = elem.getAttribute("data-width");
         if (data_width) {
-            const regex = /px|%|vw/; // Busca px, %, o vw
+            const regex = /px/; // Busca px, %, o vw
             const unidad = data_width.match(regex); // Encuentra la unidad en el valor
+            contentWidth = data_width;
             if (unidad == "px") {
                 contentWidth = data_width.replace("px", "");
             } else {
-                contentWidth = elem.getBoundingClientRect().width + 15;
+                contentWidth = getAnchoPorcentajeAPx(
+                    eContentTable.value.getBoundingClientRect().width,
+                    contentWidth
+                );
             }
         } else {
             contentWidth = elem.getBoundingClientRect().width + 15;
@@ -345,12 +355,17 @@ const initColsWidthNotFixed = () => {
         let contentWidth = 0;
         const data_width = elem.getAttribute("data-width");
         if (data_width) {
-            const regex = /px|%|vw/; // Busca px, %, o vw
+            const regex = /px/; // Busca px, %, o vw
             const unidad = data_width.match(regex); // Encuentra la unidad en el valor
+
+            contentWidth = data_width;
             if (unidad == "px") {
                 contentWidth = data_width.replace("px", "");
             } else {
-                contentWidth = elem.getBoundingClientRect().width;
+                contentWidth = getAnchoPorcentajeAPx(
+                    eContentTable.value.getBoundingClientRect().width,
+                    contentWidth
+                );
             }
             acumulados_no_fixed += parseFloat(contentWidth);
             widthColumnsFix.value[index] = contentWidth;
@@ -364,7 +379,8 @@ const initColsWidthNotFixed = () => {
         }
     });
 
-    const restanteWidth = eContentTable.value.offsetWidth - acumulados_no_fixed;
+    const restanteWidth =
+        eContentTable.value.getBoundingClientRect().width - acumulados_no_fixed;
     const restantes = cols.length - contador_cols_data_width;
     const widthCols = Math.fround(restanteWidth / restantes) - 1;
     cols.forEach((elem, index) => {
@@ -381,6 +397,15 @@ const initColsWidthNotFixed = () => {
     });
     miTableRef.value.style.tableLayout = "fixed";
     miTableHeaderRef.value.style.tableLayout = "fixed";
+};
+
+// obtener el ancho de celda de un porcentaje en pixeles
+const getAnchoPorcentajeAPx = (totalPx, porcentaje) => {
+    let ancho = 0;
+    if (totalPx && porcentaje) {
+        ancho = (porcentaje * totalPx) / 100;
+    }
+    return ancho;
 };
 
 // obtener la distancia right o left del elemento stick
@@ -415,19 +440,6 @@ const getRightLetfStick = (indexCol, item, head = false, indexRow = -1) => {
             pStyle["left"] = `${lefright}px`;
         }
     }
-
-    if (head && item.width) {
-        const width = item.width
-            ? /\d+%$/.test(item.width) ||
-              /\d+px$/.test(item.width) ||
-              /\d+vw$/.test(item.width)
-                ? item.width
-                : `${item.width}%`
-            : "";
-        pStyle["width"] = `${width}`;
-        pStyle["max-width"] = `${width}`;
-    }
-
     return pStyle;
 };
 
@@ -457,6 +469,7 @@ const cambiaPerPage = async () => {
 
 // detectar cambio del orden
 const changeOrderBy = async (orderCol) => {
+    pLoading.value = true;
     let oldOrderBy = orderBy.value;
     orderBy.value = orderCol;
     if (oldOrderBy != orderBy.value) {
@@ -511,17 +524,31 @@ const generarDatosPorLista = async () => {
     // Aplica el ordenamiento según orderBy y orderAsc
     if (vOrderAsc) {
         filteredArray = filteredArray.sort((a, b) => {
+            // Obtener la configuración de la columna por su key
+            const columnConfig = listCols.value.find(
+                (col) => col.key === vOrderBy
+            );
+
+            if (!columnConfig) {
+                // Si no se encuentra la configuración, no ordenar
+                return 0;
+            }
+
+            // Obtener valores a comparar
             let valA = a[vOrderBy];
             let valB = b[vOrderBy];
 
-            // Si las columnas son numéricas, compara como números, sino como cadenas
-            if (typeof valA === "string" && typeof valB === "string") {
+            // Si el tipo es Number, convertir los valores
+            if (columnConfig.type === Number) {
+                valA = parseFloat(valA) || 0; // Asegurar que sea un número
+                valB = parseFloat(valB) || 0;
+            } else if (typeof valA === "string" && typeof valB === "string") {
+                // Si son cadenas, convertir a minúsculas
                 valA = valA.toLowerCase();
                 valB = valB.toLowerCase();
-            } else if (typeof valA === "number" && typeof valB === "number") {
-                // No es necesario hacer nada, ya que JavaScript lo maneja de forma natural
             }
 
+            // Comparar valores
             if (valA < valB) {
                 return vOrderAsc === "asc" ? -1 : 1;
             }
@@ -654,7 +681,7 @@ const updateScrollbars = () => {
         altoScrollY *= 100;
         scrollY.value.style.height = altoScrollY + "%";
         originalScrollYpx.value = scrollY.value.offsetHeight;
-        if (originalScrollYpx.value < 15) {
+        if (originalScrollYpx.value < 15 && originalScrollYpx.value > 0) {
             scrollY.value.style.height = "16px";
         }
         scrollY.value.parentElement.style.display = "block";
@@ -750,10 +777,20 @@ const stopDrag = () => {
  * fin SCROLL
  **********/
 
+const cambioTamanioPantalla = async (e) => {
+    // console.log(window.innerWidth);
+    await renderMiTable();
+};
+
 onMounted(async () => {
+    window.addEventListener("resize", cambioTamanioPantalla);
     if (props.api) {
         cargarDatos();
     }
+});
+
+onUnmounted(() => {
+    window.removeEventListener("resize", cambioTamanioPantalla);
 });
 
 defineExpose({
@@ -891,7 +928,6 @@ defineExpose({
                             >
                                 <td
                                     v-for="(i_col, index_col) in listCols"
-                                    :data-label="i_col.label"
                                     :class="[
                                         i_col.classTd
                                             ? i_col.classTd(item)
@@ -913,6 +949,10 @@ defineExpose({
                                             ] = el)
                                     "
                                 >
+                                    <div
+                                        class="label-responsive"
+                                        v-text="`${i_col.label}:`"
+                                    ></div>
                                     <div class="mi-celda">
                                         <template v-if="$slots[i_col.key]">
                                             <slot
