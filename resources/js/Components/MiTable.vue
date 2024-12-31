@@ -1,7 +1,15 @@
 <script setup>
 import axios from "axios";
 import MiPaginacion from "@/Components/MiPaginacion.vue";
-import { ref, onMounted, onUnmounted, watch, nextTick, useSlots } from "vue";
+import {
+    ref,
+    onMounted,
+    onUpdated,
+    onUnmounted,
+    watch,
+    nextTick,
+    useSlots,
+} from "vue";
 import { debounce } from "lodash";
 const props = defineProps({
     cols: {
@@ -48,6 +56,11 @@ const props = defineProps({
     fixedHeader: {
         type: Boolean,
         default: false,
+    },
+    widthFixDefault: {
+        type: Number,
+        String,
+        default: 200,
     },
     tableClass: {
         type: String,
@@ -121,7 +134,6 @@ const orderBy = ref(props.syncOrderBy);
 const orderAsc = ref(
     props.syncOrderAsc ? props.syncOrderAsc.toLowerCase() : null
 );
-
 const total = ref(listData.value.length);
 const currentPage = ref(1);
 const filter_page = ref(props.filterPage);
@@ -132,14 +144,110 @@ const cDeRegistros = ref(1);
 const cARegistros = ref(per_page.value);
 const totalPages = ref(0);
 const pLoading = ref(false);
-const eTbody = ref(null);
-const contentScroll = ref(null);
-const eContentTable = ref(null);
-const eContentHeader = ref(null);
-const tableHeaderGroup = ref(null);
-const tableContentGroup = ref(null);
 const intervalSearch = ref(null);
-const widthColumnsFix = ref([]);
+
+watch(
+    () => props.syncOrderBy,
+    (newVal) => {
+        orderBy.value = newVal;
+        console.log("watch 1");
+        cargarDatos();
+    }
+);
+
+watch(
+    () => props.syncOrderAsc,
+    (newVal) => {
+        orderAsc.value = newVal ? newVal.toLowerCase() : null;
+        console.log("watch 2");
+        cargarDatos();
+    }
+);
+
+watch(
+    () => props.loading,
+    (newVal) => {
+        console.log("watch 3");
+        pLoading.value = newVal;
+    }
+);
+
+watch(
+    () => props.multiSearch,
+    (newVal) => {
+        console.log("watch 4");
+        oMultiSearch.value = newVal;
+        cargarDatos();
+    },
+    { deep: true }
+);
+
+watch(
+    () => props.search,
+    (newVal) => {
+        console.log("watch 5");
+        tSearch.value = newVal;
+        clearInterval(intervalSearch.value);
+        intervalSearch.value = setTimeout(() => {
+            currentPage.value = 1;
+            cargarDatos();
+        }, props.delaySearch);
+    }
+);
+
+watch(per_page, (newValue, oldValue) => {
+    console.log("watch 6");
+    cambiaPerPage();
+});
+
+watch(
+    () => props.data,
+    (newVal) => {
+        console.log("watch 7");
+        listData.value = newVal;
+        total.value = listData.value.length;
+        cargarDatos();
+    }
+);
+
+// watch(
+//     () => listItems.value,
+//     async (newVal) => {
+//     }
+// );
+
+// funcion para determinar si se cargaron todos los elementos
+const esperarCargaElementos = () => {
+    return new Promise((r) => window.requestAnimationFrame(r));
+};
+
+/**
+ * *****************************************
+ *  FUNCIONES PARA LA CARGA DE DATOS
+ */
+
+// funcion general para generar los datos que se muestran en la tabla
+// ya sea via URL o el Listado pasado en propiedades
+const cargarDatos = async () => {
+    listItems.value = [];
+    setLoading(true);
+    if (props.api) {
+        const resp = await apiRegistros();
+        total.value = resp.total;
+        listItems.value = resp.data;
+        totalPages.value = resp.lastPage;
+        muestraCantidadRegistros();
+    } else {
+        listItems.value = await generarDatosPorLista();
+        // Actualiza los contadores de registros
+        muestraCantidadRegistros();
+    }
+    fijarAltoContenedorCambioPagina();
+
+    setLoading(false);
+};
+
+// cargar registros por URL axios
 const apiRegistros = async () => {
     try {
         let dataParams = {
@@ -166,426 +274,16 @@ const apiRegistros = async () => {
 
         return response.data;
     } catch (err) {
-        pLoading.value = false;
+        setLoading(false);
         error.value = true;
         console.log(err);
         return null;
     }
 };
-
-watch(
-    () => props.syncOrderBy,
-    (newVal) => {
-        orderBy.value = newVal;
-        cargarDatos();
-    }
-);
-
-watch(
-    () => props.syncOrderAsc,
-    (newVal) => {
-        orderAsc.value = newVal ? newVal.toLowerCase() : null;
-        cargarDatos();
-    }
-);
-
-watch(
-    () => props.loading,
-    (newVal) => {
-        pLoading.value = newVal;
-    }
-);
-
-watch(
-    () => props.multiSearch,
-    (newVal) => {
-        oMultiSearch.value = newVal;
-        cargarDatos();
-    },
-    { deep: true }
-);
-
-watch(
-    () => props.search,
-    (newVal) => {
-        tSearch.value = newVal;
-        clearInterval(intervalSearch.value);
-        intervalSearch.value = setTimeout(() => {
-            currentPage.value = 1;
-            cargarDatos();
-        }, props.delaySearch);
-    }
-);
-
-watch(per_page, (newValue, oldValue) => {
-    cambiaPerPage();
-});
-
-watch(
-    () => props.data,
-    (newVal) => {
-        listData.value = newVal;
-        total.value = listData.value.length;
-        cargarDatos();
-    }
-);
-
-watch(
-    () => listItems.value,
-    async (newVal) => {
-        if (newVal.length > 0) {
-            // console.log("render");
-            await renderMiTable();
-        }
-        await determinarAltoContenedor();
-    }
-);
-
-// FUNCION QUE CONTIENE LAS FUNCIONES PARA RENDERIZAR LA TABLA
-const renderMiTable = async () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            await nextTick();
-            await esperarCargaElementos();
-            if (miTableRef.value) miTableRef.value.style.tableLayout = "auto";
-            if (miTableHeaderRef.value)
-                miTableHeaderRef.value.style.tableLayout = "auto";
-
-            if (props.fixCols) {
-                await initColsWidthFixed();
-            } else {
-                await initColsWidthNotFixed();
-            }
-            setTimeout(async () => {
-                await renderColumnsStyleFixed();
-            }, 300);
-
-            if (miTableRef.value) miTableRef.value.style.tableLayout = "fixed";
-            if (miTableHeaderRef.value)
-                miTableHeaderRef.value.style.tableLayout = "fixed";
-
-            resolve();
-        } catch (error) {
-            reject(error);
-        } finally {
-            pLoading.value = false;
-        }
-    });
-};
-
-// funcion para otener los datos de renderizado, alto tabla y ancho columnas
-const determinarAltoContenedor = async () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            removerEventosScroll();
-            if (eContentTable.value && miTableRef.value) {
-                let altura = 0;
-                let ancho = 0;
-                setTimeout(() => {
-                    if (props.tableHeight) {
-                        eContentTable.value.style.height = `${props.tableHeight}`;
-                        eContentTable.value.style.minHeight = `${props.tableHeight}`;
-                        altura =
-                            eContentTable.value.getBoundingClientRect().height;
-                        ancho =
-                            eContentTable.value.getBoundingClientRect().width;
-                    } else {
-                        if (
-                            miTableRef.value.scrollHeight >
-                            miTableRef.value.offsetHeight
-                        ) {
-                            altura = miTableRef.value.scrollHeight;
-                        } else {
-                            altura =
-                                miTableRef.value.getBoundingClientRect().height;
-                        }
-                        ancho = miTableRef.value.getBoundingClientRect().width;
-                    }
-                    eContentTable.value.style.height = `${altura}px`;
-                    eContentTable.value.style.minHeight = `${altura}px`;
-
-                    resetPositionScroll();
-                    updateScrollbars();
-                }, 300);
-            }
-
-            // resetPositionScroll();
-            // updateScrollbars();
-            resolve();
-        } catch (error) {
-            reject(error);
-        }
-    });
-};
-
-// funcion para ajustar el ancho final de columnas en la tabla
-const ajustaAnchoContentYHeader = () => {
-    return new Promise((resolve, reject) => {
-        try {
-            if (eContentTable.value) {
-                setTimeout(() => {
-                    if (contentScroll.value) {
-                        const width = contentScroll.value.offsetWidth;
-                        eContentTable.value.style.width = `${width}px`;
-                        eContentTable.value.style.maxWidth = `${width}px`;
-                        eContentHeader.value.style.width = `${width}px`;
-                        eContentHeader.value.style.maxWidth = `${width}px`;
-                    }
-                    resolve(); // Marca la promesa como resuelta
-                }, 300);
-            } else {
-                resolve(); // Si no hay tabla, igual resolvemos
-            }
-        } catch (error) {
-            reject(error); // En caso de error, rechaza la promesa
-        }
-    });
-};
-
-// funcion para determinar si se cargaron todos los elementos
-const esperarCargaElementos = () => {
-    return new Promise((r) => window.requestAnimationFrame(r));
-};
-
-// funcion general para generar los datos que se muestran en la tabla
-// ya sea via URL o el Listado pasado en propiedades
-const cargarDatos = async () => {
-    listItems.value = [];
-    pLoading.value = true;
-    if (props.api) {
-        const resp = await apiRegistros();
-        total.value = resp.total;
-        listItems.value = resp.data;
-        totalPages.value = resp.lastPage;
-        muestraCantidadRegistros();
-    } else {
-        listItems.value = await generarDatosPorLista();
-        // Actualiza los contadores de registros
-        muestraCantidadRegistros();
-    }
-};
-
-// generar anchos de celdas con propiedad de columnas fixedas
-const initColsWidthFixed = async () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            widthColumnsFix.value = [];
-            let cols = [];
-            if (miTableHeaderRef.value) {
-                cols = miTableHeaderRef.value
-                    .querySelector("thead tr")
-                    .querySelectorAll("th");
-            }
-            await ajustaAnchoContentYHeader();
-
-            cols.forEach((elem, index) => {
-                let contentWidth = 0;
-                const data_width = elem.getAttribute("data-width");
-                if (data_width) {
-                    const regex = /px/; // Busca px, %, o vw
-                    const unidad = data_width.match(regex); // Encuentra la unidad en el valor
-                    contentWidth = data_width;
-                    if (unidad == "px") {
-                        contentWidth = data_width.replace("px", "");
-                    } else {
-                        contentWidth = getAnchoPorcentajeAPx(
-                            eContentTable.value.getBoundingClientRect().width,
-                            contentWidth
-                        );
-                    }
-                } else {
-                    contentWidth = elem.getBoundingClientRect().width + 15;
-                }
-                widthColumnsFix.value[index] = contentWidth;
-                const colsContentHeader =
-                    tableHeaderGroup.value.querySelectorAll("col");
-                colsContentHeader[index].style.width = contentWidth + "px";
-                const colsContentBody =
-                    tableContentGroup.value.querySelectorAll("col");
-                colsContentBody[index].style.width = contentWidth + "px";
-            });
-            resolve();
-        } catch (error) {
-            reject(error);
-        }
-    });
-};
-
-// generar anchos de celdas con columnas sin fixear
-const initColsWidthNotFixed = async () => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            widthColumnsFix.value = [];
-            if (miTableRef.value) miTableRef.value.style.tableLayout = "auto";
-            let cols = [];
-            if (miTableHeaderRef.value) {
-                cols = miTableHeaderRef.value
-                    .querySelector("thead tr")
-                    .querySelectorAll("th");
-                miTableHeaderRef.value.style.tableLayout = "auto";
-            }
-            await ajustaAnchoContentYHeader();
-            let acumulados_no_fixed = 0;
-            let contador_cols_data_width = 0;
-            cols.forEach((elem, index) => {
-                let contentWidth = 0;
-                const data_width = elem.getAttribute("data-width");
-                if (data_width) {
-                    const regex = /px/; // Busca px, %, o vw
-                    const unidad = data_width.match(regex); // Encuentra la unidad en el valor
-
-                    contentWidth = data_width;
-                    if (unidad == "px") {
-                        contentWidth = data_width.replace("px", "");
-                    } else if (eContentTable.value) {
-                        contentWidth = getAnchoPorcentajeAPx(
-                            eContentTable.value.getBoundingClientRect().width,
-                            contentWidth
-                        );
-                    }
-                    acumulados_no_fixed += parseFloat(contentWidth);
-                    widthColumnsFix.value[index] = contentWidth;
-                    contador_cols_data_width++;
-                    const colsContentHeader =
-                        tableHeaderGroup.value.querySelectorAll("col");
-                    colsContentHeader[index].style.width = contentWidth + "px";
-                    const colsContentBody =
-                        tableContentGroup.value.querySelectorAll("col");
-                    colsContentBody[index].style.width = contentWidth + "px";
-                }
-            });
-
-            let restanteWidth = 0;
-            if (eContentTable.value) {
-                restanteWidth =
-                    eContentTable.value.getBoundingClientRect().width -
-                    acumulados_no_fixed;
-            }
-
-            const restantes = cols.length - contador_cols_data_width;
-            const widthCols = Math.fround(restanteWidth / restantes) - 1;
-            cols.forEach((elem, index) => {
-                const data_width = elem.getAttribute("data-width");
-                if (!data_width) {
-                    widthColumnsFix.value[index] = widthCols;
-                    const colsContentHeader =
-                        tableHeaderGroup.value.querySelectorAll("col");
-                    colsContentHeader[index].style.width = widthCols + "px";
-                    const colsContentBody =
-                        tableContentGroup.value.querySelectorAll("col");
-                    colsContentBody[index].style.width = widthCols + "px";
-                }
-            });
-            resolve();
-        } catch (error) {
-            reject(error);
-        }
-    });
-};
-
-// obtener el ancho de celda de un porcentaje en pixeles
-const getAnchoPorcentajeAPx = (totalPx, porcentaje) => {
-    let ancho = 0;
-    if (totalPx && porcentaje) {
-        ancho = (porcentaje * totalPx) / 100;
-    }
-    return ancho;
-};
-
-// obtener la distancia right o left del elemento stick
-const getRightLetfStick = (indexCol, item, head = false, indexRow = -1) => {
-    let pStyle = {
-        position: "sticky",
-    };
-    let inicio = 0;
-    let final = 0;
-
-    if (item.fixed) {
-        inicio = 0;
-        final = indexCol > 0 ? indexCol : 0;
-        if (item.fixed == "right") {
-            inicio =
-                indexCol + 1 < listCols.value.length
-                    ? indexCol + 1
-                    : listCols.value.length;
-            final = listCols.value.length;
-        }
-    }
-    let listFill = [];
-    let lefright = "0px";
-    if (item.fixed) {
-        listFill = widthColumnsFix.value.slice(inicio, final);
-        lefright = listFill.reduce((a, b) => {
-            return a + b;
-        }, 0);
-        if (item.fixed == "right") {
-            pStyle["right"] = `${lefright}px`;
-        } else {
-            pStyle["left"] = `${lefright}px`;
-        }
-    }
-    return pStyle;
-};
-
-// obtener el ancho por columna
-const getWidthColGroup = (index, item = null) => {
-    let width = (widthColumnsFix.value[index] ?? 0) + "px";
-    if (item.width) {
-        width = item.width
-            ? /\d+%$/.test(item.width) ||
-              /\d+px$/.test(item.width) ||
-              /\d+vw$/.test(item.width)
-                ? item.width
-                : `${item.width}%`
-            : "";
-    }
-
-    return {
-        width: width,
-    };
-};
-
-// detectar el cambio de cantidad de registros por pagina
-const cambiaPerPage = async () => {
-    currentPage.value = 1;
-    await cargarDatos();
-};
-
-// detectar cambio del orden
-const changeOrderBy = async (orderCol) => {
-    pLoading.value = true;
-    let oldOrderBy = orderBy.value;
-    orderBy.value = orderCol;
-    if (oldOrderBy != orderBy.value) {
-        orderAsc.value = "asc";
-    } else {
-        switch (orderAsc.value) {
-            case "asc":
-                orderAsc.value = "desc";
-                break;
-            case "desc":
-                orderAsc.value = null;
-                orderBy.value = null;
-                break;
-            case null:
-                orderAsc.value = "asc";
-                break;
-        }
-    }
-    cargarDatos();
-};
-
-// detectar cambio de pagina
-const cambioDePagina = async (value) => {
-    currentPage.value = value;
-    cargarDatos();
-};
-
 // generar el listado de datos sin uso de una api
 const generarDatosPorLista = async () => {
     return new Promise(async (resolve, reject) => {
         try {
-            pLoading.value = true;
             const page = parseInt(currentPage.value);
             const pageSize = parseInt(per_page.value);
             const vOrderBy = orderBy.value;
@@ -663,6 +361,43 @@ const generarDatosPorLista = async () => {
     });
 };
 
+// detectar el cambio de cantidad de registros por pagina
+const cambiaPerPage = async () => {
+    currentPage.value = 1;
+    await cargarDatos();
+};
+
+// detectar cambio del orden
+const changeOrderBy = async (orderCol) => {
+    let oldOrderBy = orderBy.value;
+    orderBy.value = orderCol;
+    if (oldOrderBy != orderBy.value) {
+        orderAsc.value = "asc";
+    } else {
+        switch (orderAsc.value) {
+            case "asc":
+                orderAsc.value = "desc";
+                break;
+            case "desc":
+                orderAsc.value = null;
+                orderBy.value = null;
+                break;
+            case null:
+                orderAsc.value = "asc";
+                break;
+        }
+    }
+    cargarDatos();
+};
+
+// detectar cambio de pagina
+const cambioDePagina = async (value) => {
+    currentPage.value = value;
+    cargarDatos();
+};
+
+// Mostrar la cantidad de registgros encontrados
+// segun la página y total
 const muestraCantidadRegistros = () => {
     const startIndex = (parseInt(currentPage.value) - 1) * per_page.value;
     const total_reg = listItems.value.length - 1;
@@ -670,10 +405,12 @@ const muestraCantidadRegistros = () => {
     cARegistros.value = cDeRegistros.value + total_reg; // Último registro de la página
 };
 
+// obtener el valor anidado de la lista de items
 function getColumnValue(obj, key) {
     return key.split(".").reduce((acc, part) => acc && acc[part], obj);
 }
 
+// usar la funcion getRowClass enviado desde la lista de columnas
 function getRowClass(item) {
     let classes = [];
     for (const column of listCols.value) {
@@ -687,55 +424,7 @@ function getRowClass(item) {
     return classes.join(" ");
 }
 
-const thtdRefs = ref({});
-const miTableRef = ref(null);
-const miTableHeaderRef = ref(null);
-const miTheadRef = ref(null);
-// Funcion para renderizar las columnas con position sticky|posicion fixeada
-// adjuntadas por un slot (thead,tfooter)
-const renderColumnsStyleFixed = () => {
-    return new Promise((resolve, reject) => {
-        try {
-            if (miTableRef.value) {
-                const table = miTableRef.value;
-                // Estilo para columnas definidas por clase
-                ["fixed-column-ext", "fixed-column-ext-right"].forEach(
-                    (className, dir) => {
-                        let offset = 0;
-                        const elements = table.querySelectorAll(
-                            `.${className}`
-                        );
-                        const iter =
-                            dir === 0 ? elements : [...elements].reverse();
-
-                        iter.forEach((el) => {
-                            if (el) {
-                                el.style.position = "sticky";
-                                el.style[
-                                    dir === 0 ? "left" : "right"
-                                ] = `${offset}px`;
-                                if (el.classList.contains("footer-fixed")) {
-                                    el.style.bottom = 0;
-                                }
-                                if (el.classList.contains("header-fixed")) {
-                                    el.style.top = 0;
-                                }
-
-                                // el.style.width =
-                                //     el.getBoundingClientRect().width;
-                                offset += el.offsetWidth;
-                            }
-                        });
-                    }
-                );
-                resolve();
-            }
-        } catch (error) {
-            reject(error);
-        }
-    });
-};
-
+// verificar la opcion activa de ordenacion en el header
 function getClassActiveSort(item) {
     if (props.api) {
         return (
@@ -745,26 +434,279 @@ function getClassActiveSort(item) {
     return orderBy.value == item.key;
 }
 
+// setear el estado de loading del contenido de la tabla
 const setLoading = (value) => {
     pLoading.value = value;
 };
+/**
+ * FIN FUNCIONES CARGA DE DATOS
+ * ******************************************************
+ */
 
-const slots = useSlots();
+/********************************************************
+ * ******************************************************
+ *  FUNCIONES Y VARIABLES DE RENDERIZACIÓN DE TABLA
+ */
+const anchoEstablecidoRender = ref(0);
+const eTbody = ref(null);
+const contentScroll = ref(null);
+const eContentTable = ref(null);
+const eContentHeader = ref(null);
+const tableHeaderGroup = ref(null);
+const tableContentGroup = ref(null);
+const thtdRefs = ref({});
+const miTableRef = ref(null);
+const miTableHeaderRef = ref(null);
+const miTheadRef = ref(null);
+const widthColumnsFix = ref([]);
+const miLoading = ref(null);
 
-/***********
+// obtener el ancho de celda de un porcentaje en pixeles
+const getAnchoPorcentajeAPx = (totalPx, porcentaje) => {
+    let ancho = 0;
+    if (totalPx && porcentaje) {
+        ancho = (porcentaje * totalPx) / 100;
+    }
+    return ancho;
+};
+
+const establecerDimensionesContenedores = () => {
+    anchoEstablecidoRender.value = miTable.value
+        ? miTable.value.offsetWidth
+        : 0;
+    establecerAnchosContenedores();
+    establecerAnchoColumnGroup();
+    establecerColumnasFixedSlot();
+    // scroll
+    syncScrollBodyHeader();
+    // alto del contenedor
+    establecerAltoContenedor();
+};
+
+// Fijar el alto del contenedor antes de cambiar de pagina
+const fijarAltoContenedorCambioPagina = () => {
+    if (!props.tableHeight) {
+        eContentTable.value.style.minHeight = "";
+        setTimeout(() => {
+            if (window.innerWidth > 790) {
+                eContentTable.value.style.minHeight = `${contentScroll.value.offsetHeight}px`;
+            }
+        }, 200);
+    }
+};
+
+// Fijar el alto que tendra el contenedor segun la propiedad tableHeight
+const establecerAltoContenedor = () => {
+    if (props.tableHeight) {
+        eContentTable.value.style.height = `${props.tableHeight}`;
+        eContentTable.value.style.minHeight = `${props.tableHeight}`;
+    }
+
+    resetPositionScroll();
+    setTimeout(() => {
+        updateScrollbars();
+    }, 300);
+};
+
+// Fjar el ancho que tendran los contenedores
+const establecerAnchosContenedores = () => {
+    if (anchoEstablecidoRender.value > 0) {
+        contentScroll.value.style.width = anchoEstablecidoRender.value + "px";
+        eContentTable.value.style.width = anchoEstablecidoRender.value + "px";
+        eContentHeader.value.style.width = anchoEstablecidoRender.value + "px";
+        eContentTable.value.style.maxWidth =
+            anchoEstablecidoRender.value + "px";
+        eContentHeader.value.style.maxWidth =
+            anchoEstablecidoRender.value + "px";
+        eContentTable.value.querySelector("table").style.width =
+            anchoEstablecidoRender.value + "px";
+        eContentTable.value.querySelector("table").style.maxWidth =
+            anchoEstablecidoRender.value + "px";
+        eContentHeader.value.querySelector("table").style.width =
+            anchoEstablecidoRender.value + "px";
+        eContentHeader.value.querySelector("table").style.maxWidth =
+            anchoEstablecidoRender.value + "px";
+    }
+};
+
+// calcular anchos % o vw
+const getCalculoAnchoPVW = (width, el) => {
+    const unidad_val = obtenerUnidadValor(width);
+    let resultado = unidad_val[1];
+    if (unidad_val[0] && unidad_val[0] != "px") {
+        resultado = (resultado * anchoEstablecidoRender.value) / 100;
+    }
+    return parseFloat(resultado);
+};
+function obtenerUnidadValor(valor) {
+    const coincidencia = valor.match(/^(\d+)(px|%)$/);
+    let unidad = null;
+    let width = valor;
+    if (coincidencia) {
+        unidad = coincidencia[2] || null;
+        width = coincidencia[1];
+    }
+    return [unidad, width];
+}
+
+// Fijar el ancho de las columnas de la tabla
+const establecerAnchoColumnGroup = () => {
+    const listWidths = listCols.value.map((elemento, indice) =>
+        elemento.hasOwnProperty("width")
+            ? getCalculoAnchoPVW(elemento.width, elemento)
+            : 0
+    );
+
+    const listIndex = listCols.value.map((elemento, indice) =>
+        elemento.hasOwnProperty("width") ? indice : -1
+    );
+    const i_cols_width = listIndex.filter((indice) => indice !== -1);
+    const restantes = listCols.value.length - i_cols_width.length;
+    const total_definidos = listWidths.reduce((a, b) => {
+        return parseFloat(a) + parseFloat(b);
+    }, 0);
+
+    let ancho_general =
+        (anchoEstablecidoRender.value - total_definidos - 1) / restantes;
+
+    if (props.fixCols) {
+        // ancho_general = anchoEstablecidoRender.value / restantes;
+        ancho_general = props.widthFixDefault;
+    }
+
+    const colsHeader = tableHeaderGroup.value.querySelectorAll("col");
+    if (colsHeader.length > 0) {
+        colsHeader.forEach((elemCol, indexCol) => {
+            // ancho
+            if (i_cols_width.includes(indexCol)) {
+                widthColumnsFix.value[indexCol] = listWidths[indexCol];
+                elemCol.style.width = listWidths[indexCol] + "px";
+            } else {
+                widthColumnsFix.value[indexCol] = ancho_general;
+                elemCol.style.width = ancho_general + "px";
+            }
+        });
+    }
+
+    tableContentGroup.value.innerHTML = tableHeaderGroup.value.innerHTML;
+};
+
+// funcion para establecer los estilos siempre y cuando
+// el item sea fixed
+const getStyleColumnFixed = (item, indexCol) => {
+    let styles = null;
+    if (item.fixed) {
+        styles = {
+            position: "sticky",
+        };
+        if (item.fixed == "right") {
+            styles["right"] = calcularDistanciaPosicionRL(indexCol, "r");
+        } else {
+            styles["left"] = calcularDistanciaPosicionRL(indexCol, "l");
+        }
+    }
+
+    return styles;
+};
+
+const establecerColumnasFixedSlot = () => {
+    if (miTableRef.value) {
+        const table = miTableRef.value;
+
+        const listIzquierda = table.querySelectorAll(".fixed-column-ext");
+        const listDerechaIni = table.querySelectorAll(
+            ".fixed-column-ext-right"
+        );
+        const listDerecha = [...listDerechaIni].reverse();
+        let distancia_acum = 0;
+        listIzquierda.forEach((elem) => {
+            elem.style.position = "sticky";
+            elem.style.left = distancia_acum + "px";
+            if (elem.classList.contains("footer-fixed")) {
+                elem.style.bottom = "1px";
+            }
+            elem.style.left = distancia_acum + "px";
+            distancia_acum += parseFloat(elem.offsetWidth);
+        });
+
+        distancia_acum = 0;
+        listDerecha.forEach((elem) => {
+            elem.style.position = "sticky";
+            elem.style.right = distancia_acum + "px";
+            if (elem.classList.contains("footer-fixed")) {
+                elem.style.bottom = "1px";
+            }
+            elem.style.right = distancia_acum + "px";
+            distancia_acum += parseFloat(elem.offsetWidth);
+        });
+
+        // ["fixed-column-ext", "fixed-column-ext-right"].forEach(
+        //     (className, dir) => {
+        //         let offset = 0;
+        //         const elements = table.querySelectorAll(`.${className}`);
+        //         const iter = dir === 0 ? elements : [...elements].reverse();
+
+        //         iter.forEach((el) => {
+        //             if (el) {
+        //                 el.style.position = "sticky";
+        //                 el.style[dir === 0 ? "left" : "right"] = `${offset}px`;
+        //                 if (el.classList.contains("footer-fixed")) {
+        //                     el.style.bottom = 0;
+        //                 }
+        //                 if (el.classList.contains("header-fixed")) {
+        //                     el.style.top = 0;
+        //                 }
+
+        //                 // el.style.width =
+        //                 //     el.getBoundingClientRect().width;
+        //                 offset += el.offsetWidth;
+        //             }
+        //         });
+        //     }
+        // );
+    }
+};
+
+// funcion para calcular la distancia derecha|izquierda del elemento
+const calcularDistanciaPosicionRL = (indexCol, rl) => {
+    let inicio = 0;
+    let fin = indexCol > 0 ? indexCol : 0;
+    let tamanio_cols = listCols.value.length;
+    let distancia = 0;
+    let width_elems = [];
+    if (rl == "r") {
+        inicio = indexCol + 1 < tamanio_cols ? indexCol : tamanio_cols - 1;
+        fin = tamanio_cols - 1;
+        if (inicio >= tamanio_cols) {
+            inicio = tamanio_cols - 1;
+        }
+    }
+    width_elems = widthColumnsFix.value.slice(inicio, fin);
+    distancia = width_elems.reduce((a, b) => {
+        return a + b;
+    }, 0);
+
+    return distancia + "px";
+};
+
+/**
+ * FIN FUNCIONES RENDER
+ * ***********************************
+ */
+
+/************************************
+ * **********************************
  * SCROLL
- **********/
+ **/
 const scrollX = ref(null);
 const scrollY = ref(null);
-
 // Variables para el drag
 const isDragging = ref(false);
 const dragAxis = ref(null);
 const startPos = ref(0);
 const startScroll = ref(0);
 const originalScrollYpx = ref(-1);
-
-// Actualizar el tamaño y la posición de los scrollbars
+// resetear la posición de los scrollbars
 const resetPositionScroll = () => {
     originalScrollYpx.value = -1;
     startPos.value = 0;
@@ -779,6 +721,7 @@ const resetPositionScroll = () => {
         scrollY.value.style.top = 0 + "px";
     }
 };
+// actualizar el tamaño del elemento de scroll (track)
 const updateScrollbars = () => {
     if (eContentTable.value) {
         if (eContentTable.value.scrollWidth > eContentTable.value.offsetWidth) {
@@ -814,6 +757,7 @@ const updateScrollbars = () => {
     }
 };
 
+// sincronizar el scroll X del contenedor con el header
 const syncScrollBodyHeader = () => {
     eContentTable.value.addEventListener("scroll", (e) => {
         // Verifica si el contenedor tiene un scroll horizontal
@@ -852,6 +796,7 @@ const syncScrollBodyHeader = () => {
     });
 };
 
+// iniciar el drag del scroll
 const startDrag = (axis, event) => {
     isDragging.value = true;
     dragAxis.value = axis;
@@ -865,6 +810,7 @@ const startDrag = (axis, event) => {
     document.addEventListener("mouseup", stopDrag);
 };
 
+// detectar el movimiento del scroll
 const handleMouseMove = (event) => {
     if (isDragging.value === true) {
         dragAxis.value === "x";
@@ -889,70 +835,86 @@ const handleMouseMove = (event) => {
     }
 };
 
+// detener el scroll
 const stopDrag = () => {
     // Habilitar la selección de texto nuevamente
     document.body.classList.remove("no-select");
     removerEventosScroll();
 };
 
+// remover los eventos de scroll
 const removerEventosScroll = () => {
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", stopDrag);
 };
 
-/***********
+/**
  * fin SCROLL
- **********/
+ ***************************************
+ **/
 
-const cambioTamanioPantalla = async (e) => {
-    // await renderMiTable();
+const observerContentMiTable = ref(null);
+const anchoAnteriorMiTable = ref(0);
+const intervalRenderContent = ref(null);
+const intervalRenderWindow = ref(null);
+const miTable = ref(null);
+
+const actualizaDimensionesVentana = () => {
+    clearInterval(intervalRenderWindow.value);
+    intervalRenderWindow.value = setTimeout(async () => {
+        establecerDimensionesContenedores();
+        clearInterval(intervalRenderContent.value);
+        console.log("resize window");
+    }, 300);
 };
 
-const observerContentScroll = ref(null);
-const anchoAnteriorScroll = ref(0);
-const intervalRender = ref(null);
+onUpdated(() => {
+    establecerDimensionesContenedores();
+});
+
 onMounted(async () => {
-    window.addEventListener("resize", cambioTamanioPantalla);
-    // Iniciar observer contentScroll
-    observerContentScroll.value = new ResizeObserver(async (entries) => {
-        // console.log(entries.length);
-        clearInterval(intervalRender.value);
+    if (props.api) {
+        cargarDatos();
+    }
+    await nextTick();
+    await esperarCargaElementos();
+    establecerDimensionesContenedores();
+    window.addEventListener("resize", actualizaDimensionesVentana);
+
+    // Iniciar observer content mitable
+    observerContentMiTable.value = new ResizeObserver(async (entries) => {
+        clearInterval(intervalRenderContent.value);
         if (entries.length > 0) {
-            if (anchoAnteriorScroll.value == 0) {
-                anchoAnteriorScroll.value =
+            if (anchoAnteriorMiTable.value == 0) {
+                anchoAnteriorMiTable.value =
                     entries[entries.length - 1].contentRect.width;
             }
-            if (contentScroll.value) {
-                if (
-                    anchoAnteriorScroll.value != contentScroll.value.offsetWidth
-                ) {
-                    intervalRender.value = setTimeout(async () => {
-                        anchoAnteriorScroll.value =
-                            contentScroll.value.offsetWidth;
-                        await renderMiTable();
-                        await determinarAltoContenedor();
-                        console.log("resize");
-                    }, 300);
+            if (miTable.value) {
+                if (anchoAnteriorMiTable.value != miTable.value.offsetWidth) {
+                    anchoAnteriorMiTable.value =
+                        entries[entries.length - 1].contentRect.width;
+                    if (window.innerWidth > 790) {
+                        intervalRenderContent.value = setTimeout(() => {
+                            establecerDimensionesContenedores();
+                            console.log("resize content");
+                        }, 400);
+                    }
                 }
             }
         }
     });
-    if (contentScroll.value) {
-        observerContentScroll.value.observe(contentScroll.value);
-    }
-    if (props.api) {
-        cargarDatos();
+    if (miTable.value) {
+        observerContentMiTable.value.observe(miTable.value);
     }
 });
 
 onUnmounted(() => {
-    window.removeEventListener("resize", cambioTamanioPantalla);
+    window.removeEventListener("resize", actualizaDimensionesVentana);
     // Limpiar observer
-    if (observerContentScroll.value && contentScroll.value) {
-        observerContentScroll.value.unobserve(contentScroll.value);
+    if (observerContentMiTable.value && contentScroll.value) {
+        observerContentMiTable.value.unobserve(contentScroll.value);
     }
-    observerContentScroll.value = null;
-    // console.log("finalizado");
+    observerContentMiTable.value = null;
 });
 
 defineExpose({
@@ -964,6 +926,7 @@ defineExpose({
     <div
         class="mi-table"
         :class="[$attrs.class, fixedHeader ? 'tablaFixeada' : '']"
+        ref="miTable"
     >
         <div class="mi-content-header" ref="eContentHeader">
             <table
@@ -994,8 +957,8 @@ defineExpose({
                                         : '',
                                     fixedHeader ? 'fixed-header' : '',
                                 ]"
+                                :style="getStyleColumnFixed(item, index)"
                                 :data-width="item.width ? item.width : ''"
-                                :style="getRightLetfStick(index, item, true)"
                             >
                                 <div
                                     class="iheader sortable"
@@ -1070,7 +1033,7 @@ defineExpose({
                 }"
                 ref="eContentTable"
             >
-                <div class="mi-loading-table" v-show="pLoading">
+                <div class="mi-loading-table" v-show="pLoading" ref="miLoading">
                     <div>
                         <template v-if="$slots.loading">
                             <slot name="loading"></slot>
@@ -1087,9 +1050,7 @@ defineExpose({
                     ]"
                     ref="miTableRef"
                 >
-                    <colgroup ref="tableContentGroup">
-                        <col v-for="item in listCols" />
-                    </colgroup>
+                    <colgroup ref="tableContentGroup"></colgroup>
                     <tbody
                         :class="[bodyClass, pLoading ? 'loading_active' : '']"
                         ref="eTbody"
@@ -1114,7 +1075,9 @@ defineExpose({
                                     :colspan="`${
                                         item.colspan ? item.colspan : 1
                                     }`"
-                                    :style="getRightLetfStick(index_col, i_col)"
+                                    :style="
+                                        getStyleColumnFixed(i_col, index_col)
+                                    "
                                     :ref="
                                         (el) =>
                                             (thtdRefs[

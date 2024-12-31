@@ -23,7 +23,7 @@ const headers = ref([
         label: "ID",
         key: "id",
         sortable: true,
-        width: "60px",
+        width: "60",
     },
     {
         label: "NOMBRE PROYECTO",
@@ -60,7 +60,7 @@ const headers = ref([
         keySortable: "pagos.created_at",
         sortable: true,
     },
-    { label: "ACCIÓN", key: "accion", width: "110px" },
+    { label: "ACCIÓN", key: "accion", width: "110" },
 ]);
 
 const search = ref("");

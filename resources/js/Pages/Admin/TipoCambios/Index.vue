@@ -26,7 +26,7 @@ const headers = ref([
         label: "ID",
         key: "id",
         sortable: true,
-        width: "80px",
+        width: "80",
     },
     {
         label: "PRINCIPAL",
@@ -40,7 +40,7 @@ const headers = ref([
         sortable: true,
         keySortable: "monedas.valor2",
     },
-    { label: "Acción", key: "accion", width: "100px" },
+    { label: "Acción", key: "accion", width: "100" },
 ]);
 
 const search = ref("");

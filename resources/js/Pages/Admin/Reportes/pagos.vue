@@ -69,7 +69,7 @@ const headers = ref([
         key: "trabajo.descripcion",
         keySortable: "trabajos.descripcion",
         sortable: true,
-        width: "400px",
+        width: "400",
     },
     {
         label: "CLIENTE",

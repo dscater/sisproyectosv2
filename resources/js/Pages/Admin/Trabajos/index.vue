@@ -24,6 +24,7 @@ const headers = ref([
         key: "id",
         sortable: true,
         fixed: true,
+        width: "80",
     },
     {
         label: "NOMBRE PROYECTO",
@@ -31,6 +32,7 @@ const headers = ref([
         keySortable: "proyectos.nombre",
         sortable: true,
         fixed: true,
+        width: "10%",
     },
     {
         label: "CLIENTE",
@@ -65,7 +67,7 @@ const headers = ref([
         label: "DESCRIPCIÓN",
         key: "descripcion",
         sortable: true,
-        width: "400px",
+        width: "400",
     },
     {
         label: "FECHAS",
@@ -73,11 +75,13 @@ const headers = ref([
         keySortable: "fecha_registro",
         sortable: true,
         fixed: "right",
+        width: "10%",
     },
     {
         label: "ACCIÓN",
         key: "accion",
         fixed: "right",
+        width: "10%",
         classTd: () => {
             return "accion";
         },

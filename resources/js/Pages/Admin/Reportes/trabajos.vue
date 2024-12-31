@@ -28,6 +28,7 @@ const headers = ref([
         key: "id",
         sortable: true,
         fixed: true,
+        width:"4%",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -90,6 +91,7 @@ const headers = ref([
         key: "costo",
         sortable: true,
         fixed: "right",
+        width:"8%",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -100,6 +102,7 @@ const headers = ref([
         key: "cancelado",
         sortable: true,
         fixed: "right",
+        width:"8%",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -111,6 +114,7 @@ const headers = ref([
         sortable: true,
         fixed: "right",
         type: Number,
+        width:"8%",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -121,6 +125,7 @@ const headers = ref([
         key: "estado_pago",
         sortable: true,
         fixed: "right",
+        width:"8%",
         classTd: (item) => {
             let class_fixed = "bg-danger";
             if (item.estado_pago == "COMPLETO") {
