@@ -40,6 +40,7 @@ const headers = ref([
         keySortable: "proyectos.nombre",
         sortable: true,
         fixed: true,
+        width:"200",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -58,7 +59,7 @@ const headers = ref([
     },
     {
         label: "FECHA INICIO",
-        key: "fecha_inicio",
+        key: "fecha_inicio_t",
         sortable: true,
     },
     {
@@ -68,7 +69,7 @@ const headers = ref([
     },
     {
         label: "FECHA ENTREGA",
-        key: "fecha_entrega",
+        key: "fecha_entrega_t",
         sortable: true,
     },
     {
@@ -78,12 +79,12 @@ const headers = ref([
     },
     {
         label: "FECHA ENVÍO",
-        key: "fecha_envio",
+        key: "fecha_envio_t",
         sortable: true,
     },
     {
         label: "FECHA CONCLUSIÓN",
-        key: "fecha_conclucion",
+        key: "fecha_conclucion_t",
         sortable: true,
     },
     {

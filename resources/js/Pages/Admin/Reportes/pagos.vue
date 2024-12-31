@@ -38,6 +38,7 @@ const headers = ref([
         key: "id",
         sortable: true,
         fixed: true,
+        width: "60",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -45,9 +46,11 @@ const headers = ref([
     },
     {
         label: "FECHA PAGO",
-        key: "fecha_pago",
+        key: "fecha_pago_t",
         sortable: true,
         fixed: true,
+        width: "120",
+        type: "Date",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -55,10 +58,11 @@ const headers = ref([
     },
     {
         label: "NOMBRE PROYECTO",
-        key: "proyecto_nombre",
+        key: "trabajo.proyecto.nombre",
         keySortable: "proyectos.nombre",
         sortable: true,
         fixed: true,
+        width: "190",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -69,7 +73,7 @@ const headers = ref([
         key: "trabajo.descripcion",
         keySortable: "trabajos.descripcion",
         sortable: true,
-        width: "400",
+        width: "300",
     },
     {
         label: "CLIENTE",
@@ -96,7 +100,8 @@ const headers = ref([
         label: "MONTO",
         key: "monto",
         sortable: true,
-        type: Number,
+        type: "Number",
+        width: "140",
         fixed: "right",
         classTd: () => {
             let class_fixed = "bg__fixed";
@@ -399,7 +404,7 @@ function obtenerFechaActual() {
                             fixed-header
                             table-height="50vh"
                         >
-                            <template #proyecto_nombre="{ item }">
+                            <template #['trabajo.proyecto.nombre']="{ item }">
                                 <p
                                     style="
                                         width: 120px;
@@ -411,6 +416,23 @@ function obtenerFechaActual() {
                                     <b>({{ item.trabajo.proyecto.alias }})</b>
                                 </p>
                             </template>
+
+                            <template #foto_comprobante="{ item }">
+                                <div
+                                class="w-100 text-center"
+                                    v-text="item.foto_comprobante ? 'SI' : 'NO'"
+                                ></div>
+                            </template>
+
+                            <template #archivo_comprobante="{ item }">
+                                <div
+                                class="w-100 text-center"
+                                    v-text="
+                                        item.archivo_comprobante ? 'SI' : 'NO'
+                                    "
+                                ></div>
+                            </template>
+
                             <template #costo="{ item }">
                                 <div class="w-100">
                                     {{ item.moneda.nombre }}
@@ -427,15 +449,10 @@ function obtenerFechaActual() {
                                 </div>
                             </template>
 
-                            <template #descripcion="{ item }">
-                                <p
-                                    style="
-                                        width: 120px;
-                                        word-wrap: break-word;
-                                        white-space: wrap;
-                                    "
-                                    v-html="item.descripcion"
-                                ></p>
+                            <template #['trabajo.descripcion']="{ item }">
+                                <div
+                                    v-html="item.trabajo.descripcion"
+                                ></div>
                             </template>
 
                             <template

@@ -60,7 +60,7 @@ const props = defineProps({
     widthFixDefault: {
         type: Number,
         String,
-        default: 200,
+        default: 180,
     },
     tableClass: {
         type: String,
@@ -150,7 +150,7 @@ watch(
     () => props.syncOrderBy,
     (newVal) => {
         orderBy.value = newVal;
-        console.log("watch 1");
+        // console.log("watch 1");
         cargarDatos();
     }
 );
@@ -159,7 +159,7 @@ watch(
     () => props.syncOrderAsc,
     (newVal) => {
         orderAsc.value = newVal ? newVal.toLowerCase() : null;
-        console.log("watch 2");
+        // console.log("watch 2");
         cargarDatos();
     }
 );
@@ -167,7 +167,7 @@ watch(
 watch(
     () => props.loading,
     (newVal) => {
-        console.log("watch 3");
+        // console.log("watch 3");
         pLoading.value = newVal;
     }
 );
@@ -175,7 +175,7 @@ watch(
 watch(
     () => props.multiSearch,
     (newVal) => {
-        console.log("watch 4");
+        // console.log("watch 4");
         oMultiSearch.value = newVal;
         cargarDatos();
     },
@@ -185,7 +185,7 @@ watch(
 watch(
     () => props.search,
     (newVal) => {
-        console.log("watch 5");
+        // console.log("watch 5");
         tSearch.value = newVal;
         clearInterval(intervalSearch.value);
         intervalSearch.value = setTimeout(() => {
@@ -196,14 +196,14 @@ watch(
 );
 
 watch(per_page, (newValue, oldValue) => {
-    console.log("watch 6");
+    // console.log("watch 6");
     cambiaPerPage();
 });
 
 watch(
     () => props.data,
     (newVal) => {
-        console.log("watch 7");
+        // console.log("watch 7");
         listData.value = newVal;
         total.value = listData.value.length;
         cargarDatos();
@@ -314,13 +314,19 @@ const generarDatosPorLista = async () => {
                     }
 
                     // Obtener valores a comparar
-                    let valA = getColumnValue(a, vOrderBy);
-                    let valB = getColumnValue(b, vOrderBy);
-
+                    let valA = getColumnValue(a, vOrderBy) ?? "";
+                    let valB = getColumnValue(b, vOrderBy) ?? "";
                     // Si el tipo es Number, convertir los valores
-                    if (columnConfig.type === Number) {
+                    if (columnConfig.type && columnConfig.type.toLowerCase() === "number") {
                         valA = parseFloat(valA) || 0; // Asegurar que sea un número
                         valB = parseFloat(valB) || 0;
+                    } else if (columnConfig.type && columnConfig.type.toLowerCase() === "date") {
+                        // Convertir fechas al formato YYYY-MM-DD
+                        valA = formatDateToISO(valA);
+                        valB = formatDateToISO(valB);
+                        // Intentar convertir las fechas a milisegundos
+                        valA = isValidDate(valA) ? new Date(valA).getTime() : 0;
+                        valB = isValidDate(valB) ? new Date(valB).getTime() : 0;
                     } else if (
                         typeof valA === "string" &&
                         typeof valB === "string"
@@ -360,6 +366,20 @@ const generarDatosPorLista = async () => {
         }
     });
 };
+
+// Función para validar formatos de fecha
+function isValidDate(dateString) {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
+}
+// Función para convertir fechas de DD/MM/YYYY a YYYY-MM-DD
+function formatDateToISO(dateString) {
+    if (/\d{2}\/\d{2}\/\d{4}/.test(dateString)) {
+        const [day, month, year] = dateString.split("/");
+        return `${year}-${month}-${day}`;
+    }
+    return dateString; // Si ya está en formato ISO, devolverlo tal cual
+}
 
 // detectar el cambio de cantidad de registros por pagina
 const cambiaPerPage = async () => {
@@ -460,6 +480,7 @@ const miTableHeaderRef = ref(null);
 const miTheadRef = ref(null);
 const widthColumnsFix = ref([]);
 const miLoading = ref(null);
+const anchoDefaultNotFound = ref(170);
 
 // obtener el ancho de celda de un porcentaje en pixeles
 const getAnchoPorcentajeAPx = (totalPx, porcentaje) => {
@@ -470,13 +491,18 @@ const getAnchoPorcentajeAPx = (totalPx, porcentaje) => {
     return ancho;
 };
 
-const establecerDimensionesContenedores = () => {
+const establecerDimensionesContenedores = async () => {
+    await nextTick();
+    await esperarCargaElementos();
+    console.log("redimencionando");
+
     anchoEstablecidoRender.value = miTable.value
         ? miTable.value.offsetWidth
         : 0;
-    establecerAnchosContenedores();
-    establecerAnchoColumnGroup();
-    establecerColumnasFixedSlot();
+    await establecerAnchosContenedores();
+    await establecerAnchoColumnGroup();
+    await establecerColumnasFixedSlot();
+
     // scroll
     syncScrollBodyHeader();
     // alto del contenedor
@@ -510,23 +536,35 @@ const establecerAltoContenedor = () => {
 
 // Fjar el ancho que tendran los contenedores
 const establecerAnchosContenedores = () => {
-    if (anchoEstablecidoRender.value > 0) {
-        contentScroll.value.style.width = anchoEstablecidoRender.value + "px";
-        eContentTable.value.style.width = anchoEstablecidoRender.value + "px";
-        eContentHeader.value.style.width = anchoEstablecidoRender.value + "px";
-        eContentTable.value.style.maxWidth =
-            anchoEstablecidoRender.value + "px";
-        eContentHeader.value.style.maxWidth =
-            anchoEstablecidoRender.value + "px";
-        eContentTable.value.querySelector("table").style.width =
-            anchoEstablecidoRender.value + "px";
-        eContentTable.value.querySelector("table").style.maxWidth =
-            anchoEstablecidoRender.value + "px";
-        eContentHeader.value.querySelector("table").style.width =
-            anchoEstablecidoRender.value + "px";
-        eContentHeader.value.querySelector("table").style.maxWidth =
-            anchoEstablecidoRender.value + "px";
-    }
+    return new Promise((resolve, reject) => {
+        try {
+            if (anchoEstablecidoRender.value > 0) {
+                contentScroll.value.style.width =
+                    anchoEstablecidoRender.value + "px";
+                eContentTable.value.style.width =
+                    anchoEstablecidoRender.value + "px";
+                eContentHeader.value.style.width =
+                    anchoEstablecidoRender.value + "px";
+                eContentTable.value.style.maxWidth =
+                    anchoEstablecidoRender.value + "px";
+                eContentHeader.value.style.maxWidth =
+                    anchoEstablecidoRender.value + "px";
+                eContentTable.value.querySelector("table").style.width =
+                    anchoEstablecidoRender.value + "px";
+                eContentTable.value.querySelector("table").style.maxWidth =
+                    anchoEstablecidoRender.value + "px";
+                eContentHeader.value.querySelector("table").style.width =
+                    anchoEstablecidoRender.value + "px";
+                eContentHeader.value.querySelector("table").style.maxWidth =
+                    anchoEstablecidoRender.value + "px";
+            }
+            setTimeout(() => {
+                resolve();
+            }, 150);
+        } catch (error) {
+            reject(error);
+        }
+    });
 };
 
 // calcular anchos % o vw
@@ -551,44 +589,77 @@ function obtenerUnidadValor(valor) {
 
 // Fijar el ancho de las columnas de la tabla
 const establecerAnchoColumnGroup = () => {
-    const listWidths = listCols.value.map((elemento, indice) =>
-        elemento.hasOwnProperty("width")
-            ? getCalculoAnchoPVW(elemento.width, elemento)
-            : 0
-    );
+    return new Promise((resolve, reject) => {
+        try {
+            const listWidths = listCols.value.map((elemento, indice) =>
+                elemento.hasOwnProperty("width")
+                    ? getCalculoAnchoPVW(elemento.width, elemento)
+                    : 0
+            );
 
-    const listIndex = listCols.value.map((elemento, indice) =>
-        elemento.hasOwnProperty("width") ? indice : -1
-    );
-    const i_cols_width = listIndex.filter((indice) => indice !== -1);
-    const restantes = listCols.value.length - i_cols_width.length;
-    const total_definidos = listWidths.reduce((a, b) => {
-        return parseFloat(a) + parseFloat(b);
-    }, 0);
+            const listIndex = listCols.value.map((elemento, indice) =>
+                elemento.hasOwnProperty("width") ? indice : -1
+            );
+            // indice de columnas con anchos pre establecidos
+            const i_cols_width = listIndex.filter((indice) => indice !== -1);
+            const restantes = listCols.value.length - i_cols_width.length;
+            const total_definidos = listWidths.reduce((a, b) => {
+                return parseFloat(a) + parseFloat(b);
+            }, 0);
 
-    let ancho_general =
-        (anchoEstablecidoRender.value - total_definidos - 1) / restantes;
+            let ancho_general =
+                (anchoEstablecidoRender.value - total_definidos - 1) /
+                restantes;
 
-    if (props.fixCols) {
-        // ancho_general = anchoEstablecidoRender.value / restantes;
-        ancho_general = props.widthFixDefault;
-    }
-
-    const colsHeader = tableHeaderGroup.value.querySelectorAll("col");
-    if (colsHeader.length > 0) {
-        colsHeader.forEach((elemCol, indexCol) => {
-            // ancho
-            if (i_cols_width.includes(indexCol)) {
-                widthColumnsFix.value[indexCol] = listWidths[indexCol];
-                elemCol.style.width = listWidths[indexCol] + "px";
-            } else {
-                widthColumnsFix.value[indexCol] = ancho_general;
-                elemCol.style.width = ancho_general + "px";
+            const colsHeader = tableHeaderGroup.value.querySelectorAll("col");
+            const colsHeaderTh = eContentHeader.value.querySelectorAll("th");
+            if (colsHeader.length > 0) {
+                colsHeader.forEach((elemCol, indexCol) => {
+                    // ancho
+                    if (i_cols_width.includes(indexCol)) {
+                        widthColumnsFix.value[indexCol] = listWidths[indexCol];
+                        elemCol.style.width = listWidths[indexCol] + "px";
+                    } else {
+                        if (props.fixCols) {
+                            if (props.widthFixDefault > 0) {
+                                ancho_general = props.widthFixDefault;
+                            } else {
+                                const elem_th = colsHeaderTh[indexCol];
+                                if (elem_th) {
+                                    const ancho_th = elem_th.offsetWidth;
+                                    const elem_div =
+                                        elem_th.querySelector("div");
+                                    if (elem_div) {
+                                        ancho_general = elem_div.offsetWidth;
+                                    } else {
+                                        ancho_general =
+                                            ancho_th < 15
+                                                ? ancho_th + 15
+                                                : ancho_th; // definir el minimo
+                                    }
+                                } else {
+                                    // en caso de que no existe o no se encuentre el elemento este tendra
+                                    // el ancho por default
+                                    ancho_general = anchoDefaultNotFound.value;
+                                }
+                            }
+                        }
+                        widthColumnsFix.value[indexCol] = ancho_general;
+                        elemCol.style.width = ancho_general + "px";
+                    }
+                });
             }
-        });
-    }
 
-    tableContentGroup.value.innerHTML = tableHeaderGroup.value.innerHTML;
+            // incorporar el colgroup del header en el contenido
+            tableContentGroup.value.innerHTML =
+                tableHeaderGroup.value.innerHTML;
+            setTimeout(() => {
+                resolve();
+            }, 150);
+        } catch (error) {
+            reject(error);
+        }
+    });
 };
 
 // funcion para establecer los estilos siempre y cuando
@@ -610,61 +681,44 @@ const getStyleColumnFixed = (item, indexCol) => {
 };
 
 const establecerColumnasFixedSlot = () => {
-    if (miTableRef.value) {
-        const table = miTableRef.value;
+    return new Promise((resolve, reject) => {
+        try {
+            if (miTableRef.value) {
+                const table = miTableRef.value;
 
-        const listIzquierda = table.querySelectorAll(".fixed-column-ext");
-        const listDerechaIni = table.querySelectorAll(
-            ".fixed-column-ext-right"
-        );
-        const listDerecha = [...listDerechaIni].reverse();
-        let distancia_acum = 0;
-        listIzquierda.forEach((elem) => {
-            elem.style.position = "sticky";
-            elem.style.left = distancia_acum + "px";
-            if (elem.classList.contains("footer-fixed")) {
-                elem.style.bottom = "1px";
+                const listIzquierda =
+                    table.querySelectorAll(".fixed-column-ext");
+                const listDerechaIni = table.querySelectorAll(
+                    ".fixed-column-ext-right"
+                );
+                const listDerecha = [...listDerechaIni].reverse();
+                let distancia_acum = 0;
+                listIzquierda.forEach((elem) => {
+                    elem.style.position = "sticky";
+                    elem.style.left = distancia_acum + "px";
+                    if (elem.classList.contains("footer-fixed")) {
+                        elem.style.bottom = "1px";
+                    }
+                    elem.style.left = distancia_acum + "px";
+                    distancia_acum += parseFloat(elem.offsetWidth);
+                });
+
+                distancia_acum = 0;
+                listDerecha.forEach((elem) => {
+                    elem.style.position = "sticky";
+                    elem.style.right = distancia_acum + "px";
+                    if (elem.classList.contains("footer-fixed")) {
+                        elem.style.bottom = "1px";
+                    }
+                    elem.style.right = distancia_acum + "px";
+                    distancia_acum += parseFloat(elem.offsetWidth);
+                });
             }
-            elem.style.left = distancia_acum + "px";
-            distancia_acum += parseFloat(elem.offsetWidth);
-        });
-
-        distancia_acum = 0;
-        listDerecha.forEach((elem) => {
-            elem.style.position = "sticky";
-            elem.style.right = distancia_acum + "px";
-            if (elem.classList.contains("footer-fixed")) {
-                elem.style.bottom = "1px";
-            }
-            elem.style.right = distancia_acum + "px";
-            distancia_acum += parseFloat(elem.offsetWidth);
-        });
-
-        // ["fixed-column-ext", "fixed-column-ext-right"].forEach(
-        //     (className, dir) => {
-        //         let offset = 0;
-        //         const elements = table.querySelectorAll(`.${className}`);
-        //         const iter = dir === 0 ? elements : [...elements].reverse();
-
-        //         iter.forEach((el) => {
-        //             if (el) {
-        //                 el.style.position = "sticky";
-        //                 el.style[dir === 0 ? "left" : "right"] = `${offset}px`;
-        //                 if (el.classList.contains("footer-fixed")) {
-        //                     el.style.bottom = 0;
-        //                 }
-        //                 if (el.classList.contains("header-fixed")) {
-        //                     el.style.top = 0;
-        //                 }
-
-        //                 // el.style.width =
-        //                 //     el.getBoundingClientRect().width;
-        //                 offset += el.offsetWidth;
-        //             }
-        //         });
-        //     }
-        // );
-    }
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
 };
 
 // funcion para calcular la distancia derecha|izquierda del elemento
@@ -794,6 +848,24 @@ const syncScrollBodyHeader = () => {
             );
         }
     });
+
+    eContentHeader.value.addEventListener("scroll", (e) => {
+        // Verifica si el contenedor tiene un scroll horizontal
+        if (e.target.scrollWidth > e.target.clientWidth) {
+            // Solo sincroniza el scroll si el contenedor tiene desplazamiento
+            eContentTable.value.scrollLeft = e.target.scrollLeft;
+            let positionLeftScroll =
+                e.target.scrollLeft / eContentHeader.value.scrollWidth;
+            scrollX.value.style.left =
+                positionLeftScroll * (eContentHeader.value.offsetWidth - 5) +
+                "px";
+        } else {
+            eContentHeader.value.removeEventListener(
+                "scroll",
+                syncScrollBodyHeader
+            );
+        }
+    });
 };
 
 // iniciar el drag del scroll
@@ -855,29 +927,34 @@ const removerEventosScroll = () => {
 
 const observerContentMiTable = ref(null);
 const anchoAnteriorMiTable = ref(0);
-const intervalRenderContent = ref(null);
 const intervalRenderWindow = ref(null);
+const intervalRenderContent = ref(null);
 const miTable = ref(null);
 
-const actualizaDimensionesVentana = () => {
+const actualizaDimensionesVentana = async () => {
     clearInterval(intervalRenderWindow.value);
-    intervalRenderWindow.value = setTimeout(async () => {
+    intervalRenderWindow.value = setTimeout(() => {
         establecerDimensionesContenedores();
         clearInterval(intervalRenderContent.value);
-        console.log("resize window");
-    }, 300);
+        // console.log("resize window");
+    }, 400);
 };
 
 onUpdated(() => {
-    establecerDimensionesContenedores();
+    clearInterval(intervalRenderWindow.value);
+    if (anchoEstablecidoRender.value != miTable.value.offsetWidth) {
+        intervalRenderWindow.value = setTimeout(() => {
+            establecerDimensionesContenedores();
+            clearInterval(intervalRenderContent.value);
+            // console.log("update");
+        }, 400);
+    }
 });
 
 onMounted(async () => {
     if (props.api) {
         cargarDatos();
     }
-    await nextTick();
-    await esperarCargaElementos();
     establecerDimensionesContenedores();
     window.addEventListener("resize", actualizaDimensionesVentana);
 
@@ -896,8 +973,8 @@ onMounted(async () => {
                     if (window.innerWidth > 790) {
                         intervalRenderContent.value = setTimeout(() => {
                             establecerDimensionesContenedores();
-                            console.log("resize content");
-                        }, 400);
+                            // console.log("resize content");
+                        }, 700);
                     }
                 }
             }
@@ -1063,9 +1140,6 @@ defineExpose({
                                 <td
                                     v-for="(i_col, index_col) in listCols"
                                     :class="[
-                                        i_col.classTd
-                                            ? i_col.classTd(item)
-                                            : '',
                                         i_col.fixed
                                             ? i_col.fixed == 'right'
                                                 ? 'fixed-column-right'
@@ -1089,7 +1163,14 @@ defineExpose({
                                         class="label-responsive"
                                         v-text="`${i_col.label}:`"
                                     ></div>
-                                    <div class="mi-celda">
+                                    <div
+                                        class="mi-celda"
+                                        :class="[
+                                            i_col.classTd
+                                                ? i_col.classTd(item)
+                                                : '',
+                                        ]"
+                                    >
                                         <template v-if="$slots[i_col.key]">
                                             <slot
                                                 :name="i_col.key"

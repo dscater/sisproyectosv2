@@ -191,6 +191,9 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.pagination{
+    flex-wrap: wrap;
+}
 .page-item.disabled,
 .page-item.disabled,
 .page-item a:disabled,

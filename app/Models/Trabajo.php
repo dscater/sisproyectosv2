@@ -36,7 +36,47 @@ class Trabajo extends Model
         'fecha_registro',
     ];
 
-    protected $appends = ["porcentaje_cancelado", "cantidad_pagos", "fecha_registro_t"];
+    protected $appends = [
+        "porcentaje_cancelado",
+        "cantidad_pagos",
+        "fecha_inicio_t",
+        "fecha_entrega_t",
+        "fecha_envio_t",
+        "fecha_conclucion_t",
+        "fecha_registro_t"
+    ];
+
+    public function getFechaConclucionTAttribute()
+    {
+        if ($this->fecha_conclusion) {
+            return date("d/m/Y", strtotime($this->fecha_conclusion));
+        }
+        return "";
+    }
+
+    public function getFechaEnvioTAttribute()
+    {
+        if ($this->fecha_envio) {
+            return date("d/m/Y", strtotime($this->fecha_envio));
+        }
+        return "";
+    }
+
+    public function getFechaEntregaTAttribute()
+    {
+        if ($this->fecha_entrega) {
+            return date("d/m/Y", strtotime($this->fecha_entrega));
+        }
+        return "";
+    }
+
+    public function getFechaInicioTAttribute()
+    {
+        if ($this->fecha_inicio) {
+            return date("d/m/Y", strtotime($this->fecha_inicio));
+        }
+        return "";
+    }
 
     public function getFechaRegistroTAttribute()
     {
