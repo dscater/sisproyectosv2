@@ -87,7 +87,7 @@ body table.table.mitabla.tablaFixeada thead tr {
     box-shadow: none;
 }
 
-body table.table tbody tr td.accion .mi-celda{
+body table.table tbody tr td.accion .mi-celda {
     flex-direction: column;
 }
 
@@ -101,6 +101,28 @@ body table.table tbody tr td {
 }
 
 /* MODIFICAICÓN ESTILOS ADMINLTE */
+.hold-transition .content-wrapper,
+.hold-transition .control-sidebar,
+.hold-transition .control-sidebar *,
+.hold-transition .main-footer,
+.hold-transition .main-header,
+.hold-transition .main-sidebar,
+.hold-transition .main-sidebar * {
+    transition: all 0.2s ease-in-out !important;
+}
+
+.nav-sidebar .nav-treeview {
+    height: 0;
+    display: block;
+    overflow: hidden;
+    transition: all 2s ease-out;
+}
+
+.nav-sidebar .nav-item .nav-link.sub-menu.menu-is-opening i.right {
+    -webkit-transform: rotate(-90deg) !important;
+    transform: rotate(-90deg) !important;
+}
+
 .loading {
     position: fixed;
     top: -200vh;

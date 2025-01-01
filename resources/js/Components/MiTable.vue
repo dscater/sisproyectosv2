@@ -242,8 +242,8 @@ const cargarDatos = async () => {
         // Actualiza los contadores de registros
         muestraCantidadRegistros();
     }
-    fijarAltoContenedorCambioPagina();
-
+    await esperaAntesRedimencionar();
+    await fijarAltoContenedorCambioPagina();
     setLoading(false);
 };
 
@@ -317,10 +317,16 @@ const generarDatosPorLista = async () => {
                     let valA = getColumnValue(a, vOrderBy) ?? "";
                     let valB = getColumnValue(b, vOrderBy) ?? "";
                     // Si el tipo es Number, convertir los valores
-                    if (columnConfig.type && columnConfig.type.toLowerCase() === "number") {
+                    if (
+                        columnConfig.type &&
+                        columnConfig.type.toLowerCase() === "number"
+                    ) {
                         valA = parseFloat(valA) || 0; // Asegurar que sea un número
                         valB = parseFloat(valB) || 0;
-                    } else if (columnConfig.type && columnConfig.type.toLowerCase() === "date") {
+                    } else if (
+                        columnConfig.type &&
+                        columnConfig.type.toLowerCase() === "date"
+                    ) {
                         // Convertir fechas al formato YYYY-MM-DD
                         valA = formatDateToISO(valA);
                         valB = formatDateToISO(valB);
@@ -492,40 +498,60 @@ const getAnchoPorcentajeAPx = (totalPx, porcentaje) => {
 };
 
 const establecerDimensionesContenedores = async () => {
-    await nextTick();
-    await esperarCargaElementos();
-    console.log("redimencionando");
+    return new Promise(async (resolve, reject) => {
+        try {
+            await nextTick();
+            await esperarCargaElementos();
+            console.log("redimencionando");
 
-    anchoEstablecidoRender.value = miTable.value
-        ? miTable.value.offsetWidth
-        : 0;
-    await establecerAnchosContenedores();
-    await establecerAnchoColumnGroup();
-    await establecerColumnasFixedSlot();
+            anchoEstablecidoRender.value = miTable.value
+                ? miTable.value.offsetWidth
+                : 0;
+            anchoAnteriorMiTable.value = miTable.value
+                ? miTable.value.offsetWidth
+                : 0;
+            await establecerAnchoColumnGroup();
+            await establecerAnchosContenedores();
+            await establecerColumnasFixedSlot();
 
-    // scroll
-    syncScrollBodyHeader();
-    // alto del contenedor
-    establecerAltoContenedor();
+            // scroll
+            syncScrollBodyHeader();
+            // alto del contenedor
+            establecerAltoContenedor();
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
 };
 
 // Fijar el alto del contenedor antes de cambiar de pagina
 const fijarAltoContenedorCambioPagina = () => {
-    if (!props.tableHeight) {
-        eContentTable.value.style.minHeight = "";
-        setTimeout(() => {
-            if (window.innerWidth > 790) {
-                eContentTable.value.style.minHeight = `${contentScroll.value.offsetHeight}px`;
+    return new Promise((resolve, reject) => {
+        try {
+            if (eContentTable.value) {
+                eContentTable.value.style.minHeight = "";
+                if (!props.tableHeight) {
+                    if (window.innerWidth > 790) {
+                        eContentTable.value.style.minHeight = `${contentScroll.value.offsetHeight}px`;
+                    }
+                }
             }
-        }, 200);
-    }
+            resolve();
+        } catch (error) {
+            reject(error);
+        }
+    });
 };
 
 // Fijar el alto que tendra el contenedor segun la propiedad tableHeight
 const establecerAltoContenedor = () => {
-    if (props.tableHeight) {
-        eContentTable.value.style.height = `${props.tableHeight}`;
-        eContentTable.value.style.minHeight = `${props.tableHeight}`;
+    if (eContentTable.value) {
+        eContentTable.value.style.minHeight = "";
+        if (props.tableHeight) {
+            eContentTable.value.style.height = `${props.tableHeight}`;
+            eContentTable.value.style.minHeight = `${props.tableHeight}`;
+        }
     }
 
     resetPositionScroll();
@@ -611,8 +637,12 @@ const establecerAnchoColumnGroup = () => {
                 (anchoEstablecidoRender.value - total_definidos - 1) /
                 restantes;
 
-            const colsHeader = tableHeaderGroup.value.querySelectorAll("col");
-            const colsHeaderTh = eContentHeader.value.querySelectorAll("th");
+            const colsHeader = tableHeaderGroup.value
+                ? tableHeaderGroup.value.querySelectorAll("col")
+                : [];
+            const colsHeaderTh = eContentHeader.value
+                ? eContentHeader.value.querySelectorAll("th")
+                : [];
             if (colsHeader.length > 0) {
                 colsHeader.forEach((elemCol, indexCol) => {
                     // ancho
@@ -651,11 +681,11 @@ const establecerAnchoColumnGroup = () => {
             }
 
             // incorporar el colgroup del header en el contenido
-            tableContentGroup.value.innerHTML =
-                tableHeaderGroup.value.innerHTML;
-            setTimeout(() => {
-                resolve();
-            }, 150);
+            if (tableContentGroup.value && tableHeaderGroup.value) {
+                tableContentGroup.value.innerHTML =
+                    tableHeaderGroup.value.innerHTML;
+            }
+            resolve();
         } catch (error) {
             reject(error);
         }
@@ -813,59 +843,63 @@ const updateScrollbars = () => {
 
 // sincronizar el scroll X del contenedor con el header
 const syncScrollBodyHeader = () => {
-    eContentTable.value.addEventListener("scroll", (e) => {
-        // Verifica si el contenedor tiene un scroll horizontal
-        if (e.target.scrollWidth > e.target.clientWidth) {
-            // Solo sincroniza el scroll si el contenedor tiene desplazamiento
-            eContentHeader.value.scrollLeft = e.target.scrollLeft;
-            let positionLeftScroll =
-                e.target.scrollLeft / eContentTable.value.scrollWidth;
-            scrollX.value.style.left =
-                positionLeftScroll * (eContentTable.value.offsetWidth - 5) +
-                "px";
-        } else {
-            eContentTable.value.removeEventListener(
-                "scroll",
-                syncScrollBodyHeader
-            );
-        }
+    if (eContentTable.value) {
+        eContentTable.value.removeEventListener("scroll", scrollContentAHeader);
+        eContentTable.value.addEventListener("scroll", scrollContentAHeader);
+    }
+    if (eContentHeader.value) {
+        eContentHeader.value.removeEventListener(
+            "scroll",
+            scrollHeaderAContent
+        );
+        eContentHeader.value.addEventListener("scroll", scrollHeaderAContent);
+    }
+};
 
-        // Verifica si el contenedor tiene un scroll vertical
-        if (e.target.scrollHeight > e.target.clientHeight) {
-            // Solo sincroniza el scroll si el contenedor tiene desplazamiento
-            eContentHeader.value.scrollTop = e.target.scrollTop;
-            let positionTopScroll =
-                e.target.scrollTop / eContentTable.value.scrollHeight;
-            scrollY.value.style.top =
-                positionTopScroll *
-                    (eContentTable.value.offsetHeight -
-                        (originalScrollYpx.value > -1 ? 16 : 5)) +
-                "px";
-        } else {
-            eContentTable.value.removeEventListener(
-                "scroll",
-                syncScrollBodyHeader
-            );
-        }
-    });
+const scrollContentAHeader = (e) => {
+    // Verifica si el contenedor tiene un scroll horizontal
+    if (e.target.scrollWidth > e.target.clientWidth) {
+        // Solo sincroniza el scroll si el contenedor tiene desplazamiento
+        eContentHeader.value.scrollLeft = e.target.scrollLeft;
+        let positionLeftScroll =
+            e.target.scrollLeft / eContentTable.value.scrollWidth;
+        scrollX.value.style.left =
+            positionLeftScroll * (eContentTable.value.offsetWidth - 5) + "px";
+    } else {
+        eContentTable.value.removeEventListener("scroll", syncScrollBodyHeader);
+    }
 
-    eContentHeader.value.addEventListener("scroll", (e) => {
-        // Verifica si el contenedor tiene un scroll horizontal
-        if (e.target.scrollWidth > e.target.clientWidth) {
-            // Solo sincroniza el scroll si el contenedor tiene desplazamiento
-            eContentTable.value.scrollLeft = e.target.scrollLeft;
-            let positionLeftScroll =
-                e.target.scrollLeft / eContentHeader.value.scrollWidth;
-            scrollX.value.style.left =
-                positionLeftScroll * (eContentHeader.value.offsetWidth - 5) +
-                "px";
-        } else {
-            eContentHeader.value.removeEventListener(
-                "scroll",
-                syncScrollBodyHeader
-            );
-        }
-    });
+    // Verifica si el contenedor tiene un scroll vertical
+    if (e.target.scrollHeight > e.target.clientHeight) {
+        // Solo sincroniza el scroll si el contenedor tiene desplazamiento
+        eContentHeader.value.scrollTop = e.target.scrollTop;
+        let positionTopScroll =
+            e.target.scrollTop / eContentTable.value.scrollHeight;
+        scrollY.value.style.top =
+            positionTopScroll *
+                (eContentTable.value.offsetHeight -
+                    (originalScrollYpx.value > -1 ? 16 : 5)) +
+            "px";
+    } else {
+        eContentTable.value.removeEventListener("scroll", syncScrollBodyHeader);
+    }
+};
+
+const scrollHeaderAContent = (e) => {
+    // Verifica si el contenedor tiene un scroll horizontal
+    if (e.target.scrollWidth > e.target.clientWidth) {
+        // Solo sincroniza el scroll si el contenedor tiene desplazamiento
+        eContentTable.value.scrollLeft = e.target.scrollLeft;
+        let positionLeftScroll =
+            e.target.scrollLeft / eContentHeader.value.scrollWidth;
+        scrollX.value.style.left =
+            positionLeftScroll * (eContentHeader.value.offsetWidth - 5) + "px";
+    } else {
+        eContentHeader.value.removeEventListener(
+            "scroll",
+            syncScrollBodyHeader
+        );
+    }
 };
 
 // iniciar el drag del scroll
@@ -878,6 +912,7 @@ const startDrag = (axis, event) => {
         axis === "x" ? container.scrollLeft : container.scrollTop;
 
     document.body.classList.add("no-select");
+    removerEventosScroll();
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", stopDrag);
 };
@@ -940,7 +975,20 @@ const actualizaDimensionesVentana = async () => {
     }, 400);
 };
 
-onUpdated(() => {
+const esperaAntesRedimencionar = () => {
+    return new Promise((resolve, reject) => {
+        try {
+            setTimeout(() => {
+                resolve();
+            }, 300);
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
+onUpdated(async () => {
+    // await esperaAntesRedimencionar();
     clearInterval(intervalRenderWindow.value);
     if (anchoEstablecidoRender.value != miTable.value.offsetWidth) {
         intervalRenderWindow.value = setTimeout(() => {
@@ -949,13 +997,8 @@ onUpdated(() => {
             // console.log("update");
         }, 400);
     }
-});
 
-onMounted(async () => {
-    if (props.api) {
-        cargarDatos();
-    }
-    establecerDimensionesContenedores();
+    window.removeEventListener("resize", actualizaDimensionesVentana);
     window.addEventListener("resize", actualizaDimensionesVentana);
 
     // Iniciar observer content mitable
@@ -983,6 +1026,14 @@ onMounted(async () => {
     if (miTable.value) {
         observerContentMiTable.value.observe(miTable.value);
     }
+});
+
+onMounted(async () => {
+    if (props.api) {
+        cargarDatos();
+    }
+    // await esperaAntesRedimencionar();
+    // await establecerDimensionesContenedores();
 });
 
 onUnmounted(() => {

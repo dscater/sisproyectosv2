@@ -37,12 +37,6 @@ watch(
 );
 
 router.on("navigate", (event) => {
-    const body = document.querySelector("body");
-    if (body.classList.contains("sidebar-open")) {
-        body.classList.remove("sidebar-open");
-        body.classList.add("sidebar-closed");
-        body.classList.add("sidebar-collapse");
-    }
     route_current.value = route().current();
 });
 

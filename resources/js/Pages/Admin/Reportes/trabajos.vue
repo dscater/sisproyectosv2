@@ -114,7 +114,7 @@ const headers = ref([
         key: "saldo",
         sortable: true,
         fixed: "right",
-        type: Number,
+        type: "Number",
         width:"8%",
         classTd: () => {
             let class_fixed = "bg__fixed";

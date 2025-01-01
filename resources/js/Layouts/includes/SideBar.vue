@@ -1,14 +1,57 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { router } from "@inertiajs/vue3";
 import ItemMenu from "@/Components/ItemMenu.vue";
+import { useSideBar } from "@/composables/useSidebar.js";
 import { useAppStore } from "@/stores/aplicacion/appStore";
+const { closeSidebar } = useSideBar();
 const appStore = useAppStore();
+
+const toggleSubMenu = (e) => {
+    e.stopPropagation();
+    const elem = e.currentTarget;
+    if (
+        elem.classList.contains("menu-is-opening") &&
+        elem.classList.contains("menu-open")
+    ) {
+        elem.classList.remove("menu-is-opening");
+        elem.classList.remove("menu-open");
+        toggleSubMenuELem(elem, false);
+    } else {
+        elem.classList.add("menu-is-opening");
+        elem.classList.add("menu-open");
+        toggleSubMenuELem(elem, true);
+    }
+};
+
+const toggleSubMenuELem = (el, show) => {
+    const subMenu = el.nextElementSibling;
+    if (subMenu) {
+        subMenu.style.height = show ? subMenu.scrollHeight + "px" : "0";
+    }
+};
+
+router.on("navigate", (event) => {
+    closeSidebar();
+});
+
 onMounted(() => {
     // Selecciona el elemento del widget
     var sidebarSearchElement = $('[data-widget="sidebar-search"]');
     // Configura manualmente el texto de "no encontrado"
     sidebarSearchElement.data("notFoundText", "Sin resultados");
+
+    const subMenus = document.querySelectorAll(".sub-menu");
+    subMenus.forEach((elem, index) => {
+        elem.addEventListener("click", toggleSubMenu);
+    });
+});
+
+onUnmounted(() => {
+    const subMenus = document.querySelectorAll(".sub-menu");
+    subMenus.forEach((elem, index) => {
+        elem.remvoeEventListener("click", toggleSubMenu);
+    });
 });
 </script>
 <template>
@@ -113,7 +156,7 @@ onMounted(() => {
                     ></ItemMenu>
 
                     <li class="nav-item">
-                        <a href="#" class="nav-link">
+                        <a href="#" class="nav-link sub-menu">
                             <i class="nav-icon fas fa-table"></i>
                             <p>
                                 Reportes

@@ -13,7 +13,7 @@ import "./assets/css/miTable.css"; // mi-table
 // mis scripts
 import "./assets/js/jquery.min.js";
 import "./assets/js/bootstrap.bundle.js";
-import "./assets/js/adminlte.min.js";
+// import "./assets/js/adminlte.min.js";
 
 import { createApp, h } from "vue";
 import { createInertiaApp } from "@inertiajs/vue3";
