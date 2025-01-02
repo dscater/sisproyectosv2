@@ -231,7 +231,6 @@ onMounted(() => {
                     :syncOrderBy="'fecha_registro'"
                     :syncOrderAsc="'DESC'"
                     table-responsive
-                    fix-cols
                     fixed-header
                 >
                     <template #['proyecto.nombre']="{ item }">

@@ -62,7 +62,8 @@ const headers = ref([
         keySortable: "proyectos.nombre",
         sortable: true,
         fixed: true,
-        width: "190",
+        // width: "190",
+        
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
