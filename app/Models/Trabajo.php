@@ -285,18 +285,18 @@ class Trabajo extends Model
             $suma_total_cambio = 0;
             if (count($pagos) > 0) {
                 foreach ($pagos as $p) {
-                    if ($p->moneda_id != $moneda_principal->id) {
-                        // solo si la moneda es diferente a la principal intercambiar los valores de las columnas
-                        $aux_pago = Pago::find($p->id);
-                        $p->monto = $aux_pago->monto_cambio;
-                        $p->monto_cambio = $aux_pago->monto;
-                        // monedas
-                        $p->moneda_id = $moneda_principal->id;
-                        $p->moneda_cambio_id = $aux_pago->moneda_id;
-                    } else {
-                        // verificar si usan un tipo de cambios
-                        if ($p->trabajo->tipo_cambio_id != 0) {
-                            $tipo_cambio = $p->trabajo->tipo_cambio;
+                    // verificar si usan un tipo de cambios
+                    if ($p->trabajo->tipo_cambio_id != 0) {
+                        $tipo_cambio = $p->trabajo->tipo_cambio;
+                        if ($p->moneda_seleccionada_id != $moneda_principal->id) {
+                            // recalcular los valores segun tipo de cambio
+                            $monto_cambio = self::getMontoCambio($tipo_cambio->id, $p->moneda_seleccionada_id, $p->monto_original);
+                            $p->monto = $monto_cambio;
+                            $p->monto_cambio = $p->monto_original;
+                            // monedas
+                            $p->moneda_id = $moneda_principal->id;
+                            $p->moneda_cambio_id = $p->moneda_seleccionada_id;
+                        } else {
                             // monto
                             $monto_cambio = self::getMontoCambio($tipo_cambio->id, $p->moneda_id, $p->monto);
                             $p->monto_cambio = $monto_cambio;
@@ -304,17 +304,19 @@ class Trabajo extends Model
                             $p->moneda_id = $moneda_principal->id;
                             $p->moneda_cambio_id = $tipo_cambio->moneda2_id;
                         }
+                        $p->save();
                     }
                     $suma_total += (float)$p->monto;
                     $suma_total_cambio += (float)$p->monto_cambio;
-                    $p->save();
                 }
             }
+            $saldo = (float)$trabajo->costo - (float)$suma_total;
+            $saldo_cambio = (float)$trabajo->costo_cambio - (float)$suma_total_cambio;
             $trabajo->estado_pago = 'PENDIENTE';
             $trabajo->cancelado = $suma_total;
-            $trabajo->saldo = $trabajo->costo - $suma_total;
-            $trabajo->cancelado_cambio = $suma_total_cambio;
-            $trabajo->saldo_cambio = $trabajo->costo_cambio - $suma_total_cambio;
+            $trabajo->saldo = $saldo;
+            $trabajo->cancelado_cambio = (float)$suma_total_cambio;
+            $trabajo->saldo_cambio = $saldo_cambio;
             if ($trabajo->saldo <= 0) {
                 $trabajo->estado_pago = 'COMPLETO';
             }

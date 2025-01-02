@@ -104,7 +104,7 @@ class TipoCambioController extends Controller
 
     public function getInfo(TipoCambio $tipo_cambio)
     {
-        return response()->JSON($tipo_cambio);
+        return response()->JSON($tipo_cambio->load(["moneda_1", "moneda_2"]));
     }
 
     public function show(TipoCambio $tipo_cambio)

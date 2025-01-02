@@ -39,12 +39,44 @@ const montoSaldo = ref(0);
 const montoSaldoCambio = ref(0);
 const montoCancelado = ref(0);
 const montoCanceladoCambio = ref(0);
+const listMonedas = ref([]);
+
+const monedaSeleccionadaText = computed(() => {
+    if (oTrabajo.value && form.moneda_seleccionada_id != "") {
+        const oMoneda = listMonedas.value.filter(
+            (elem) => elem.moneda_id === form.moneda_seleccionada_id
+        )[0];
+        if (oMoneda && oMoneda.moneda) {
+            return oMoneda.moneda.nombre;
+        }
+    }
+    return "";
+});
+
+const calularSaldosYCancelado = () => {
+    if (monedaPrincipal.value) {
+        if (monedaPrincipal.value.id == form.moneda_seleccionada_id) {
+            calculaMonto();
+        } else {
+            calculaMontoCambio();
+        }
+    } else {
+        Swal.fire({
+            icon: "info",
+            title: "Error",
+            text: `Error, no se cargo la moneda principal`,
+            confirmButtonColor: "#3085d6",
+            confirmButtonText: `Aceptar`,
+        });
+    }
+};
 
 const calculaMonto = () => {
     let monto = getMontosSaldo();
-    montoSaldo.value = isNaN(monto) ? 0 : parseFloat(monto).toFixed(2);
-    montoCancelado.value = oTrabajo.value.costo - parseFloat(montoSaldo.value);
-    montoCancelado.value = parseFloat(montoCancelado.value).toFixed(2);
+    montoSaldo.value = isNaN(monto) ? 0 : parseFloat(monto);
+    montoCancelado.value =
+        parseFloat(oTrabajo.value.costo) - parseFloat(montoSaldo.value);
+    montoCancelado.value = parseFloat(montoCancelado.value);
 
     if (oTipoCambio.value) {
         montoSaldoCambio.value = fHelpers().getMontoCambio(
@@ -54,9 +86,7 @@ const calculaMonto = () => {
         );
         montoCanceladoCambio.value =
             oTrabajo.value.costo_cambio - montoSaldoCambio.value;
-        montoCanceladoCambio.value = parseFloat(
-            montoCanceladoCambio.value
-        ).toFixed(2);
+        montoCanceladoCambio.value = parseFloat(montoCanceladoCambio.value);
         form.monto_cambio = fHelpers().getMontoCambio(
             oTrabajo.value.moneda_id,
             form.monto,
@@ -91,10 +121,10 @@ const calculaMontoCambio = () => {
 };
 
 const getMontosSaldo = (sw = 1) => {
-    let array_keys = ["monto", "saldo", "moneda", "cancelado"];
+    let array_keys = ["monto_original", "saldo", "moneda", "cancelado"];
     if (sw == 2) {
         array_keys = [
-            "monto_cambio",
+            "monto_original",
             "saldo_cambio",
             "moneda_cambio",
             "cancelado_cambio",
@@ -109,9 +139,12 @@ const getMontosSaldo = (sw = 1) => {
     let monto = 0;
     if (oTrabajo.value) {
         monto = oTrabajo.value[key_saldo];
-        let form_monto = form[key_monto] ? form[key_monto] : 0;
+        let form_monto = form[key_monto] ? parseFloat(form[key_monto]) : 0;
         if (oTrabajo.value) {
-            monto = oTrabajo.value[key_saldo];
+            monto = parseFloat(oTrabajo.value[key_saldo]);
+            if (fHelpers().contarDecimales(monto) > 2) {
+                monto = fHelpers().redondear(monto, 2);
+            }
             if (form_monto <= monto) {
                 if (form_monto && form_monto > 0) {
                     monto = parseFloat(monto) - parseFloat(form_monto);
@@ -127,6 +160,8 @@ const getMontosSaldo = (sw = 1) => {
     return parseFloat(parseFloat(monto).toFixed(2)) ?? 0;
 };
 
+
+// enviar los datos para guardar en la bd
 const enviarFormulario = () => {
     enviando.value = true;
     let url =
@@ -137,7 +172,7 @@ const enviarFormulario = () => {
     form.post(url, {
         preserveScroll: true,
         forceFormData: true,
-        onSuccess: () => {
+        onSuccess: (res) => {
             const flash = usePage().props.flash;
             Swal.fire({
                 icon: "success",
@@ -149,6 +184,7 @@ const enviarFormulario = () => {
             limpiarPago();
         },
         onError: (err) => {
+            console.log(err);
             const flash = usePage().props.flash;
             Swal.fire({
                 icon: "info",
@@ -178,6 +214,7 @@ const enviarFormulario = () => {
     });
 };
 
+// obtener el tipo de cambio del trabajo si este lo tuviera
 const getTipoCambio = async () => {
     oTipoCambio.value = null;
     if (oTrabajo.value && oTrabajo.value.tipo_cambio_id != 0) {
@@ -185,10 +222,24 @@ const getTipoCambio = async () => {
             route("tipo_cambios.getInfo", oTrabajo.value.tipo_cambio_id)
         );
         oTipoCambio.value = resp;
+
+        // crear la lista de monedas
+        listMonedas.value.push({
+            moneda_id: oTipoCambio.value.moneda1_id,
+            valor: oTipoCambio.value.valor1,
+            moneda: oTipoCambio.value.moneda_1,
+        });
+        listMonedas.value.push({
+            moneda_id: oTipoCambio.value.moneda2_id,
+            valor: oTipoCambio.value.valor2,
+            moneda: oTipoCambio.value.moneda_2,
+        });
     }
 };
 
+// obtener informacion del trabajo seleccionado
 const getTrabajo = async (value) => {
+    listMonedas.value = [];
     oTrabajo.value = null;
     if (value) {
         const resp = await useCrudAxios().axiosGet(
@@ -198,8 +249,23 @@ const getTrabajo = async (value) => {
         oTrabajo.value = resp.trabajo;
         if (oTrabajo.value.tipo_cambio_id != 0) {
             await getTipoCambio();
+        } else {
+            listMonedas.value.push({
+                moneda_id: oTrabajo.value.moneda_id,
+                valor: 0,
+                moneda: oTrabajo.value.moneda,
+            });
         }
-        if (oPago.value.id != 0) {
+
+        if (oPago.value.id == 0) {
+            form.moneda_seleccionada_id = oTrabajo.value.moneda_id;
+        }
+
+        if (
+            oPago.value.id != 0 &&
+            oPago.value.trabajo_id == oTrabajo.value.id
+        ) {
+            // para EDITAR restaurar los montos con los del pago
             // trabajo
             oTrabajo.value.cancelado =
                 parseFloat(oTrabajo.value.cancelado) -
@@ -207,6 +273,7 @@ const getTrabajo = async (value) => {
             oTrabajo.value.saldo =
                 parseFloat(oTrabajo.value.saldo) +
                 parseFloat(oPago.value.monto);
+
             oTrabajo.value.cancelado_cambio =
                 parseFloat(oTrabajo.value.cancelado_cambio) -
                 parseFloat(oPago.value.monto_cambio);
@@ -214,28 +281,26 @@ const getTrabajo = async (value) => {
                 parseFloat(oTrabajo.value.saldo_cambio) +
                 parseFloat(oPago.value.monto_cambio);
             // pago
-            montoCancelado.value =
-                parseFloat(oTrabajo.value.cancelado) -
-                parseFloat(oPago.value.monto);
-            montoSaldo.value =
-                parseFloat(oTrabajo.value.saldo) +
-                parseFloat(oPago.value.monto);
-            montoCanceladoCambio.value =
-                parseFloat(oTrabajo.value.cancelado_cambio) -
-                parseFloat(oPago.value.monto_cambio);
-            montoSaldoCambio.value =
-                parseFloat(oTrabajo.value.saldo_cambio) +
-                parseFloat(oPago.value.monto_cambio);
-            calculaMonto();
+            montoCancelado.value = oTrabajo.value.cancelado;
+            montoSaldo.value = oTrabajo.value.saldo;
+            montoCanceladoCambio.value = oTrabajo.value.cancelado_cambio;
+            montoSaldoCambio.value = oTrabajo.value.saldo_cambio;
         } else {
             montoCancelado.value = oTrabajo.value.cancelado;
             montoCanceladoCambio.value = oTrabajo.value.cancelado_cambio;
             montoSaldo.value = oTrabajo.value.saldo;
             montoSaldoCambio.value = oTrabajo.value.saldo_cambio;
         }
+
+        if (oPago.value.id != 0) {
+            setTimeout(() => {
+                calularSaldosYCancelado();
+            }, 300);
+        }
     }
 };
 
+// obtener la lista de trabajos
 const getTrabajos = async () => {
     const resp = await useCrudAxios().axiosGet(route("trabajos.listado"), {
         order: "desc",
@@ -250,17 +315,18 @@ const getMonedaPrincipal = async () => {
     monedaPrincipal.value = resp;
 };
 
+// cargar las funciones que traen listas
 const cargarListas = async () => {
     await getTrabajos();
     await getMonedaPrincipal();
     appStore.stopLoading();
 };
 
-onMounted(() => {
+onMounted(async () => {
+    await cargarListas();
     if (oPago.value.id != 0) {
         getTrabajo(oPago.value.trabajo_id);
     }
-    cargarListas();
 });
 </script>
 
@@ -305,7 +371,7 @@ onMounted(() => {
                                 <strong
                                     >Cancelado
                                     {{ oTrabajo?.moneda?.nombre }}: </strong
-                                >{{ montoCancelado }}
+                                >{{ parseFloat(montoCancelado).toFixed(2) }}
                             </p>
                             <p
                                 class="text-md"
@@ -323,7 +389,9 @@ onMounted(() => {
                                     {{
                                         oTrabajo?.moneda_cambio?.nombre
                                     }}: </strong
-                                >{{ montoCanceladoCambio }}
+                                >{{
+                                    parseFloat(montoCanceladoCambio).toFixed(2)
+                                }}
                             </p>
                         </div>
                         <div class="bg-saldo">
@@ -338,7 +406,7 @@ onMounted(() => {
                                 <strong
                                     >Saldo
                                     {{ oTrabajo?.moneda?.nombre }}: </strong
-                                >{{ montoSaldo }}
+                                >{{ parseFloat(montoSaldo).toFixed(2) }}
                             </p>
                             <p
                                 class="text-lg"
@@ -355,7 +423,7 @@ onMounted(() => {
                                     >Saldo
                                     {{ oTrabajo?.moneda_cambio?.nombre }}:
                                 </strong>
-                                {{ montoSaldoCambio }}
+                                {{ parseFloat(montoSaldoCambio).toFixed(2) }}
                             </p>
                         </div>
                     </div>
@@ -364,7 +432,7 @@ onMounted(() => {
             <div class="col-md-8">
                 <div class="card card-body">
                     <div class="row">
-                        <div class="col-md-12 mt-3">
+                        <div class="col-md-12 form-group">
                             <label>Seleccionar Trabajo*</label>
                             <el-select
                                 class="w-100"
@@ -394,53 +462,50 @@ onMounted(() => {
                         </div>
                     </div>
                     <div class="row" v-if="oTrabajo">
-                        <div class="col-md-6 mt-3">
-                            <label>Monto {{ oTrabajo.moneda.nombre }}*</label>
+                        <div class="col-md-6 form-group">
+                            <label>Seleccionar moneda*</label>
+                            <select
+                                class="form-control"
+                                v-model="form.moneda_seleccionada_id"
+                                @change="calularSaldosYCancelado"
+                            >
+                                <option value="">- Seleccione -</option>
+                                <option
+                                    v-for="item in listMonedas"
+                                    :value="item.moneda_id"
+                                >
+                                    {{ item.moneda.descripcion }} ({{
+                                        item.moneda.nombre
+                                    }})
+                                </option>
+                            </select>
+                            <span
+                                v-if="form.errors?.moneda_seleccionada_id"
+                                class="error invalid-feedback"
+                                >{{ form.errors.moneda_seleccionada_id }}</span
+                            >
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Monto {{ monedaSeleccionadaText }}*</label>
                             <input
                                 type="number"
                                 step="0.01"
                                 class="form-control"
                                 :class="{
-                                    'is-invalid': form.errors?.monto,
+                                    'is-invalid': form.errors?.monto_original,
                                 }"
                                 required
-                                v-model="form.monto"
-                                @keyup.prevent="calculaMonto"
-                                @change="calculaMonto"
+                                v-model="form.monto_original"
+                                @keyup.prevent="calularSaldosYCancelado"
+                                @change="calularSaldosYCancelado"
                             />
                             <span
-                                v-if="form.errors?.monto"
+                                v-if="form.errors?.monto_original"
                                 class="error invalid-feedback"
-                                >{{ form.errors.monto }}</span
+                                >{{ form.errors.monto_original }}</span
                             >
                         </div>
-                        <div
-                            class="col-md-6 mt-3"
-                            v-if="oTrabajo.tipo_cambio_id"
-                        >
-                            <label
-                                >Monto
-                                {{ oTrabajo.moneda_cambio.nombre }}*</label
-                            >
-                            <input
-                                type="number"
-                                step="0.01"
-                                class="form-control"
-                                :class="{
-                                    'is-invalid': form.errors?.monto_cambio,
-                                }"
-                                required
-                                v-model="form.monto_cambio"
-                                @keyup.prevent="calculaMontoCambio"
-                                @change="calculaMontoCambio"
-                            />
-                            <span
-                                v-if="form.errors?.monto_cambio"
-                                class="error invalid-feedback"
-                                >{{ form.errors.monto_cambio }}</span
-                            >
-                        </div>
-                        <div class="col-md-6 mt-3">
+                        <div class="col-md-6 form-group">
                             <label>Fecha de Pago*</label>
                             <input
                                 type="date"
@@ -457,7 +522,7 @@ onMounted(() => {
                                 >{{ form.errors.fecha_pago }}</span
                             >
                         </div>
-                        <div class="col-12 mt-3">
+                        <div class="col-12 form-group">
                             <label>Descripción*</label>
                             <textarea
                                 class="form-control"
@@ -474,7 +539,7 @@ onMounted(() => {
                                 >{{ form.errors.descripcion }}</span
                             >
                         </div>
-                        <div class="col-md-6 mt-3">
+                        <div class="col-md-6 form-group">
                             <label>Imagen Comprobante</label>
                             <input
                                 type="file"
@@ -493,7 +558,7 @@ onMounted(() => {
                                 >{{ form.errors.fecha_pago }}</span
                             >
                         </div>
-                        <div class="col-md-6 mt-3">
+                        <div class="col-md-6 form-group">
                             <label>Archivo comprobante</label>
                             <input
                                 type="file"
@@ -512,7 +577,7 @@ onMounted(() => {
                                 >{{ form.errors.fecha_pago }}</span
                             >
                         </div>
-                        <div class="col-12 mt-3">
+                        <div class="col-12 form-group">
                             <label>Descripción archivos</label>
                             <textarea
                                 class="form-control"

@@ -9,13 +9,15 @@ use App\Models\Trabajo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class PagoController extends Controller
 {
     public $validacion = [
         "trabajo_id" => "required",
-        "monto" => "required|numeric|min:1",
+        "moneda_seleccionada_id" => "required",
+        "monto_original" => "required|numeric|min:1",
         "fecha_pago" => "required|date",
         "descripcion" => "required|min:4",
     ];
@@ -89,16 +91,22 @@ class PagoController extends Controller
         $request->validate($this->validacion);
         DB::beginTransaction();
         try {
-            $trabajo = Trabajo::find($request['trabajo_id']);
+            $trabajo = Trabajo::find($request->trabajo_id);
             $request['cliente_id'] = $trabajo->cliente_id;
+
+            if ($trabajo->tipo_cambio_id != 0) {
+                $montos_pago = PagoController::generaMontosCambio($trabajo->tipo_cambio_id, $request->moneda_seleccionada_id, $request->monto_original);
+            }
 
             $datos_pago = [
                 "trabajo_id" => $trabajo->id,
                 "cliente_id" => $trabajo->cliente_id,
-                "monto" => $request->monto,
-                "moneda_id" => $trabajo->moneda_id,
-                "monto_cambio" => $trabajo->tipo_cambio_id != 0 ? $request->monto_cambio : $request->monto,
-                "moneda_cambio_id" => $trabajo->tipo_cambio_id != 0 ? $trabajo->moneda_cambio_id : 0,
+                "monto_original" => $request->monto_original,
+                "moneda_seleccionada_id" => $request->moneda_seleccionada_id,
+                "monto" => $montos_pago["monto"],
+                "moneda_id" => $montos_pago["moneda_id"],
+                "monto_cambio" => $montos_pago["monto_cambio"],
+                "moneda_cambio_id" => $montos_pago["moneda_cambio_id"],
                 "descripcion" => $request->descripcion,
                 "fecha_pago" => $request->fecha_pago,
                 "descripcion_archivo" => $request->descripcion_archivo,
@@ -126,9 +134,14 @@ class PagoController extends Controller
 
             DB::commit();
             return redirect()->route('pagos.index')->with('msj', 'Pago registrado con éxito');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->route('pagos.index')->with('error', 'No se puedo realizar el pago debido a este error: ' . $e->getMessage());
+            Log::debug("ERROR: " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
         }
     }
 
@@ -158,14 +171,20 @@ class PagoController extends Controller
         $request->validate($this->validacion);
         DB::beginTransaction();
         try {
-            $trabajo = $pago->trabajo;
+            $old_trabajo = $pago->trabajo;
+            $trabajo = Trabajo::find($request->trabajo_id);
+            if ($trabajo->tipo_cambio_id != 0) {
+                $montos_pago = PagoController::generaMontosCambio($trabajo->tipo_cambio_id, $request->moneda_seleccionada_id, $request->monto_original);
+            }
             $datos_pago = [
                 "trabajo_id" => $trabajo->id,
                 "cliente_id" => $trabajo->cliente_id,
-                "monto" => $request->monto,
-                "moneda_id" => $trabajo->moneda_id,
-                "monto_cambio" => $trabajo->tipo_cambio_id != 0 ? $request->monto_cambio : $request->monto,
-                "moneda_cambio_id" => $trabajo->tipo_cambio_id != 0 ? $trabajo->moneda_cambio_id : 0,
+                "monto_original" => $request->monto_original,
+                "moneda_seleccionada_id" => $request->moneda_seleccionada_id,
+                "monto" => $montos_pago["monto"],
+                "moneda_id" => $montos_pago["moneda_id"],
+                "monto_cambio" => $montos_pago["monto_cambio"],
+                "moneda_cambio_id" => $montos_pago["moneda_cambio_id"],
                 "descripcion" => $request->descripcion,
                 "fecha_pago" => $request->fecha_pago,
                 "descripcion_archivo" => $request->descripcion_archivo,
@@ -199,10 +218,21 @@ class PagoController extends Controller
             // reestablecer pagos del trabajo
             Trabajo::reestablecerPagosTrabajo($trabajo->id);
 
+            // restablecer pagos trabajo erroneo
+            if ($old_trabajo->id != $trabajo->id) {
+                Trabajo::reestablecerPagosTrabajo($old_trabajo->id);
+            }
+
             DB::commit();
-            return redirect()->route('pagos.index')->with('msj', 'Registro actualizado con éxito');
+            return redirect()->route('pagos.index')->with('message', 'Registro actualizado con éxito');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            $errors = $e->errors();
+            throw ValidationException::withMessages($errors);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::debug("ERROR: " . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode());
         }
     }
 
@@ -228,5 +258,34 @@ class PagoController extends Controller
             // Log::debug("ERROR " . $e->getCode() . ": " . $e->getMessage());
             throw new \RuntimeException($e->getMessage(), $e->getCode());
         }
+    }
+
+    public static function generaMontosCambio($tipo_cambio_id, $moneda_seleccionada_id, $monto_original)
+    {
+        $montos_pago = [
+            "monto" => $monto_original,
+            "moneda_id" => $moneda_seleccionada_id,
+            "monto_cambio" => $monto_original,
+            "moneda_cambio_id" => 0
+        ];
+
+        if ($tipo_cambio_id != 0) {
+            $moneda_principal = Moneda::where("principal", 1)->get()->first();
+            $tipo_cambio = TipoCambio::findOrFail($tipo_cambio_id);
+            $monto_cambio = Trabajo::getMontoCambio($tipo_cambio_id, $moneda_seleccionada_id, $monto_original);
+            if ($moneda_seleccionada_id == $moneda_principal->id) {
+                // convertir a la segunda moneda
+                // solo afectara las columnas de cambio
+                $montos_pago["monto_cambio"] = $monto_cambio;
+                $montos_pago["monto"] = $monto_original;
+            } else {
+                // convertir a moneda principal
+                $montos_pago["monto_cambio"] = $monto_original;
+                $montos_pago["monto"] = $monto_cambio;
+            }
+            $montos_pago["moneda_id"] = $tipo_cambio->moneda1_id;
+            $montos_pago["moneda_cambio_id"] = $tipo_cambio->moneda2_id;
+        }
+        return $montos_pago;
     }
 }

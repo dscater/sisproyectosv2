@@ -12,6 +12,8 @@ class Pago extends Model
     protected $fillable = [
         'trabajo_id',
         'cliente_id',
+        "monto_original",
+        "moneda_seleccionada_id",
         'monto',
         'moneda_id',
         'monto_cambio',
@@ -68,6 +70,11 @@ class Pago extends Model
     public function cliente()
     {
         return $this->belongsTo(Cliente::class, 'cliente_id');
+    }
+
+    public function moneda_seleccionada()
+    {
+        return $this->belongsTo(Moneda::class, 'moneda_seleccionada_id');
     }
 
     public function moneda()

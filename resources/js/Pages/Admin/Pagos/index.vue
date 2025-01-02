@@ -44,11 +44,6 @@ const headers = ref([
         sortable: true,
     },
     {
-        label: "MONTO CANCELADO",
-        key: "monto",
-        sortable: true,
-    },
-    {
         label: "DESCRIPCIÓN",
         key: "descripcion",
         keySortable: "pagos.descripcion",
@@ -59,8 +54,17 @@ const headers = ref([
         key: "fecha_pago_t",
         keySortable: "pagos.created_at",
         sortable: true,
+        fixed:"right"
     },
-    { label: "ACCIÓN", key: "accion", width: "110" },
+    {
+        label: "MONTO CANCELADO",
+        key: "monto",
+        sortable: true,
+        fixed:"right"
+    },
+    { label: "ACCIÓN", key: "accion",
+    fixed:"right"
+     },
 ]);
 
 const search = ref("");

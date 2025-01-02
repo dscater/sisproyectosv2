@@ -48,9 +48,21 @@ export const fHelpers = () => {
         return parseFloat(parseFloat(nuevo_monto).toFixed(2)) ?? 0;
     };
 
+    // verificar redondeo
+    function contarDecimales(numero) {
+        const partes = numero.toString().split(".");
+        return partes[1] ? partes[1].length : 0;
+    }
+    function redondear(numero, decimales) {
+        const factor = Math.pow(10, decimales);
+        return Math.round(numero * factor) / factor;
+    }
+
     return {
         getFechaActual,
         sumarDiasFecha,
         getMontoCambio,
+        contarDecimales,
+        redondear,
     };
 };
