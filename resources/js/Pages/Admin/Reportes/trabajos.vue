@@ -61,6 +61,7 @@ const headers = ref([
         label: "FECHA INICIO",
         key: "fecha_inicio_t",
         sortable: true,
+        type:"date"
     },
     {
         label: "DÍAS PLAZO",
@@ -71,21 +72,19 @@ const headers = ref([
         label: "FECHA ENTREGA",
         key: "fecha_entrega_t",
         sortable: true,
-    },
-    {
-        label: "ESTADO/TRABAJO",
-        key: "estado_trabajo",
-        sortable: true,
+        type:"date"
     },
     {
         label: "FECHA ENVÍO",
         key: "fecha_envio_t",
         sortable: true,
+        type:"date"
     },
     {
         label: "FECHA CONCLUSIÓN",
-        key: "fecha_conclucion_t",
+        key: "fecha_conclusion_t",
         sortable: true,
+        type:"date"
     },
     {
         label: "COSTO",
@@ -122,6 +121,23 @@ const headers = ref([
         },
     },
     {
+        label: "ESTADO/TRABAJO",
+        key: "estado_trabajo",
+        sortable: true,
+        width:"8%",
+        fixed: "right",
+        classTd: (item) => {
+            let class_fixed = "bg-proceso";
+            if (item.estado_trabajo == "ENVIADO") {
+                class_fixed = " bg-enviado";
+            }
+            if (item.estado_trabajo == "CONCLUIDO") {
+                class_fixed = " bg-concluido";
+            }
+            return class_fixed;
+        },
+    },
+    {
         label: "ESTADO/PAGO",
         key: "estado_pago",
         sortable: true,
@@ -130,7 +146,7 @@ const headers = ref([
         classTd: (item) => {
             let class_fixed = "bg-danger";
             if (item.estado_pago == "COMPLETO") {
-                class_fixed = " bg-cancelado";
+                class_fixed = " bg-concluido";
             }
             return class_fixed;
         },
@@ -301,22 +317,24 @@ onMounted(async () => {
                             class="p-3"
                         >
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-6 form-group">
                                     <label>Seleccione el proyecto*</label>
-                                    <select
+                                    <el-select
                                         name="proyecto"
-                                        class="form-control"
+                                        class="w-100"
+                                        size="large"
                                         v-model="form.proyecto"
                                         @change="cambioValoresFiltros"
+                                        filterable
                                     >
-                                        <option value="todos">Todos</option>
-                                        <option
+                                        <el-option :value="'todos'" :label="'Todos'">Todos</el-option>
+                                        <el-option
                                             v-for="item in proyectos"
                                             :value="item.id"
-                                        >
-                                            {{ item.nombre }} ({{ item.alias }})
-                                        </option>
-                                    </select>
+                                            :label="`(${ item.alias }) ${ item.nombre }`"
+                                        >  
+                                        </el-option>
+                                    </el-select>
                                     <div
                                         v-if="form.errors.proyecto"
                                         class="text-sm text-red-600"
@@ -324,23 +342,24 @@ onMounted(async () => {
                                         {{ form.errors.proyecto }}
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 form-group">
                                     <label>Seleccione el trabajo*</label>
-                                    <select
+                                    <el-select
                                         name="trabajo"
-                                        class="form-control"
+                                        class="w-100"
+                                        size="large"
                                         v-model="form.trabajo"
                                         @change="cambioValoresFiltros"
+                                        filterable
                                     >
-                                        <option value="todos">Todos</option>
-                                        <option
+                                        <el-option :value="'todos'" :label="'Todos'">Todos</el-option>
+                                        <el-option
                                             v-for="item in trabajos"
                                             :value="item.id"
+                                            :label="`(${ item.proyecto.alias }) ${ item.descripcion }`"
                                         >
-                                            ({{ item.proyecto.alias }})
-                                            {{ item.descripcion }}
-                                        </option>
-                                    </select>
+                                        </el-option>
+                                    </el-select>
                                     <div
                                         v-if="form.errors.trabajo"
                                         class="text-sm text-red-600"
@@ -348,7 +367,7 @@ onMounted(async () => {
                                         {{ form.errors.trabajo }}
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 form-group">
                                     <label>Estado de pago*</label>
                                     <select
                                         name="estado_pago"
@@ -356,11 +375,11 @@ onMounted(async () => {
                                         v-model="form.estado_pago"
                                         @change="cambioValoresFiltros"
                                     >
-                                        <option value="todos">Todos</option>
-                                        <option value="COMPLETO">
+                                        <option :value="'todos'">Todos</option>
+                                        <option :value="'COMPLETO'">
                                             COMPLETO
                                         </option>
-                                        <option value="PENDIENTE">
+                                        <option :value="'PENDIENTE'">
                                             PENDIENTE
                                         </option>
                                     </select>
@@ -371,7 +390,7 @@ onMounted(async () => {
                                         {{ form.errors.estado_pago }}
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 form-group">
                                     <label>Estado de trabajo*</label>
                                     <select
                                         name="estado_trabajo"
@@ -379,12 +398,12 @@ onMounted(async () => {
                                         v-model="form.estado_trabajo"
                                         @change="cambioValoresFiltros"
                                     >
-                                        <option value="todos">Todos</option>
-                                        <option value="EN PROCESO">
+                                        <option :value="'todos'">Todos</option>
+                                        <option :value="'EN PROCESO'">
                                             EN PROCESO
                                         </option>
-                                        <option value="ENVIADO">ENVIADO</option>
-                                        <option value="CONCLUIDO">
+                                        <option :value="'ENVIADO'">ENVIADO</option>
+                                        <option :value="'CONCLUIDO'">
                                             CONCLUIDO
                                         </option>
                                     </select>
@@ -395,22 +414,24 @@ onMounted(async () => {
                                         {{ form.errors.estado_trabajo }}
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 form-group">
                                     <label>Cliente*</label>
-                                    <select
+                                    <el-select
                                         name="cliente_id"
-                                        class="form-control"
+                                        class="w-100"
+                                        size="large"
                                         v-model="form.cliente_id"
                                         @change="cambioValoresFiltros"
+                                        filterable
                                     >
-                                        <option value="todos">Todos</option>
-                                        <option
+                                        <el-option :value="'todos'" :label="'Todos'">Todos</el-option>
+                                        <el-option
                                             v-for="item in clientes"
                                             :value="item.id"
+                                            :label="item.nombre"
                                         >
-                                            {{ item.nombre }}
-                                        </option>
-                                    </select>
+                                        </el-option>
+                                    </el-select>
                                     <div
                                         v-if="form.errors.cliente_id"
                                         class="text-sm text-red-600"
@@ -418,7 +439,7 @@ onMounted(async () => {
                                         {{ form.errors.cliente_id }}
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 form-group">
                                     <label>Fechas*</label>
                                     <select
                                         name="filtro_fecha"
@@ -439,7 +460,7 @@ onMounted(async () => {
                                             v-if="form.filtro_fecha != 'todos'"
                                         >
                                             <div class="row mt-2">
-                                                <div class="col-md-6">
+                                                <div class="col-md-6 form-group">
                                                     <label
                                                         >Fecha inicial*</label
                                                     >
@@ -456,7 +477,7 @@ onMounted(async () => {
                                                         "
                                                     />
                                                 </div>
-                                                <div class="col-md-6">
+                                                <div class="col-md-6 form-group">
                                                     <label>Fecha final*</label>
                                                     <input
                                                         type="date"
@@ -529,6 +550,7 @@ onMounted(async () => {
                     </template>
                     <template #costo="{ item }">
                         <div class="w-100">
+                                        size="large"
                             {{ item.moneda.nombre }}
                             {{ item.costo }}
                         </div>
@@ -536,6 +558,7 @@ onMounted(async () => {
 
                     <template #cancelado="{ item }">
                         <div class="w-100">
+                                        size="large"
                             <div class="w-100 text-center">
                                 {{ item.moneda.nombre }}
                                 {{ item.cancelado }}

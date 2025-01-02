@@ -1,14 +1,35 @@
 :root {
     --principal: #1867c0;
     --principal_hover: #40a5f7;
-    --principal_transparent: #2a99f3c2;
-    --fondo_app: #f2f2f2;
+    --white1: #f2f2f2;
     --correcto: #d2e7c9;
-    --transparente: #000000bd;
-    --secundario_transparente: #a14609d0;
-    --progress: #4b5563;
     --cancelado: rgb(159, 247, 166);
-    --cancelado-dark: rgb(0, 180, 45);
+    --bg__progreso: rgb(0, 180, 45);
+    --bg__primary: #409eff;
+    --bg__primary1: rgb(102.2, 177.4, 255);
+    --bg__primary2: rgb(50.8, 116.6, 184.5);
+    --bg__primary3: rgb(42, 89, 137.5);
+    --bg__success: #67c23a;
+    --bg__success1: rgb(133.4, 206.2, 97.4);
+    --bg__success2: rgb(78.1, 141.8, 46.6);
+    --bg__success3: rgb(61.5, 107, 39);
+    --bg__success4: rgb(44.9, 72.2, 31.4);
+    --bg__success4: rgb(36.6, 54.8, 27.6);
+    --bg__warning: #e6a23c;
+    --bg__warning1: rgb(235, 181, 99);
+    --bg__warning2: rgb(167, 119.4, 48);
+    --bg__warning3: #7d5b28;
+    --bg__danger: #f56c6c;
+    --bg__danger1: rgb(247, 137.4, 137.4);
+    --bg__danger2: rgb(177.5, 81.6, 81.6);
+    --bg__danger3: rgb(132.5, 64, 64);
+    --bg__dark: #909399;
+    --bg__dark1: rgb(166.2, 168.6, 173.4);
+    --bg__dark2: rgb(106.8, 108.9, 113.1);
+    --bg__dark3: rgb(82, 83.5, 86.5);
+    --bg__dark4: rgb(57.2, 58.1, 59.9);
+    --bg__dark5: rgb(44.8, 45.4, 46.6);
+    --bg__dark6: rgb(32.4, 32.7, 33.3);
 }
 
 html {
@@ -27,24 +48,134 @@ body {
 }
 
 /* MIS ESTILOS */
+
+.bg__primary {
+    background-color: var(--bg__primary);
+    color: white;
+}
+.bg__primary1 {
+    background-color: var(--bg__primary1);
+    color: white;
+}
+.bg__primary2 {
+    background-color: var(--bg__primary2);
+    color: white;
+}
+.bg__primary3 {
+    background-color: var(--bg__primary3);
+    color: white;
+}
+
+.bg__success {
+    background-color: var(--bg__success);
+    color: white;
+}
+.bg__success1 {
+    background-color: var(--bg__success1);
+    color: white;
+}
+.bg__success2 {
+    background-color: var(--bg__success2);
+    color: white;
+}
+.bg__success3 {
+    background-color: var(--bg__success3);
+    color: white;
+}
+.bg__success4 {
+    background-color: var(--bg__success4);
+    color: white;
+}
+.bg__success5 {
+    background-color: var(--bg__success5);
+    color: white;
+}
+
+.bg__warning {
+    background-color: var(--bg__warning);
+    color: white;
+}
+.bg__warning1 {
+    background-color: var(--bg__warning1);
+    color: white;
+}
+.bg__warning2 {
+    background-color: var(--bg__warning2);
+    color: white;
+}
+.bg__warning3 {
+    background-color: var(--bg__warning3);
+    color: white;
+}
+
+.bg__danger {
+    background-color: var(--bg__danger);
+    color: white;
+}
+
+.bg__danger1 {
+    background-color: var(--bg__danger1);
+    color: white;
+}
+
+.bg__danger2 {
+    background-color: var(--bg__danger2);
+    color: white;
+}
+
+.bg__danger3 {
+    background-color: var(--bg__danger3);
+    color: white;
+}
+
+.bg__dark {
+    background-color: var(--bg__dark);
+    color: white;
+}
+
+.bg__dark1 {
+    background-color: var(--bg__dark1);
+    color: white;
+}
+.bg__dark2 {
+    background-color: var(--bg__dark2);
+    color: white;
+}
+.bg__dark3 {
+    background-color: var(--bg__dark3);
+    color: white;
+}
+.bg__dark4 {
+    background-color: var(--bg__dark4);
+    color: white;
+}
+.bg__dark5 {
+    background-color: var(--bg__dark5);
+    color: white;
+}
+.bg__dark5 {
+    background-color: var(--bg__dark5);
+    color: white;
+}
+
 .content-table table .mi-celda.bg-proceso {
-    background-color: var(--principal_hover);
+    background-color: var(--bg__primary);
     color: white;
 }
 .content-table table .mi-celda.bg-enviado {
-    background-color: var(--principal);
-    color: var(--correcto);
+    background-color: var(--bg__warning);
+    color: var(--white1);
 }
 .content-table table .mi-celda.bg-concluido {
-    background-color: var(--success);
-    color: var(--fondo_app);
+    background-color: var(--bg__success);
+    color: var(--white1);
     font-weight: bold;
 }
 
 .cont_barra_progreso {
     width: 100%;
     height: 14px;
-    background-color: var(--danger);
+    background-color: var(--bg__danger);
     position: relative;
     transition: all 43s ease-in;
     text-align: center;
@@ -60,7 +191,7 @@ body {
 }
 
 .bara_prog {
-    background-color: var(--cancelado-dark);
+    background-color: var(--bg__progreso);
     height: 100%;
     position: absolute;
     width: 0%;
@@ -98,6 +229,10 @@ body .main-sidebar .sidebar .nav .nav-link.active {
 .el-select.el-select--large {
     height: 38px;
 }
+.el-select-dropdown{
+    max-width: 900px;
+}
+
 .el-select.is-invalid .el-select__wrapper {
     box-shadow: 0 0 0 1px #dc3545;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23dc3545' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");

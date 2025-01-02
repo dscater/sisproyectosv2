@@ -338,25 +338,36 @@ onMounted(async () => {
                     <div class="card-body">
                         <p><strong>Código: </strong>{{ oTrabajo?.id }}</p>
                         <hr />
-                        <div class="bg-costo">
-                            <p class="text-md">
+                        <div class="bg-saldo">
+                            <p
+                                class="text-lg"
+                                :class="
+                                    parseFloat(montoSaldo) <= 0
+                                        ? 'text-success font-weight-bold'
+                                        : ''
+                                "
+                            >
                                 <strong
-                                    >Costo
+                                    >Saldo
                                     {{ oTrabajo?.moneda?.nombre }}: </strong
-                                >{{ oTrabajo?.costo }}
+                                >{{ parseFloat(montoSaldo).toFixed(2) }}
                             </p>
                             <p
-                                class="text-md"
+                                class="text-lg"
+                                :class="
+                                    parseFloat(montoSaldo) <= 0
+                                        ? 'text-success font-weight-bold'
+                                        : ''
+                                "
                                 v-if="
                                     oTrabajo && oTrabajo.moneda_cambio_id != 0
                                 "
                             >
                                 <strong
-                                    >Costo
-                                    {{
-                                        oTrabajo?.moneda_cambio?.nombre
-                                    }}: </strong
-                                >{{ oTrabajo?.costo_cambio }}
+                                    >Saldo
+                                    {{ oTrabajo?.moneda_cambio?.nombre }}:
+                                </strong>
+                                {{ parseFloat(montoSaldoCambio).toFixed(2) }}
                             </p>
                         </div>
                         <div class="bg-cancelado">
@@ -394,36 +405,25 @@ onMounted(async () => {
                                 }}
                             </p>
                         </div>
-                        <div class="bg-saldo">
-                            <p
-                                class="text-lg"
-                                :class="
-                                    parseFloat(montoSaldo) <= 0
-                                        ? 'text-success font-weight-bold'
-                                        : ''
-                                "
-                            >
+                        <div class="bg-costo">
+                            <p class="text-md">
                                 <strong
-                                    >Saldo
+                                    >Costo
                                     {{ oTrabajo?.moneda?.nombre }}: </strong
-                                >{{ parseFloat(montoSaldo).toFixed(2) }}
+                                >{{ oTrabajo?.costo }}
                             </p>
                             <p
-                                class="text-lg"
-                                :class="
-                                    parseFloat(montoSaldo) <= 0
-                                        ? 'text-success font-weight-bold'
-                                        : ''
-                                "
+                                class="text-md"
                                 v-if="
                                     oTrabajo && oTrabajo.moneda_cambio_id != 0
                                 "
                             >
                                 <strong
-                                    >Saldo
-                                    {{ oTrabajo?.moneda_cambio?.nombre }}:
-                                </strong>
-                                {{ parseFloat(montoSaldoCambio).toFixed(2) }}
+                                    >Costo
+                                    {{
+                                        oTrabajo?.moneda_cambio?.nombre
+                                    }}: </strong
+                                >{{ oTrabajo?.costo_cambio }}
                             </p>
                         </div>
                     </div>

@@ -25,7 +25,7 @@ const headers = ref([
         label: "ID",
         key: "id",
         sortable: true,
-        width: "7%",
+        width: "4%",
     },
     {
         label: "NOMBRE PROYECTO",
@@ -41,6 +41,7 @@ const headers = ref([
         label: "DESCRIPCIÓN",
         key: "descripcion",
         sortable: true,
+        width: "20%",
     },
     {
         label: "FECHA DE REGISTRO",

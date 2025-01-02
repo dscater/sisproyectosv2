@@ -42,11 +42,11 @@ class Trabajo extends Model
         "fecha_inicio_t",
         "fecha_entrega_t",
         "fecha_envio_t",
-        "fecha_conclucion_t",
+        "fecha_conclusion_t",
         "fecha_registro_t"
     ];
 
-    public function getFechaConclucionTAttribute()
+    public function getFechaConclusionTAttribute()
     {
         if ($this->fecha_conclusion) {
             return date("d/m/Y", strtotime($this->fecha_conclusion));
@@ -142,7 +142,13 @@ class Trabajo extends Model
     // FUNCION PARA OBTENER EL MONTO PENDIENTE DE TODOS LOS TRABAJOS
     static function getTotalSaldoPendiente()
     {
-        return Trabajo::where("saldo", ">", 0)->whereIn("estado_trabajo", ["ENVIADO", "CONCLUIDO"])->sum("saldo");
+        return Trabajo::whereIn("estado_trabajo", ["ENVIADO", "CONCLUIDO"])->sum("saldo");
+    }
+
+    // FUNCION PARA OBTENER EL MONTO TOTAL DE SALDOS
+    static function getTotalSaldos()
+    {
+        return Trabajo::sum("saldo");
     }
 
     // FUNCION PARA OBTENER EL TOTAL COSTO DE TODOS LOS TRABAJOS

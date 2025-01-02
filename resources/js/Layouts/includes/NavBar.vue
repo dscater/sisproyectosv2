@@ -26,10 +26,10 @@ onUnmounted(() => {
                 ></a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="index3.html" class="nav-link">Home</a>
+                <Link :href="route('pagos.create')" class="nav-link">Nuevo Pago</Link>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
-                <a href="#" class="nav-link">Contact</a>
+                <Link :href="route('trabajos.create')" class="nav-link">Nuevo Trabajo</Link>
             </li>
         </ul>
 

@@ -166,8 +166,13 @@ watch(
     () => props.multiSearch,
     (newVal) => {
         // console.log("watch 4");
-        oMultiSearch.value = newVal;
-        cargarDatos();
+        setLoading(true)
+        clearInterval(intervalSearch.value);
+        intervalSearch.value = setTimeout(() => {
+            currentPage.value = 1;
+            oMultiSearch.value = newVal;
+            cargarDatos();
+        }, props.delaySearch);
     },
     { deep: true }
 );
@@ -176,6 +181,7 @@ watch(
     () => props.search,
     (newVal) => {
         // console.log("watch 5");
+        setLoading(true)
         tSearch.value = newVal;
         clearInterval(intervalSearch.value);
         intervalSearch.value = setTimeout(() => {
@@ -618,7 +624,7 @@ const establecerAltoContenedor = () => {
         }
     }
 
-    resetPositionScroll();
+    // resetPositionScroll();
     setTimeout(() => {
         updateScrollbars();
     }, 300);

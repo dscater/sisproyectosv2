@@ -209,25 +209,25 @@ function obtenerFechaActual() {
                                     target="_blank"
                                     class="row"
                                 >
-                                    <div class="col-md-6">
+                                    <div class="col-md-6 form-group">
                                         <label>Seleccione el proyecto*</label>
-                                        <select
+                                        <el-select
                                             v-model="form.proyecto"
                                             name="proyecto"
-                                            class="form-control"
+                                            class="w-100"
+                                            size="large"
                                             placeholder=""
                                             @change="cambioValoresFiltros"
+                                            filterable
                                         >
-                                            <option value="todos">Todos</option>
-                                            <option
+                                            <el-option :value="'todos'" :label="'Todos'">Todos</el-option>
+                                            <el-option
                                                 v-for="item in proyectos"
                                                 :value="item.id"
+                                                :label="`(${item.alias}) ${ item.nombre }`"
                                             >
-                                                {{ item.nombre }} ({{
-                                                    item.alias
-                                                }})
-                                            </option>
-                                        </select>
+                                            </el-option>
+                                        </el-select>
                                         <div
                                             v-if="form.errors.proyecto"
                                             class="text-sm text-red-600"
@@ -235,24 +235,25 @@ function obtenerFechaActual() {
                                             {{ form.errors.proyecto }}
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-6 form-group">
                                         <label>Seleccione el trabajo*</label>
-                                        <select
+                                        <el-select
                                             v-model="form.trabajo"
                                             name="trabajo"
-                                            class="form-control"
+                                            class="w-100"
+                                            size="large"
                                             placeholder=""
                                             @change="cambioValoresFiltros"
+                                            filterable
                                         >
-                                            <option value="todos">Todos</option>
-                                            <option
+                                            <el-option :value="'todos'" :label="'Todos'">Todos</el-option>
+                                            <el-option
                                                 v-for="item in trabajos"
                                                 :value="item.id"
+                                                :label="`(${ item.proyecto.alias }) ${ item.descripcion }`"
                                             >
-                                                ({{ item.proyecto.alias }})
-                                                {{ item.descripcion }}
-                                            </option>
-                                        </select>
+                                            </el-option>
+                                        </el-select>
                                         <div
                                             v-if="form.errors.trabajo"
                                             class="text-sm text-red-600"
@@ -260,7 +261,7 @@ function obtenerFechaActual() {
                                             {{ form.errors.trabajo }}
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-6 form-group">
                                         <label>Estado de trabajo*</label>
                                         <select
                                             v-model="form.estado_trabajo"
@@ -287,7 +288,7 @@ function obtenerFechaActual() {
                                             {{ form.errors.estado_trabajo }}
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-6 form-group">
                                         <label>Cliente*</label>
                                         <select
                                             v-model="form.cliente_id"
@@ -311,7 +312,7 @@ function obtenerFechaActual() {
                                             {{ form.errors.cliente_id }}
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-6 form-group">
                                         <label>Fechas*</label>
                                         <select
                                             v-model="form.filtro_fecha"
@@ -332,7 +333,7 @@ function obtenerFechaActual() {
                                         v-if="form.filtro_fecha != 'todos'"
                                     >
                                         <div class="row">
-                                            <div class="col-md-6">
+                                            <div class="col-md-6 form-group">
                                                 <label>Fecha inicial*</label>
                                                 <input
                                                     v-model="form.fecha_ini"
@@ -347,7 +348,7 @@ function obtenerFechaActual() {
                                                     "
                                                 />
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="col-md-6 form-group">
                                                 <label>Fecha final*</label>
                                                 <input
                                                     v-model="form.fecha_fin"

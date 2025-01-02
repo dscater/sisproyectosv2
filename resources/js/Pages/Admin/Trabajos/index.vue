@@ -24,7 +24,7 @@ const headers = ref([
         key: "id",
         sortable: true,
         fixed: true,
-        width: "80",
+        width: "3%",
     },
     {
         label: "NOMBRE PROYECTO",
@@ -44,6 +44,7 @@ const headers = ref([
         label: "COSTO",
         key: "costo",
         sortable: true,
+        width:"140"
     },
     {
         label: "CANCELADO",
@@ -55,14 +56,32 @@ const headers = ref([
         key: "saldo",
         sortable: true,
         classTd: (item) => {
-            return item.estado_pago == "COMPLETO" ? "bg-cancelado" : "bg-red";
+            return item.estado_pago == "COMPLETO" ? "bg-cancelado" : "bg__danger";
         },
     },
     {
         label: "DESCRIPCIÓN",
         key: "descripcion",
         sortable: true,
-        width: "400",
+        width: "200",
+    },
+    {
+        label: "FECHA INICIO",
+        key: "fecha_inicio_t",
+        keySortable: "fecha_inicio",
+        sortable: true,
+    },
+    {
+        label: "FECHA ENTREGA",
+        key: "fecha_entrega_t",
+        keySortable: "fecha_entrega",
+        sortable: true,
+    },
+    {
+        label: "FECHA CONCLUSIÓN",
+        key: "fecha_conclusion_t",
+        keySortable: "fecha_conclusion",
+        sortable: true,
     },
     {
         label: "FECHA REGISTRO",
@@ -90,7 +109,7 @@ const headers = ref([
         label: "ACCIÓN",
         key: "accion",
         fixed: "right",
-        width: "10%",
+        width: "4%",
         classTd: () => {
             return "accion";
         },
@@ -217,7 +236,6 @@ onMounted(() => {
                                 v-model="multiSearch.search"
                                 placeholder="Buscar"
                                 class="form-control border-1 border-right-0"
-                                @keypress.enter.prevent="updateDatos"
                             />
                             <div class="input-append">
                                 <button
@@ -258,14 +276,14 @@ onMounted(() => {
                     <template #costo="{ item }">
                         <div class="w-100">
                             <div
-                                class="badge badge-primary text-md rounded-0 d-block text-center text-wrap"
+                                class="badge bg__primary2 text-md rounded-0 d-block text-center text-wrap"
                             >
                                 {{ item.moneda.nombre }}
                                 {{ item.costo }}
                             </div>
                             <div
                                 v-if="item.tipo_cambio_id != 0"
-                                class="badge badge-success text-md rounded-0 d-block text-center text-wrap"
+                                class="badge bg__success2 text-md rounded-0 d-block text-center text-wrap"
                             >
                                 {{ item.moneda_cambio.nombre }}
                                 {{ item.costo_cambio }}
@@ -279,7 +297,7 @@ onMounted(() => {
 
                     <template #cancelado="{ item }">
                         <div class="w-100">
-                            <div class="w-100 text-center">
+                            <div class="w-100 text-center font-weight-bold text-sm">
                                 {{ item.moneda.nombre }}
                                 {{ item.cancelado }}
                             </div>
@@ -312,6 +330,12 @@ onMounted(() => {
                                 {{ item.moneda_cambio.nombre }}
                                 {{ item.saldo_cambio }}
                             </div>
+                        </div>
+                    </template>
+
+                    <template #estado_trabajo="{ item }">
+                        <div class="font-weight-bold text-xs">
+                        {{ item.estado_trabajo }}
                         </div>
                     </template>
 

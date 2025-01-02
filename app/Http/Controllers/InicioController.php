@@ -20,7 +20,9 @@ class InicioController extends Controller
             ->whereIn("estado_trabajo", ["ENVIADO", "CONCLUIDO"])->get();
 
         $total_cancelado = Trabajo::getTotalCancelado();
-        $total_saldo = Trabajo::getTotalSaldoPendiente();
+        $total_saldo = Trabajo::getTotalSaldos();
+        $total_saldo_enviando = Trabajo::getTotalSaldoPendiente();
+        
         $costo_total = Trabajo::getTotalTrabajos();
         // fin informacion trabajos
 
@@ -36,6 +38,7 @@ class InicioController extends Controller
             'moneda_principal' => $moneda_principal,
             'total_cancelado' => $total_cancelado,
             'total_saldo' => $total_saldo,
+            'total_saldo_enviando' => $total_saldo_enviando,
             'costo_total' => $costo_total,
         ]);
     }
