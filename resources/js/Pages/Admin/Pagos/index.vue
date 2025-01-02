@@ -184,6 +184,16 @@ onMounted(() => {
                     :syncOrderBy="'pagos.created_at'"
                     :syncOrderAsc="'DESC'"
                 >
+                    <template #['trabajo.proyecto.nombre'] = {item}>
+                        <div style="word-wrap: break-word; white-space: wrap">
+                            {{ item.trabajo.proyecto.nombre }}
+                            <br />
+                            <b class="text-sm">
+                                ({{ item.trabajo.proyecto.alias }})</b
+                            >
+                        </div>
+                    </template>
+
                     <template #costo="{ item }">
                         <div class="w-100">
                             <div
@@ -202,18 +212,19 @@ onMounted(() => {
                         </div>
                     </template>
 
-                    <template #cancelado="{ item }">
+                    <template #monto="{ item }">
                         <div class="w-100">
-                            <div class="w-100 text-center">
+                            <div class="w-100 text-center font-weight-bold text-md">
                                 {{ item.moneda.nombre }}
-                                {{ item.cancelado }}
+                                {{ item.monto }}
                             </div>
+                         
                             <div
-                                v-if="item.tipo_cambio_id != 0"
+                                v-if="item.trabajo.proyecto.tipo_cambio_id != 0 && item.moneda_cambio"
                                 class="w-100 text-center"
                             >
                                 {{ item.moneda_cambio.nombre }}
-                                {{ item.costo_cambio }}
+                                {{ item.monto_cambio }}
                             </div>
                         </div>
                     </template>

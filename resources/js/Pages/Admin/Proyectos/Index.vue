@@ -25,6 +25,7 @@ const headers = ref([
         label: "ID",
         key: "id",
         sortable: true,
+        width: "7%",
     },
     {
         label: "NOMBRE PROYECTO",
@@ -187,6 +188,12 @@ onMounted(() => {
                     :syncOrderBy="'fecha_registro'"
                     :syncOrderAsc="'DESC'"
                 >
+                    <template #alias="{ item }">
+                        <span class="text-md font-weight-bold">{{ item.alias }}</span>
+                    </template>
+                    <template #descripcion="{ item }">
+                        <div class="w-100" v-html="item.descripcion"></div>
+                    </template>
                     <template #accion="{ item }">
                         <button
                             class="btn btn-warning accion_icon"

@@ -102,6 +102,11 @@ class TipoCambioController extends Controller
         return Inertia::render('Admin/TipoCambios/Edit', ['tipo_cambio' => $tipo_cambio]);
     }
 
+    public function getInfo(TipoCambio $tipo_cambio)
+    {
+        return response()->JSON($tipo_cambio);
+    }
+
     public function show(TipoCambio $tipo_cambio)
     {
         return Inertia::render(

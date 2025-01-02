@@ -2,14 +2,13 @@
     --principal: #1867c0;
     --principal_hover: #40a5f7;
     --principal_transparent: #2a99f3c2;
-    --secundario: #ffff00;
-    --secundario2: #e7d803;
-    --secundario_hover: #e4e400;
     --fondo_app: #f2f2f2;
     --correcto: #d2e7c9;
     --transparente: #000000bd;
-    --secundarion_transparente: #a14609d0;
+    --secundario_transparente: #a14609d0;
     --progress: #4b5563;
+    --cancelado: rgb(159, 247, 166);
+    --cancelado-dark: rgb(0, 180, 45);
 }
 
 html {
@@ -28,13 +27,56 @@ body {
 }
 
 /* MIS ESTILOS */
+.content-table table .mi-celda.bg-proceso {
+    background-color: var(--principal_hover);
+    color: white;
+}
+.content-table table .mi-celda.bg-enviado {
+    background-color: var(--principal);
+    color: var(--correcto);
+}
+.content-table table .mi-celda.bg-concluido {
+    background-color: var(--success);
+    color: var(--fondo_app);
+    font-weight: bold;
+}
+
+.cont_barra_progreso {
+    width: 100%;
+    height: 14px;
+    background-color: var(--danger);
+    position: relative;
+    transition: all 43s ease-in;
+    text-align: center;
+    z-index: 0;
+}
+
+.cont_barra_progreso span {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: rgb(243, 243, 243);
+    position: relative;
+    top: -0.2rem;
+}
+
+.bara_prog {
+    background-color: var(--cancelado-dark);
+    height: 100%;
+    position: absolute;
+    width: 0%;
+    left: 0;
+    top: 0;
+    transition: all 43s ease-in;
+    z-index: -1;
+}
+
 .contenedor_opciones {
     width: 100%;
     border: solid 1px;
 }
 
 .bg-cancelado {
-    background-color: rgb(159, 247, 166);
+    background-color: var(--cancelado);
 }
 tr.bg-cancelado {
     border-bottom: solid 2px;

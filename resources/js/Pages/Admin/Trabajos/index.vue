@@ -59,23 +59,32 @@ const headers = ref([
         },
     },
     {
-        label: "ESTADOS",
-        key: "estado_trabajo",
-        sortable: true,
-    },
-    {
         label: "DESCRIPCIÓN",
         key: "descripcion",
         sortable: true,
         width: "400",
     },
     {
-        label: "FECHAS",
+        label: "FECHA REGISTRO",
         key: "fecha_registro_t",
         keySortable: "fecha_registro",
         sortable: true,
-        fixed: "right",
-        width: "10%",
+    },
+    {
+        label: "ESTADO TRABAJO",
+        key: "estado_trabajo",
+        sortable: true,
+        fixed:"right",
+        classTd: (item) => {
+            let claseTd = "bg-proceso";
+            if(item.estado_trabajo == 'ENVIADO'){
+                claseTd = "bg-enviado";
+            }
+            if(item.estado_trabajo == 'CONCLUIDO'){
+                claseTd = "bg-concluido";
+            }
+            return claseTd;
+        },
     },
     {
         label: "ACCIÓN",
@@ -135,6 +144,12 @@ const updateDatos = async () => {
         await miTable.value.cargarDatos();
     }
 };
+
+const getPorcentajeCancelado = (item)=>{
+    const porcentaje = Math.round((parseFloat(item.cancelado) * 100) / parseFloat(item.costo),2);
+    return porcentaje
+}
+
 onMounted(() => {
     appStore.stopLoading();
 });
@@ -236,19 +251,21 @@ onMounted(() => {
                     <template #['proyecto.nombre']="{ item }">
                         <div style="word-wrap: break-word; white-space: wrap">
                             {{ item.proyecto.nombre }}
+                            <br/>
+                            <b class="text-sm"> ({{ item.proyecto.alias }})</b>
                         </div>
                     </template>
                     <template #costo="{ item }">
                         <div class="w-100">
                             <div
-                                class="badge badge-primary text-md rounded-0 d-block text-center"
+                                class="badge badge-primary text-md rounded-0 d-block text-center text-wrap"
                             >
                                 {{ item.moneda.nombre }}
                                 {{ item.costo }}
                             </div>
                             <div
                                 v-if="item.tipo_cambio_id != 0"
-                                class="badge badge-success text-md rounded-0 d-block text-center"
+                                class="badge badge-success text-md rounded-0 d-block text-center text-wrap"
                             >
                                 {{ item.moneda_cambio.nombre }}
                                 {{ item.costo_cambio }}
@@ -273,6 +290,28 @@ onMounted(() => {
                                 {{ item.moneda_cambio.nombre }}
                                 {{ item.cancelado_cambio }}
                             </div>
+                            <div class="cont_barra_progreso">
+                                <span>{{ getPorcentajeCancelado(item) }} %</span>
+                                <div class="bara_prog" :style="{
+                                    width:getPorcentajeCancelado(item)+'%'
+                                }"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template #saldo="{ item }">
+                        <div class="w-100">
+                            <div class="w-100 text-center">
+                                {{ item.moneda.nombre }}
+                                {{ item.saldo }}
+                            </div>
+                            <div
+                                v-if="item.tipo_cambio_id != 0"
+                                class="w-100 text-center"
+                            >
+                                {{ item.moneda_cambio.nombre }}
+                                {{ item.saldo_cambio }}
+                            </div>
                         </div>
                     </template>
 
@@ -295,3 +334,5 @@ onMounted(() => {
         </div>
     </Content>
 </template>
+<style scoped>
+</style>

@@ -43,7 +43,7 @@ const montoCanceladoCambio = ref(0);
 const calculaMonto = () => {
     let monto = getMontosSaldo();
     montoSaldo.value = isNaN(monto) ? 0 : parseFloat(monto).toFixed(2);
-    montoCancelado.value = oTrabajo.value.costo - montoSaldo.value;
+    montoCancelado.value = oTrabajo.value.costo - parseFloat(montoSaldo.value);
     montoCancelado.value = parseFloat(montoCancelado.value).toFixed(2);
 
     if (oTipoCambio.value) {
@@ -69,7 +69,7 @@ const calculaMontoCambio = () => {
     let monto = getMontosSaldo(2);
     montoSaldoCambio.value = isNaN(monto) ? 0 : parseFloat(monto).toFixed(2);
     montoCanceladoCambio.value =
-        oTrabajo.value.costo_cambio - montoSaldoCambio.value;
+        oTrabajo.value.costo_cambio - parseFloat(montoSaldoCambio.value);
 
     montoCanceladoCambio.value = parseFloat(montoCanceladoCambio.value).toFixed(
         2
@@ -109,15 +109,18 @@ const getMontosSaldo = (sw = 1) => {
     let monto = 0;
     if (oTrabajo.value) {
         monto = oTrabajo.value[key_saldo];
-
-        if (form[key_monto] <= monto) {
-            if (form[key_monto] && form[key_monto] > 0) {
-                monto = parseFloat(monto) - parseFloat(form[key_monto]);
+        let form_monto = form[key_monto] ? form[key_monto] : 0;
+        if (oTrabajo.value) {
+            monto = oTrabajo.value[key_saldo];
+            if (form_monto <= monto) {
+                if (form_monto && form_monto > 0) {
+                    monto = parseFloat(monto) - parseFloat(form_monto);
+                }
+            } else {
+                form.errors[
+                    key_monto
+                ] = `El monto no puede ser mayor a ${oTrabajo.value[key_moneda].nombre} ${monto}`;
             }
-        } else {
-            form.errors[
-                key_monto
-            ] = `El monto no puede ser mayor a ${oTrabajo.value[key_moneda].nombre} ${monto}`;
         }
     }
     monto = isNaN(monto) ? 0 : monto;
@@ -179,7 +182,7 @@ const getTipoCambio = async () => {
     oTipoCambio.value = null;
     if (oTrabajo.value && oTrabajo.value.tipo_cambio_id != 0) {
         const resp = await useCrudAxios().axiosGet(
-            route("tipo_cambios.show", oTrabajo.value.tipo_cambio_id)
+            route("tipo_cambios.getInfo", oTrabajo.value.tipo_cambio_id)
         );
         oTipoCambio.value = resp;
     }
@@ -267,44 +270,94 @@ onMounted(() => {
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
-                        <p><strong>Id: </strong>{{ oTrabajo?.id }}</p>
+                        <p><strong>Código: </strong>{{ oTrabajo?.id }}</p>
                         <hr />
-                        <p>
-                            <strong
-                                >Costo {{ oTrabajo?.moneda?.nombre }}: </strong
-                            >{{ oTrabajo?.costo }}
-                        </p>
-                        <p v-if="oTrabajo && oTrabajo.moneda_cambio_id != 0">
-                            <strong
-                                >Costo
-                                {{ oTrabajo?.moneda_cambio?.nombre }}: </strong
-                            >{{ oTrabajo?.costo_cambio }}
-                        </p>
-                        <hr />
-                        <p>
-                            <strong
-                                >Cancelado
-                                {{ oTrabajo?.moneda?.nombre }}: </strong
-                            >{{ montoCancelado }}
-                        </p>
-                        <p v-if="oTrabajo && oTrabajo.moneda_cambio_id != 0">
-                            <strong
-                                >Cancelado
-                                {{ oTrabajo?.moneda_cambio?.nombre }}: </strong
-                            >{{ montoCanceladoCambio }}
-                        </p>
-                        <hr />
-                        <p>
-                            <strong
-                                >Saldo {{ oTrabajo?.moneda?.nombre }}: </strong
-                            >{{ montoSaldo }}
-                        </p>
-                        <p v-if="oTrabajo && oTrabajo.moneda_cambio_id != 0">
-                            <strong
-                                >Saldo {{ oTrabajo?.moneda_cambio?.nombre }}:
-                            </strong>
-                            {{ montoSaldoCambio }}
-                        </p>
+                        <div class="bg-costo">
+                            <p class="text-md">
+                                <strong
+                                    >Costo
+                                    {{ oTrabajo?.moneda?.nombre }}: </strong
+                                >{{ oTrabajo?.costo }}
+                            </p>
+                            <p
+                                class="text-md"
+                                v-if="
+                                    oTrabajo && oTrabajo.moneda_cambio_id != 0
+                                "
+                            >
+                                <strong
+                                    >Costo
+                                    {{
+                                        oTrabajo?.moneda_cambio?.nombre
+                                    }}: </strong
+                                >{{ oTrabajo?.costo_cambio }}
+                            </p>
+                        </div>
+                        <div class="bg-cancelado">
+                            <p
+                                class="text-md"
+                                :class="
+                                    parseFloat(montoCancelado) <= 0
+                                        ? 'text-danger'
+                                        : ''
+                                "
+                            >
+                                <strong
+                                    >Cancelado
+                                    {{ oTrabajo?.moneda?.nombre }}: </strong
+                                >{{ montoCancelado }}
+                            </p>
+                            <p
+                                class="text-md"
+                                :class="
+                                    parseFloat(montoCancelado) <= 0
+                                        ? 'text-danger'
+                                        : ''
+                                "
+                                v-if="
+                                    oTrabajo && oTrabajo.moneda_cambio_id != 0
+                                "
+                            >
+                                <strong
+                                    >Cancelado
+                                    {{
+                                        oTrabajo?.moneda_cambio?.nombre
+                                    }}: </strong
+                                >{{ montoCanceladoCambio }}
+                            </p>
+                        </div>
+                        <div class="bg-saldo">
+                            <p
+                                class="text-lg"
+                                :class="
+                                    parseFloat(montoSaldo) <= 0
+                                        ? 'text-success font-weight-bold'
+                                        : ''
+                                "
+                            >
+                                <strong
+                                    >Saldo
+                                    {{ oTrabajo?.moneda?.nombre }}: </strong
+                                >{{ montoSaldo }}
+                            </p>
+                            <p
+                                class="text-lg"
+                                :class="
+                                    parseFloat(montoSaldo) <= 0
+                                        ? 'text-success font-weight-bold'
+                                        : ''
+                                "
+                                v-if="
+                                    oTrabajo && oTrabajo.moneda_cambio_id != 0
+                                "
+                            >
+                                <strong
+                                    >Saldo
+                                    {{ oTrabajo?.moneda_cambio?.nombre }}:
+                                </strong>
+                                {{ montoSaldoCambio }}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -480,7 +533,7 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div class="row mt-2">
+                <div class="row mt-2 mb-4">
                     <div class="col-12">
                         <Link
                             :href="route('pagos.index')"
@@ -500,4 +553,32 @@ onMounted(() => {
         </div>
     </form>
 </template>
-<style scoped></style>
+<style scoped>
+.bg-costo,
+.bg-cancelado,
+.bg-saldo {
+    margin-bottom: 0px;
+    border-bottom: solid 1px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+    padding: 10px 8px;
+}
+
+.bg-costo p,
+.bg-cancelado p,
+.bg-saldo p {
+    width: 100%;
+    text-align: left;
+}
+.bg-costo {
+    background-color: rgb(223, 248, 253);
+}
+.bg-cancelado {
+    background-color: rgb(223, 253, 223);
+}
+.bg-saldo {
+    background-color: rgb(253, 237, 223);
+}
+</style>

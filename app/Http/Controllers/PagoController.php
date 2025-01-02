@@ -52,7 +52,7 @@ class PagoController extends Controller
     {
         $perPage = $request->input('perPage', 5);
         $search = $request->search;
-        $pagos = Pago::with(["trabajo.proyecto", "cliente", "moneda"])
+        $pagos = Pago::with(["trabajo.proyecto", "cliente", "moneda", "moneda_cambio"])
             ->select("pagos.*")
             ->join("trabajos", "trabajos.id", "=", "pagos.trabajo_id")
             ->join("proyectos", "proyectos.id", "=", "trabajos.proyecto_id")

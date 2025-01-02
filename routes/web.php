@@ -100,6 +100,7 @@ Route::middleware(['auth'])->prefix("admin")->group(function () {
     );
 
     // TIPO DE CAMBIOS
+    Route::get("/tipo_cambios/getInfo/{tipo_cambio}", [TipoCambioController::class, 'getInfo'])->name("tipo_cambios.getInfo");
     Route::get("/tipo_cambios/paginado", [TipoCambioController::class, 'paginado'])->name("tipo_cambios.paginado");
     Route::get("/tipo_cambios/listado", [TipoCambioController::class, 'listado'])->name("tipo_cambios.listado");
     Route::resource("tipo_cambios", TipoCambioController::class)->only(

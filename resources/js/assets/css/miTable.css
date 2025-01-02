@@ -205,7 +205,8 @@
 .mi-table .mi-content-header table.tablaFixeada th {
     border: solid 1px rgb(233, 233, 233);
 }
-
+.mi-table .fixed-column .mi-celda,
+.mi-table .fixed-column-right .mi-celda,
 .mi-table .fixed-column,
 .mi-table .fixed-column-right {
     position: sticky;
@@ -359,9 +360,6 @@
         border: none;
         box-shadow: none;
     }
-    .mi-table .content-table table.table-resposive tbody tr td:last-child {
-    }
-
     .mi-table
         .content-table
         table.table-resposive

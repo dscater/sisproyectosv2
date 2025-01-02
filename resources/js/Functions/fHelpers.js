@@ -45,7 +45,6 @@ export const fHelpers = () => {
                 nuevo_monto = parseFloat(monto) / parseFloat(valor2);
             }
         }
-
         return parseFloat(parseFloat(nuevo_monto).toFixed(2)) ?? 0;
     };
 
