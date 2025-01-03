@@ -36,12 +36,18 @@ class Pago extends Model
 
     public function getUrlFotoAttribute()
     {
-        return asset("/files/" . $this->foto_comprobante);
+        if ($this->foto_comprobante) {
+            return asset("/files/" . $this->foto_comprobante);
+        }
+        return "";
     }
 
     public function getUrlArchivoAttribute()
     {
-        return asset("/files/" . $this->archivo_comprobante);
+        if ($this->archivo_comprobante) {
+            return asset("/files/" . $this->archivo_comprobante);
+        }
+        return "";
     }
 
     public function getTipoArchivoAttribute()
@@ -49,13 +55,11 @@ class Pago extends Model
         $tipo = "";
         if ($this->archivo_comprobante && $this->archivo_comprobante != "") {
             $array_nom = explode(".", $this->archivo_comprobante);
-            if (in_array($array_nom[1], ["jpg", "jpeg", "png", "webp", "gif"])) {
+            if (in_array($array_nom[count($array_nom) - 1], ["jpg", "jpeg", "png", "webp", "gif"])) {
                 $tipo = "imagen";
-            }
-            if (in_array($array_nom[1], ["pdf"])) {
+            } elseif (in_array($array_nom[count($array_nom) - 1], ["pdf"])) {
                 $tipo = "pdf";
-            }
-            if (!in_array($array_nom[1], ["jpg", "jpeg", "png", "webp", "gif", "pdf"])) {
+            } else {
                 $tipo = "otros";
             }
         }

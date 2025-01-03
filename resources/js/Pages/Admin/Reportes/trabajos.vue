@@ -2,12 +2,10 @@
 import Content from "@/Components/Content.vue";
 import { Head, useForm, Link } from "@inertiajs/vue3";
 import {
-    inject,
     onMounted,
     onBeforeMount,
     computed,
     ref,
-    nextTick,
     watch,
 } from "vue";
 import { debounce } from "lodash";
@@ -15,6 +13,8 @@ import { debounce } from "lodash";
 import axios from "axios";
 import { useAppStore } from "@/stores/aplicacion/appStore";
 import MiTable from "@/Components/MiTable.vue";
+import { fHelpers } from "@/Functions/fHelpers";
+const { getFormatoMoneda } = fHelpers();
 const appStore = useAppStore();
 onBeforeMount(() => {
     appStore.startLoading();
@@ -91,6 +91,7 @@ const headers = ref([
         key: "costo",
         sortable: true,
         fixed: "right",
+        type: "Number",
         width:"8%",
         classTd: () => {
             let class_fixed = "bg__fixed";
@@ -102,6 +103,7 @@ const headers = ref([
         key: "cancelado",
         sortable: true,
         fixed: "right",
+        type: "Number",
         width:"8%",
         classTd: () => {
             let class_fixed = "bg__fixed";
@@ -550,18 +552,25 @@ onMounted(async () => {
                     </template>
                     <template #costo="{ item }">
                         <div class="w-100">
-                                        size="large"
                             {{ item.moneda.nombre }}
-                            {{ item.costo }}
+                            {{ getFormatoMoneda(item.costo) }}
                         </div>
                     </template>
 
                     <template #cancelado="{ item }">
                         <div class="w-100">
-                                        size="large"
                             <div class="w-100 text-center">
                                 {{ item.moneda.nombre }}
-                                {{ item.cancelado }}
+                                {{ getFormatoMoneda(item.cancelado) }}
+                            </div>
+                        </div>
+                    </template>
+
+                    <template #saldo="{ item }">
+                        <div class="w-100">
+                            <div class="w-100 text-center">
+                                {{ item.moneda.nombre }}
+                                {{ getFormatoMoneda(item.saldo) }}
                             </div>
                         </div>
                     </template>
@@ -638,13 +647,13 @@ onMounted(async () => {
                     <tbody v-if="!cargando" class="bg-white">
                         <tr>
                             <td class="text-center">
-                                {{ total_costo }}
+                                {{ getFormatoMoneda(total_costo) }}
                             </td>
                             <td class="text-center">
-                                {{ total_cancelado }}
+                                {{ getFormatoMoneda(total_cancelado) }}
                             </td>
                             <td class="text-center">
-                                {{ total_saldos }}
+                                {{ getFormatoMoneda(total_saldos) }}
                             </td>
                             <td class="text-center">
                                 {{ total_proceso }}

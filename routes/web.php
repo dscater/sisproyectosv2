@@ -87,6 +87,8 @@ Route::middleware(['auth'])->prefix("admin")->group(function () {
     );
 
     // TRABAJOS
+    Route::post("/trabajos/confirma_envio/{trabajo}", [TrabajoController::class, 'confirma_envio'])->name("trabajos.confirma_envio");
+    Route::post("/trabajos/confirma_concluido/{trabajo}", [TrabajoController::class, 'confirma_concluido'])->name("trabajos.confirma_concluido");
     Route::get("/trabajos/paginado", [TrabajoController::class, 'paginado'])->name("trabajos.paginado");
     Route::get("/trabajos/listado", [TrabajoController::class, 'listado'])->name("trabajos.listado");
     Route::resource("trabajos", TrabajoController::class)->only(

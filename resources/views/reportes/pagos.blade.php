@@ -170,7 +170,7 @@
                     <td>{{ $pago->foto_comprobante ? 'SI' : 'NO' }}</td>
                     <td>{{ $pago->archivo_comprobante ? 'SI' : 'NO' }}</td>
                     <td>{{ $pago->descripcion_archivo }}</td>
-                    <td class="centreado">{{ $pago->monto }}</td>
+                    <td class="centreado">{{ number_format($pago->monto, 2, '.', ',') }}</td>
                 </tr>
                 @php
                     $total_cancelado += $pago->monto;
@@ -178,7 +178,7 @@
             @endforeach
             <tr>
                 <td class="bold txt-lg derecha" colspan="8">TOTAL</td>
-                <td class="bold txt-lg centreado">{{ number_format($total_cancelado, 2, '.', ' ') }}</td>
+                <td class="bold txt-lg centreado">{{ number_format($total_cancelado, 2, '.', ',') }}</td>
             </tr>
         </tbody>
     </table>

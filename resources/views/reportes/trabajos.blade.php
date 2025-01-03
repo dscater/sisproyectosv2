@@ -201,10 +201,10 @@
                     <td>{{ $trabajo->estado_trabajo }}</td>
                     <td>{{ $trabajo->fecha_envio }}</td>
                     <td>{{ $trabajo->fecha_conclusion }}</td>
-                    <td class="centreado">{{ $trabajo->costo }}</td>
-                    <td class="centreado">{{ $trabajo->cancelado }}
+                    <td class="centreado">{{ number_format($trabajo->costo, 2, '.', ',') }}</td>
+                    <td class="centreado">{{ number_format($trabajo->cancelado, 2, '.', ',') }}
                     </td>
-                    <td class="centreado">{{ $trabajo->saldo }}</td>
+                    <td class="centreado">{{ number_format($trabajo->saldo, 2, '.', ',') }}</td>
                     <td class="{{ mb_strtolower($trabajo->estado_pago) }}">{{ $trabajo->estado_pago }}</td>
                 </tr>
                 @php
@@ -215,9 +215,9 @@
             @endforeach
             <tr>
                 <td class="bold txt-lg" colspan="10">TOTALES</td>
-                <td class="bold txt-lg">{{ number_format($total_costo, 2, '.', ' ') }}</td>
-                <td class="bold txt-lg">{{ number_format($total_cancelado, 2, '.', ' ') }}</td>
-                <td class="bold txt-lg">{{ number_format($total_saldo, 2, '.', ' ') }}</td>
+                <td class="bold txt-lg">{{ number_format($total_costo, 2, '.', ',') }}</td>
+                <td class="bold txt-lg">{{ number_format($total_cancelado, 2, '.', ',') }}</td>
+                <td class="bold txt-lg">{{ number_format($total_saldo, 2, '.', ',') }}</td>
                 <td class="bold txt-lg"></td>
             </tr>
         </tbody>
@@ -226,7 +226,7 @@
         <thead>
             <tr>
                 <th colspan="8">
-                    TOTALES
+                    RESUMEN
                 </th>
             </tr>
             <tr>
@@ -242,9 +242,9 @@
         </thead>
         <tbody>
             <tr>
-                <td class="centreado txt-lg">{{ number_format($total_costo, 2, '.', ' ') }}</td>
-                <td class="centreado txt-lg">{{ number_format($total_cancelado, 2, '.', ' ') }}</td>
-                <td class="centreado txt-lg">{{ number_format($total_saldo, 2, '.', ' ') }}</td>
+                <td class="centreado txt-lg">{{ number_format($total_costo, 2, '.', ',') }}</td>
+                <td class="centreado txt-lg">{{ number_format($total_cancelado, 2, '.', ',') }}</td>
+                <td class="centreado txt-lg">{{ number_format($total_saldo, 2, '.', ',') }}</td>
                 <td class="centreado txt-lg">{{ $total_procesos }}</td>
                 <td class="centreado txt-lg">{{ $total_enviados }}</td>
                 <td class="centreado txt-lg">{{ $total_concluidos }}</td>

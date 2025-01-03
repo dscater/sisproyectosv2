@@ -36,11 +36,8 @@ watch(
             document
                 .getElementsByTagName("body")[0]
                 .classList.add("modal-open");
-            if (modal.value) {
-                window.addEventListener("keyup", handleKeyup);
-            }
+            window.addEventListener("keyup", handleKeyup);
         } else {
-            emits("close");
             document
                 .getElementsByTagName("body")[0]
                 .classList.remove("modal-open");
@@ -49,7 +46,7 @@ watch(
     }
 );
 
-const modal = ref(null);
+const miModal = ref(null);
 
 const handleKeyup = (e) => {
     if (e.key === "Escape" && show.value) {
@@ -64,8 +61,12 @@ const handleKeyup = (e) => {
 const isShaking = ref(false);
 
 const clickModal = (e) => {
-    if (e.target == modal.value) {
-        triggerShake();
+    if (e.target == miModal.value) {
+        if (props.closeEsc) {
+            emits("close");
+        } else {
+            triggerShake();
+        }
     }
 };
 
@@ -80,9 +81,19 @@ const triggerShake = () => {
     }
 };
 
-onMounted(() => {});
+onMounted(() => {
+    if (show.value) {
+        document.getElementsByTagName("body")[0].classList.add("modal-open");
+        window.addEventListener("keyup", handleKeyup);
+    } else {
+        document.getElementsByTagName("body")[0].classList.remove("modal-open");
+        window.removeEventListener("keyup", handleKeyup);
+    }
+});
 
-onBeforeUnmount(() => {});
+onBeforeUnmount(() => {
+    window.removeEventListener("keyup", handleKeyup);
+});
 </script>
 
 <template>
@@ -92,7 +103,7 @@ onBeforeUnmount(() => {});
         :style="{
             display: show ? 'block' : 'none',
         }"
-        ref="modal"
+        ref="miModal"
         @click="clickModal"
     >
         <div class="modal-dialog" :class="[size]">

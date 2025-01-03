@@ -4,16 +4,17 @@ import MiTable from "@/Components/MiTable.vue";
 import { Head, usePage, Link, router } from "@inertiajs/vue3";
 import { useTrabajos } from "@/composables/trabajos/useTrabajos";
 import { useCrudAxios } from "@/composables/curdAxios/useCrudAxios";
-import { ref, onMounted, reactive, onBeforeMount } from "vue";
-import axios from "axios";
+import { ref, onMounted, onBeforeMount } from "vue";
+import { fHelpers } from "@/Functions/fHelpers";
 import { useAppStore } from "@/stores/aplicacion/appStore";
+const { getFormatoMoneda } = fHelpers();
 const appStore = useAppStore();
 onBeforeMount(() => {
     appStore.startLoading();
 });
 const { props } = usePage();
 const { limpiarTrabajo, setTrabajo, oTrabajo } = useTrabajos();
-const { axiosGet, axiosDelete } = useCrudAxios();
+const { axiosPost, axiosDelete } = useCrudAxios();
 const responseTrabajos = ref([]);
 const listTrabajos = ref([]);
 const itemsPerPage = ref(5);
@@ -78,6 +79,12 @@ const headers = ref([
         sortable: true,
     },
     {
+        label: "FECHA ENVIO",
+        key: "fecha_envio_t",
+        keySortable: "fecha_envio",
+        sortable: true,
+    },
+    {
         label: "FECHA CONCLUSIÓN",
         key: "fecha_conclusion_t",
         keySortable: "fecha_conclusion",
@@ -131,15 +138,11 @@ const options = ref({
 
 const loading = ref(true);
 
-const editarTrabajo = (item) => {
-    setTrabajo(item);
-    router.get(route("trabajos.edit", item.id));
-};
 
 const eliminarTrabajo = (item) => {
     Swal.fire({
         title: "¿Quierés eliminar este registro?",
-        html: `<strong>${item.proyecto.nombre} <br/> ${item.cliente.nombre}</strong>`,
+        html: `<strong>(${item.proyecto.alias})</strong><br/><p style="margin-bottom:3px;">${item.proyecto.nombre}</p><br/>${item.cliente.nombre}`,
         showCancelButton: true,
         confirmButtonColor: "#B61431",
         confirmButtonText: "Si, eliminar",
@@ -157,6 +160,57 @@ const eliminarTrabajo = (item) => {
         }
     });
 };
+
+const confirmarEnvio= (item)=>{
+        Swal.fire({
+        icon:"question",
+        title: `Confirmar envío <i class="fa fa-paper-plane"></i>`,
+        html: `<strong>(${item.proyecto.alias})</strong><br/><p style="margin-bottom:3px;">${item.proyecto.nombre}</p><br/>${item.cliente.nombre}`,
+        showCancelButton: true,
+        confirmButtonColor: "#1867c0",
+        confirmButtonText: "Si, confirmar",
+        cancelButtonText: "No, cancelar",
+        denyButtonText: `No, cancelar`,
+        background: "#e6a23c",
+        color: "#ffffff",
+        iconColor: '#ffffff',
+    }).then(async (result) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (result.isConfirmed) {
+            let respuesta = await axiosPost(
+                route("trabajos.confirma_envio", item.id)
+            );
+            if (respuesta && respuesta.sw) {
+                updateDatos();
+            }
+        }
+    });
+}
+const confirmarConcluido= (item)=>{
+        Swal.fire({
+        icon:"question",
+        title: `Confirmar concluído <i class="fa fa-check-circle"></i>`,
+        html: `<strong>(${item.proyecto.alias})</strong><br/><p style="margin-bottom:3px;">${item.proyecto.nombre}</p><br/>${item.cliente.nombre}`,
+        showCancelButton: true,
+        confirmButtonColor: "#1867c0",
+        confirmButtonText: "Si, confirmar",
+        cancelButtonText: "No, cancelar",
+        denyButtonText: `No, cancelar`,
+        background: "#67c23a",
+        color: "#ffffff",
+        iconColor: '#ffffff',
+    }).then(async (result) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (result.isConfirmed) {
+            let respuesta = await axiosPost(
+                route("trabajos.confirma_concluido", item.id)
+            );
+            if (respuesta && respuesta.sw) {
+                updateDatos();
+            }
+        }
+    });
+}
 
 const updateDatos = async () => {
     if (miTable.value) {
@@ -279,14 +333,14 @@ onMounted(() => {
                                 class="badge bg__primary2 text-md rounded-0 d-block text-center text-wrap"
                             >
                                 {{ item.moneda.nombre }}
-                                {{ item.costo }}
+                                {{ getFormatoMoneda(item.costo) }}
                             </div>
                             <div
                                 v-if="item.tipo_cambio_id != 0"
                                 class="badge bg__success2 text-md rounded-0 d-block text-center text-wrap"
                             >
                                 {{ item.moneda_cambio.nombre }}
-                                {{ item.costo_cambio }}
+                                {{ getFormatoMoneda(item.costo_cambio) }}
                             </div>
                         </div>
                     </template>
@@ -299,14 +353,14 @@ onMounted(() => {
                         <div class="w-100">
                             <div class="w-100 text-center font-weight-bold text-sm">
                                 {{ item.moneda.nombre }}
-                                {{ item.cancelado }}
+                                {{ getFormatoMoneda(item.cancelado) }}
                             </div>
                             <div
                                 v-if="item.tipo_cambio_id != 0"
                                 class="w-100 text-center"
                             >
                                 {{ item.moneda_cambio.nombre }}
-                                {{ item.cancelado_cambio }}
+                                {{ getFormatoMoneda(item.cancelado_cambio) }}
                             </div>
                             <div class="cont_barra_progreso">
                                 <span>{{ getPorcentajeCancelado(item) }} %</span>
@@ -321,14 +375,14 @@ onMounted(() => {
                         <div class="w-100">
                             <div class="w-100 text-center">
                                 {{ item.moneda.nombre }}
-                                {{ item.saldo }}
+                                {{ getFormatoMoneda(item.saldo) }}
                             </div>
                             <div
                                 v-if="item.tipo_cambio_id != 0"
                                 class="w-100 text-center"
                             >
                                 {{ item.moneda_cambio.nombre }}
-                                {{ item.saldo_cambio }}
+                                {{ getFormatoMoneda(item.saldo_cambio) }}
                             </div>
                         </div>
                     </template>
@@ -340,13 +394,16 @@ onMounted(() => {
                     </template>
 
                     <template #accion="{ item }">
-                        <button
+                        <button v-if="!item.fecha_conclusion" class="btn bg__success"@click="confirmarConcluido(item)"><i class="fa fa-check-circle"></i></button>
+                        <button v-if="!item.fecha_envio" class="btn bg__warning"@click="confirmarEnvio(item)"><i class="fa fa-paper-plane"></i></button>
+                        <Link
+                        :href="route('trabajos.edit', item.id)"
                             class="btn btn-warning accion_icon"
-                            @click.prevent="editarTrabajo(item)"
                         >
                             <i class="fa fa-edit"></i>
-                        </button>
+                        </Link>
                         <button
+                        v-if="item.estado_trabajo != 'CONCLUIDO'"
                             class="btn btn-danger accion_icon"
                             @click.prevent="eliminarTrabajo(item)"
                         >

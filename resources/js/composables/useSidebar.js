@@ -54,15 +54,33 @@ export const useSideBar = () => {
                     body.classList.remove("sidebar-open");
                 }
             }
+
+            nextTick(() => {
+                verificarSubMenusOpen();
+            });
         }
     };
 
-    const verificaSidebarAbierto = () => {
-        const body = document.querySelector("body");
-        if (body.classList.contains("sidebar-open")) {
-            return true;
+    const verificarSubMenusOpen = () => {
+        const subMenus = document.querySelectorAll(".sub-menu");
+        subMenus.forEach((elem, index) => {
+            if (!elem.classList.contains("active")) {
+                elem.classList.remove("menu-is-opening");
+                elem.classList.remove("menu-open");
+                toggleSubMenuELem(elem, false);
+            } else {
+                elem.classList.add("menu-is-opening");
+                elem.classList.add("menu-open");
+                toggleSubMenuELem(elem, true);
+            }
+        });
+    };
+
+    const toggleSubMenuELem = (el, show) => {
+        const subMenu = el.nextElementSibling;
+        if (subMenu) {
+            subMenu.style.height = show ? subMenu.scrollHeight + "px" : "0";
         }
-        return false;
     };
 
     function handleClickOutside(event) {
@@ -92,5 +110,6 @@ export const useSideBar = () => {
     return {
         toggleSidebar,
         closeSidebar,
+        toggleSubMenuELem,
     };
 };

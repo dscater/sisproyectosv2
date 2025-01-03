@@ -1,7 +1,7 @@
 <script setup>
 import Content from "@/Components/Content.vue";
 import { Head } from "@inertiajs/vue3";
-import Pago from "@/Pages/Admin/Pagos/Pago.vue";
+import Pago from "@/Pages/Admin/Pagos/Parcial/Pago.vue";
 const props = defineProps({
     trabajo: {
         type: Object,

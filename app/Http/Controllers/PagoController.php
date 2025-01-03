@@ -60,7 +60,7 @@ class PagoController extends Controller
             ->join("proyectos", "proyectos.id", "=", "trabajos.proyecto_id")
             ->join("clientes", "clientes.id", "=", "pagos.cliente_id");
         if (trim($search) != "") {
-            $pagos->where(DB::raw('CONCAT(proyectos.nombre, proyectos.alias, pagos.descripcion, clientes.nombre)'), 'LIKE', "%$search%");
+            $pagos->where(DB::raw('CONCAT(proyectos.nombre, proyectos.alias, pagos.descripcion, trabajos.descripcion, clientes.nombre)'), 'LIKE', "%$search%");
         }
 
         if ($request->orderBy && $request->orderAsc) {
@@ -153,9 +153,9 @@ class PagoController extends Controller
     public function show(Pago $pago)
     {
         return Inertia::render(
-            'pagos/show',
+            'Admin/Pagos/Show',
             [
-                'pago' => $pago,
+                'pago' => $pago->load(["trabajo.proyecto", "cliente", "moneda_seleccionada", "moneda", "moneda_cambio"]),
             ]
         );
     }

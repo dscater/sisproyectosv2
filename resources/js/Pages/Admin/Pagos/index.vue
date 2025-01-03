@@ -4,18 +4,17 @@ import MiTable from "@/Components/MiTable.vue";
 import { Head, usePage, Link, router } from "@inertiajs/vue3";
 import { usePagos } from "@/composables/pagos/usePagos";
 import { useCrudAxios } from "@/composables/curdAxios/useCrudAxios";
-import { ref, onMounted, reactive, onBeforeMount } from "vue";
-import axios from "axios";
+import { ref, onMounted, onBeforeMount } from "vue";
 import { useAppStore } from "@/stores/aplicacion/appStore";
+import { fHelpers } from "@/Functions/fHelpers";
+const { getFormatoMoneda } = fHelpers();
 const appStore = useAppStore();
 onBeforeMount(() => {
     appStore.startLoading();
 });
 const { props } = usePage();
-const { limpiarPago, setPago, oPago } = usePagos();
-const { axiosGet, axiosDelete } = useCrudAxios();
-const responsePagos = ref([]);
-const listPagos = ref([]);
+const { setPago, oPago } = usePagos();
+const { axiosDelete } = useCrudAxios();
 const itemsPerPage = ref(5);
 const miTable = ref(null);
 const headers = ref([
@@ -50,6 +49,12 @@ const headers = ref([
         sortable: true,
     },
     {
+        label: "DESCRIPCIÓN ARCHIVO",
+        key: "descripcion_archivo",
+        keySortable: "pagos.descripcion_archivo",
+        sortable: true,
+    },
+    {
         label: "FECHA DE PAGO",
         key: "fecha_pago_t",
         keySortable: "pagos.created_at",
@@ -63,7 +68,10 @@ const headers = ref([
         fixed:"right"
     },
     { label: "ACCIÓN", key: "accion",
-    fixed:"right"
+    fixed:"right",
+    classTd:()=>{
+        return 'accion';
+    }
      },
 ]);
 
@@ -81,11 +89,6 @@ const options = ref({
 });
 
 const loading = ref(true);
-
-const editarPago = (item) => {
-    setPago(item);
-    router.get(route("pagos.edit", item.id));
-};
 
 const eliminarPago = (item) => {
     Swal.fire({
@@ -198,21 +201,18 @@ onMounted(() => {
                         </div>
                     </template>
 
-                    <template #costo="{ item }">
-                        <div class="w-100">
-                            <div
-                                class="badge badge-primary text-md rounded-0 w-100 text-center"
-                            >
-                                {{ item.moneda.nombre }}
-                                {{ item.costo }}
-                            </div>
-                            <div
-                                v-if="item.tipo_cambio_id != 0"
-                                class="badge badge-success text-md rounded-0 w-100 text-center"
-                            >
-                                {{ item.moneda_cambio.nombre }}
-                                {{ item.costo_cambio }}
-                            </div>
+                    <template #['trabajo.descripcion']="{ item }">
+                        <div v-html="item.trabajo.descripcion">
+                        </div>
+                    </template>
+
+                    <template #descripcion="{ item }">
+                        <div v-html="item.descripcion">
+                        </div>
+                    </template>
+
+                    <template #descripcion_archivo="{ item }">
+                        <div v-html="item.descripcion_archivo">
                         </div>
                     </template>
 
@@ -220,26 +220,31 @@ onMounted(() => {
                         <div class="w-100">
                             <div class="w-100 text-center font-weight-bold text-md">
                                 {{ item.moneda.nombre }}
-                                {{ item.monto }}
+                                {{ getFormatoMoneda(item.monto) }}
                             </div>
-                         
                             <div
                                 v-if="item.trabajo.proyecto.tipo_cambio_id != 0 && item.moneda_cambio"
                                 class="w-100 text-center"
                             >
                                 {{ item.moneda_cambio.nombre }}
-                                {{ item.monto_cambio }}
+                                {{ getFormatoMoneda(item.monto_cambio) }}
                             </div>
                         </div>
                     </template>
 
                     <template #accion="{ item }">
-                        <button
+                        <Link
+                            :href="route('pagos.show',item.id)"
+                            class="btn btn-primary accion_icon"
+                        >
+                            <i class="fa fa-eye"></i>
+                        </Link>
+                        <Link
+                            :href="route('pagos.edit', item.id)"
                             class="btn btn-warning accion_icon"
-                            @click.prevent="editarPago(item)"
                         >
                             <i class="fa fa-edit"></i>
-                        </button>
+                        </Link>
                         <button
                             class="btn btn-danger accion_icon"
                             @click.prevent="eliminarPago(item)"

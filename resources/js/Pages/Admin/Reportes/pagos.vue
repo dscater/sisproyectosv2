@@ -6,6 +6,8 @@ import { computed, inject, onMounted, ref, watch, onBeforeMount } from "vue";
 import axios from "axios";
 import MiTable from "@/Components/MiTable.vue";
 import { useAppStore } from "@/stores/aplicacion/appStore";
+import { fHelpers } from "@/Functions/fHelpers";
+const { getFormatoMoneda } = fHelpers();
 const appStore = useAppStore();
 onBeforeMount(() => {
     appStore.startLoading();
@@ -364,7 +366,7 @@ function obtenerFechaActual() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-12 mt-3">
+                                    <div class="col-md-6 offest-md-3 mt-3">
                                         <button
                                             type="submit"
                                             class="btn btn-primary btn-block"
@@ -434,19 +436,10 @@ function obtenerFechaActual() {
                                 ></div>
                             </template>
 
-                            <template #costo="{ item }">
+                            <template #monto="{ item }">
                                 <div class="w-100">
                                     {{ item.moneda.nombre }}
-                                    {{ item.costo }}
-                                </div>
-                            </template>
-
-                            <template #cancelado="{ item }">
-                                <div class="w-100">
-                                    <div class="w-100 text-center">
-                                        {{ item.moneda.nombre }}
-                                        {{ item.cancelado }}
-                                    </div>
+                                    {{ getFormatoMoneda(item.monto) }}
                                 </div>
                             </template>
 

@@ -1,11 +1,11 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, nextTick } from "vue";
 import { router } from "@inertiajs/vue3";
 import ItemMenu from "@/Components/ItemMenu.vue";
 import { useSideBar } from "@/composables/useSidebar.js";
 import { useAppStore } from "@/stores/aplicacion/appStore";
 import { useConfiguracionStore } from "@/stores/configuracion/configuracionStore";
-const { closeSidebar } = useSideBar();
+const { closeSidebar, toggleSubMenuELem } = useSideBar();
 const configuracionStore = useConfiguracionStore();
 const appStore = useAppStore();
 const configuracion = ref(null);
@@ -27,14 +27,9 @@ const toggleSubMenu = (e) => {
     }
 };
 
-const toggleSubMenuELem = (el, show) => {
-    const subMenu = el.nextElementSibling;
-    if (subMenu) {
-        subMenu.style.height = show ? subMenu.scrollHeight + "px" : "0";
-    }
-};
-
+const route_current = ref("");
 router.on("navigate", (event) => {
+    route_current.value = route().current();
     closeSidebar();
 });
 
@@ -45,19 +40,9 @@ onMounted(() => {
     var sidebarSearchElement = $('[data-widget="sidebar-search"]');
     // Configura manualmente el texto de "no encontrado"
     sidebarSearchElement.data("notFoundText", "Sin resultados");
-
-    const subMenus = document.querySelectorAll(".sub-menu");
-    subMenus.forEach((elem, index) => {
-        elem.addEventListener("click", toggleSubMenu);
-    });
 });
 
-onUnmounted(() => {
-    const subMenus = document.querySelectorAll(".sub-menu");
-    subMenus.forEach((elem, index) => {
-        elem.remvoeEventListener("click", toggleSubMenu);
-    });
-});
+onUnmounted(() => {});
 </script>
 <template>
     <!-- Main Sidebar Container -->
@@ -149,6 +134,7 @@ onUnmounted(() => {
                             'pagos.index',
                             'pagos.create',
                             'pagos.edit',
+                            'pagos.show',
                         ]"
                     ></ItemMenu>
                     <ItemMenu
@@ -163,7 +149,17 @@ onUnmounted(() => {
                     ></ItemMenu>
 
                     <li class="nav-item">
-                        <a href="#" class="nav-link sub-menu">
+                        <a
+                            href="#"
+                            class="nav-link sub-menu"
+                            :class="[
+                                route_current == 'reportes.trabajos' ||
+                                route_current == 'reportes.pagos'
+                                    ? 'active menu-is-opening menu-open'
+                                    : '',
+                            ]"
+                            @click.stop="toggleSubMenu($event)"
+                        >
                             <i class="nav-icon fas fa-table"></i>
                             <p>
                                 Reportes
