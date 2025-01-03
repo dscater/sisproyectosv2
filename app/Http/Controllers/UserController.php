@@ -52,8 +52,8 @@ class UserController extends Controller
             $user = Auth::user();
             $tipo = $user->tipo;
             $array_permisos = self::$permisos;
-            if (isset($array_permisos["aux"]) && $array_permisos["aux"]) {
-                return $array_permisos["aux"];
+            if (isset($array_permisos[$tipo]) && $array_permisos[$tipo]) {
+                return $array_permisos[$tipo];
             }
         }
         return [];
