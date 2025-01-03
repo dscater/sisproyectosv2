@@ -48,9 +48,15 @@ onMounted(() => {
         <div class="row mb-1">
             <div class="col-md-8 offset-md-2">
                 <div class="row">
-                    <Pago :pago="pago"></Pago>
+                    <div class="col-12">
+                        <Pago :pago="pago"></Pago>
+                    </div>
                 </div>
-                <Link :href="route('pagos.index')" class="btn btn-outline-secondary"><i class="fa fa-arrow-left"></i> Volver</Link>
+                <Link
+                    :href="route('pagos.index')"
+                    class="btn btn-outline-secondary"
+                    ><i class="fa fa-arrow-left"></i> Volver</Link
+                >
             </div>
         </div>
     </Content>

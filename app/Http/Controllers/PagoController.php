@@ -54,6 +54,7 @@ class PagoController extends Controller
     {
         $perPage = $request->input('perPage', 5);
         $search = $request->search;
+        $fecha_pago = $request->fecha_pago;
         $pagos = Pago::with(["trabajo.proyecto", "cliente", "moneda", "moneda_cambio"])
             ->select("pagos.*")
             ->join("trabajos", "trabajos.id", "=", "pagos.trabajo_id")
@@ -61,6 +62,10 @@ class PagoController extends Controller
             ->join("clientes", "clientes.id", "=", "pagos.cliente_id");
         if (trim($search) != "") {
             $pagos->where(DB::raw('CONCAT(proyectos.nombre, proyectos.alias, pagos.descripcion, trabajos.descripcion, clientes.nombre)'), 'LIKE', "%$search%");
+        }
+
+        if ($fecha_pago && trim($fecha_pago) != "") {
+            $pagos->where("pagos.fecha_pago", $fecha_pago);
         }
 
         if ($request->orderBy && $request->orderAsc) {

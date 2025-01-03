@@ -124,6 +124,7 @@ onUnmounted(() => {});
                             'trabajos.index',
                             'trabajos.create',
                             'trabajos.edit',
+                            'trabajos.pagos',
                         ]"
                     ></ItemMenu>
                     <ItemMenu

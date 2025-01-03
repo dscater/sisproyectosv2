@@ -212,6 +212,32 @@ const confirmarConcluido= (item)=>{
     });
 }
 
+const cancelarConcluido= (item)=>{
+        Swal.fire({
+        icon:"question",
+        title: `Cancelar concluído <i class="fa fa-check-circle"></i>`,
+        html: `<strong>(${item.proyecto.alias})</strong><br/><p style="margin-bottom:3px;">${item.proyecto.nombre}</p><br/>${item.cliente.nombre}`,
+        showCancelButton: true,
+        confirmButtonColor: "#1867c0",
+        confirmButtonText: "Si, cancelar",
+        cancelButtonText: "No, cancelar",
+        denyButtonText: `No, cancelar`,
+        background: "#f56c6c",
+        color: "#ffffff",
+        iconColor: '#ffffff',
+    }).then(async (result) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (result.isConfirmed) {
+            let respuesta = await axiosPost(
+                route("trabajos.cancelar_concluido", item.id)
+            );
+            if (respuesta && respuesta.sw) {
+                updateDatos();
+            }
+        }
+    });
+}
+
 const updateDatos = async () => {
     if (miTable.value) {
         await miTable.value.cargarDatos();
@@ -276,11 +302,19 @@ onMounted(() => {
                             clearable
                         >
                             <el-option value="pagopendiente"
-                                >PAGOS PENDIENTES</el-option
+                            label="Pago pendiente"
+                                >PAGO PENDIENTE</el-option
                             >
-                            <el-option value="proceso">EN PROCESO</el-option>
-                            <el-option value="concluidosenviados"
-                                >CONCLUIDOS/ENVIADOS</el-option
+                            <el-option value="pagocompleto"
+                            label="Pago completo"
+                                >PAGO COMPLETO</el-option
+                            >
+                            <el-option value="proceso" label="En proceso">EN PROCESO</el-option>
+                            <el-option value="enviado" label="Enviado"
+                                >ENVIADO</el-option
+                            >
+                            <el-option value="concluido" label="Concluido"
+                                >CONCLUIDOS</el-option
                             >
                         </el-select>
                     </div>
@@ -315,7 +349,7 @@ onMounted(() => {
                     :url="route('trabajos.paginado')"
                     :numPages="5"
                     :multiSearch="multiSearch"
-                    :syncOrderBy="'fecha_registro'"
+                    :syncOrderBy="'fecha_inicio'"
                     :syncOrderAsc="'DESC'"
                     table-responsive
                     fixed-header
@@ -394,8 +428,16 @@ onMounted(() => {
                     </template>
 
                     <template #accion="{ item }">
-                        <button v-if="!item.fecha_conclusion" class="btn bg__success"@click="confirmarConcluido(item)"><i class="fa fa-check-circle"></i></button>
-                        <button v-if="!item.fecha_envio" class="btn bg__warning"@click="confirmarEnvio(item)"><i class="fa fa-paper-plane"></i></button>
+                        <button v-if="item.estado_trabajo == 'CONCLUIDO'" class="btn bg__danger accion_icon"@click="cancelarConcluido(item)"><i class="fa fa-ban"></i></button>
+                        <button v-if="!item.fecha_conclusion" class="btn bg__success accion_icon"@click="confirmarConcluido(item)"><i class="fa fa-check-circle"></i></button>
+                        <button v-if="!item.fecha_envio" class="btn bg__warning accion_icon"@click="confirmarEnvio(item)"><i class="fa fa-paper-plane"></i></button>
+                        <Link
+                        :href="route('trabajos.pagos', item.id)"
+                            class="btn bg__primary accion_icon"
+                            v-if="item.cancelado > 0"
+                        >
+                            <i class="fa fa-list"></i>
+                        </Link>
                         <Link
                         :href="route('trabajos.edit', item.id)"
                             class="btn btn-warning accion_icon"

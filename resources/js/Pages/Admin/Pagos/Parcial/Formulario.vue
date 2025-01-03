@@ -344,7 +344,7 @@ onMounted(async () => {
                                 :class="
                                     parseFloat(montoSaldo) <= 0
                                         ? 'text-success font-weight-bold'
-                                        : ''
+                                        : 'text-primary'
                                 "
                             >
                                 <strong

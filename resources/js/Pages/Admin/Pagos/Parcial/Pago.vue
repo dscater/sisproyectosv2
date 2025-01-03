@@ -49,96 +49,95 @@ const verPdf = (e) => {
 };
 </script>
 <template>
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <div class="fila_info">
-                    <div class="label_info">Fecha del pago:</div>
-                    <div class="content_info">
-                        {{ pago.fecha_pago_t }}
+    <div class="card">
+        <div class="card-body">
+            <div class="fila_info">
+                <div class="label_info">Fecha del pago:</div>
+                <div class="content_info">
+                    {{ pago.fecha_pago_t }}
+                </div>
+            </div>
+            <div class="fila_info">
+                <div class="label_info">Desc. Trabajo:</div>
+                <div
+                    class="content_info"
+                    v-html="pago.trabajo.descripcion"
+                ></div>
+            </div>
+            <div class="fila_info">
+                <div class="label_info">Cliente:</div>
+                <div class="content_info">
+                    {{ pago.cliente.nombre }}
+                </div>
+            </div>
+            <div class="fila_info">
+                <div class="label_info">Foto comprobante:</div>
+                <div class="content_info">
+                    <div class="contenedor_imagen" v-if="pago.url_foto">
+                        <button @click="pantallaCompleta($event)">
+                            <i class="fa fa-expand"></i>
+                        </button>
+                        <img
+                            :src="pago.url_foto"
+                            alt="Comprobante"
+                            class="foto"
+                        />
                     </div>
+                    <span v-else>NO</span>
                 </div>
-                <div class="fila_info">
-                    <div class="label_info">Desc. Trabajo:</div>
-                    <div
-                        class="content_info"
-                        v-html="pago.trabajo.descripcion"
-                    ></div>
-                </div>
-                <div class="fila_info">
-                    <div class="label_info">Cliente:</div>
-                    <div class="content_info">
-                        {{ pago.cliente.nombre }}
-                    </div>
-                </div>
-                <div class="fila_info">
-                    <div class="label_info">Foto comprobante:</div>
-                    <div class="content_info">
-                        <div class="contenedor_imagen" v-if="pago.url_foto">
+            </div>
+            <div class="fila_info">
+                <div class="label_info">Archivo comprobante:</div>
+                <div class="content_info">
+                    <template v-if="pago.url_archivo">
+                        <div
+                            class="contenedor_imagen"
+                            v-if="pago.tipo_archivo == 'imagen'"
+                        >
                             <button @click="pantallaCompleta($event)">
                                 <i class="fa fa-expand"></i>
                             </button>
                             <img
-                                :src="pago.url_foto"
+                                :src="pago.url_archivo"
                                 alt="Comprobante"
                                 class="foto"
                             />
                         </div>
-                        <span v-else>NO</span>
-                    </div>
+                        <button
+                            v-if="pago.tipo_archivo == 'pdf'"
+                            class="btn btn-primary"
+                            @click="verPdf($event)"
+                            :data-url="pago.url_archivo"
+                        >
+                            Ver archivo
+                            <i class="fa fa-file-pdf"></i>
+                        </button>
+                        <a
+                            :href="pago.url_archivo"
+                            target="_blank"
+                            v-if="pago.tipo_archivo == 'otros'"
+                            >Ver archivo</a
+                        >
+                    </template>
+                    <span v-else>NO</span>
                 </div>
-                <div class="fila_info">
-                    <div class="label_info">Archivo comprobante:</div>
-                    <div class="content_info">
-                        <template v-if="pago.url_archivo">
-                            <div
-                                class="contenedor_imagen"
-                                v-if="pago.tipo_archivo == 'imagen'"
-                            >
-                                <button @click="pantallaCompleta($event)">
-                                    <i class="fa fa-expand"></i>
-                                </button>
-                                <img
-                                    :src="pago.url_archivo"
-                                    alt="Comprobante"
-                                    class="foto"
-                                />
-                            </div>
-                            <button
-                                v-if="pago.tipo_archivo == 'pdf'"
-                                class="btn btn-primary"
-                                @click="verPdf($event)"
-                                :data-url="pago.url_archivo"
-                            >
-                                Ver archivo
-                                <i class="fa fa-file-pdf"></i>
-                            </button>
-                            <a
-                                :href="pago.url_archivo"
-                                target="_blank"
-                                v-if="pago.tipo_archivo == 'otros'"
-                                >Ver archivo</a
-                            >
-                        </template>
-                        <span v-else>NO</span>
-                    </div>
+            </div>
+            <div class="fila_info text-md">
+                <div class="label_info">Monto {{ pago.moneda.nombre }}:</div>
+                <div class="content_info">
+                    {{ getFormatoMoneda(pago.monto) }}
                 </div>
-                <div class="fila_info text-md">
-                    <div class="label_info">
-                        Monto {{ pago.moneda.nombre }}:
-                    </div>
-                    <div class="content_info">
-                        {{ getFormatoMoneda(pago.monto) }}
-                    </div>
-                </div>
+            </div>
 
-                <div class="fila_info text-md" v-if="pago.trabajo.tipo_cambio_id != 0">
-                    <div class="label_info">
-                        Monto {{ pago.moneda_cambio.nombre }}:
-                    </div>
-                    <div class="content_info">
-                        {{ pago.monto_cambio }}
-                    </div>
+            <div
+                class="fila_info text-md"
+                v-if="pago.trabajo.tipo_cambio_id != 0"
+            >
+                <div class="label_info">
+                    Monto {{ pago.moneda_cambio.nombre }}:
+                </div>
+                <div class="content_info">
+                    {{ pago.monto_cambio }}
                 </div>
             </div>
         </div>

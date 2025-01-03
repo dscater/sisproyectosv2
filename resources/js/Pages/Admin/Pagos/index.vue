@@ -78,7 +78,7 @@ const headers = ref([
 const search = ref("");
 const multiSearch = ref({
     search: "",
-    filtro: [],
+    fecha_pago: "",
 });
 const options = ref({
     page: 1,
@@ -143,7 +143,7 @@ onMounted(() => {
         <div class="row mb-1">
             <div class="col-md-12">
                 <div class="row">
-                    <div class="col-md-8 my-1 d-flex align-end pt-3">
+                    <div class="col-md-4 my-1 d-flex align-end pt-3">
                         <Link
                             v-if="
                                 props.auth.user.permisos.includes(
@@ -156,7 +156,10 @@ onMounted(() => {
                             <i class="fa fa-plus"></i> Nuevo Pago
                         </Link>
                     </div>
-                    <div class="col-md-4 my-1 d-flex pl-4">
+                    <div class="col-md-3 my-1 pt-3 d-flex align-end">
+                        <input type="date" class="form-control" v-model="multiSearch.fecha_pago">
+                    </div>
+                    <div class="col-md-5 my-1 d-flex">
                         <div class="input-group" style="align-items: end">
                             <input
                                 v-model="multiSearch.search"

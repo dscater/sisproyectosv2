@@ -87,16 +87,29 @@ class TrabajoController extends Controller
         }
 
         if ($filtro && count($filtro) > 0) {
+            $estados = [];
             foreach ($filtro as $value) {
                 if ($value == 'pagopendiente') {
                     $trabajos->where("trabajos.estado_pago", "PENDIENTE");
                 }
+                if ($value == 'pagocompleto') {
+                    $trabajos->where("trabajos.estado_pago", "COMPLETO");
+                }
+
                 if ($value == 'proceso') {
-                    $trabajos->where("trabajos.estado_trabajo", "EN PROCESO");
+                    $estados[] = "EN PROCESO";
                 }
-                if ($value == 'concluidosenviados') {
-                    $trabajos->whereIn("trabajos.estado_trabajo", ["CONCLUIDO", "ENVIADO"]);
+                if ($value == 'enviado') {
+                    $estados[] = "ENVIADO";
                 }
+                if ($value == 'concluido') {
+                    $estados[] = "CONCLUIDO";
+                }
+            }
+
+            // filtrar estados
+            if (count($estados) > 0) {
+                $trabajos->whereIn("estado_trabajo", $estados);
             }
         }
 
@@ -182,7 +195,15 @@ class TrabajoController extends Controller
         $trabajo->estado_trabajo = 'ENVIADO';
         $trabajo->fecha_envio = date("Y-m-d");
         $trabajo->save();
-        return response()->JSON(['trabajo' => $trabajo, 'message' => 'Registro actualizado con éxito']);
+        return response()->JSON(['trabajo' => $trabajo, 'message' => 'Registro actualizado con éxito', "sw" => true]);
+    }
+
+    public function cancelar_envio(Trabajo $trabajo, Request $request)
+    {
+        $trabajo->estado_trabajo = 'EN PROCESO';
+        $trabajo->fecha_envio = NULL;
+        $trabajo->save();
+        return response()->JSON(['trabajo' => $trabajo, 'message' => 'Registro actualizado con éxito', "sw" => true]);
     }
 
     public function confirma_concluido(Trabajo $trabajo, Request $request)
@@ -190,7 +211,15 @@ class TrabajoController extends Controller
         $trabajo->estado_trabajo = 'CONCLUIDO';
         $trabajo->fecha_conclusion = date("Y-m-d");
         $trabajo->save();
-        return response()->JSON(['trabajo' => $trabajo, 'message' => 'Registro actualizado con éxito']);
+        return response()->JSON(['trabajo' => $trabajo, 'message' => 'Registro actualizado con éxito', "sw" => true]);
+    }
+
+    public function cancelar_concluido(Trabajo $trabajo, Request $request)
+    {
+        $trabajo->estado_trabajo = 'ENVIADO';
+        $trabajo->fecha_conclusion = NULL;
+        $trabajo->save();
+        return response()->JSON(['trabajo' => $trabajo, 'message' => 'Registro actualizado con éxito', "sw" => true]);
     }
 
     public function update(Request $request, Trabajo $trabajo)
@@ -265,10 +294,10 @@ class TrabajoController extends Controller
         }
     }
 
-    public function lista_pagos(Trabajo $trabajo)
+    public function pagos(Trabajo $trabajo)
     {
-        $pagos = Pago::without('trabajo')->where("trabajo_id", $trabajo->id)->orderBy("created_at", "desc")->get();
-        return Inertia::render("trabajos/pagos", [
+        $pagos = Pago::where("trabajo_id", $trabajo->id)->orderBy("created_at", "desc")->get();
+        return Inertia::render("Admin/Trabajos/Pagos", [
             "pagos" => $pagos,
             "trabajo" => $trabajo
         ]);
