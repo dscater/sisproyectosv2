@@ -1,7 +1,6 @@
 <script setup>
 import Content from "@/Components/Content.vue";
 import { Head, Link } from "@inertiajs/vue3";
-import BreezeButton from "@/Components/PrimaryButton.vue";
 import { useForm } from "@inertiajs/vue3";
 import { computed, inject, onMounted, ref, watch, onBeforeMount } from "vue";
 import axios from "axios";
@@ -192,7 +191,7 @@ function obtenerFechaActual() {
         <div class="row">
             <div class="col-12">
                 <div class="row">
-                    <div class="col-md-6 offset-md-3">
+                    <div class="col-12">
                         <div class="card">
                             <div class="card-body">
                                 <div class="row">
@@ -209,7 +208,7 @@ function obtenerFechaActual() {
                                     target="_blank"
                                     class="row"
                                 >
-                                    <div class="col-md-6 form-group">
+                                    <div class="col-md-3 form-group">
                                         <label>Seleccione el proyecto*</label>
                                         <el-select
                                             v-model="form.proyecto"
@@ -235,7 +234,7 @@ function obtenerFechaActual() {
                                             {{ form.errors.proyecto }}
                                         </div>
                                     </div>
-                                    <div class="col-md-6 form-group">
+                                    <div class="col-md-3 form-group">
                                         <label>Seleccione el trabajo*</label>
                                         <el-select
                                             v-model="form.trabajo"
@@ -261,7 +260,7 @@ function obtenerFechaActual() {
                                             {{ form.errors.trabajo }}
                                         </div>
                                     </div>
-                                    <div class="col-md-6 form-group">
+                                    <div class="col-md-3 form-group">
                                         <label>Estado de trabajo*</label>
                                         <select
                                             v-model="form.estado_trabajo"
@@ -288,7 +287,7 @@ function obtenerFechaActual() {
                                             {{ form.errors.estado_trabajo }}
                                         </div>
                                     </div>
-                                    <div class="col-md-6 form-group">
+                                    <div class="col-md-3 form-group">
                                         <label>Cliente*</label>
                                         <select
                                             v-model="form.cliente_id"
@@ -312,7 +311,7 @@ function obtenerFechaActual() {
                                             {{ form.errors.cliente_id }}
                                         </div>
                                     </div>
-                                    <div class="col-md-6 form-group">
+                                    <div class="col-md-3 form-group">
                                         <label>Fechas*</label>
                                         <select
                                             v-model="form.filtro_fecha"
@@ -329,7 +328,7 @@ function obtenerFechaActual() {
                                         </select>
                                     </div>
                                     <div
-                                        class="col-12"
+                                        class="col-md-6"
                                         v-if="form.filtro_fecha != 'todos'"
                                     >
                                         <div class="row">

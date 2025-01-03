@@ -308,7 +308,7 @@ onMounted(async () => {
             <!-- /.row -->
         </template>
         <div class="row">
-            <div class="col-md-6 offset-md-3">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-body">
                         <form
@@ -317,7 +317,7 @@ onMounted(async () => {
                             class="p-3"
                         >
                             <div class="row">
-                                <div class="col-md-6 form-group">
+                                <div class="col-md-3 form-group">
                                     <label>Seleccione el proyecto*</label>
                                     <el-select
                                         name="proyecto"
@@ -342,7 +342,7 @@ onMounted(async () => {
                                         {{ form.errors.proyecto }}
                                     </div>
                                 </div>
-                                <div class="col-md-6 form-group">
+                                <div class="col-md-3 form-group">
                                     <label>Seleccione el trabajo*</label>
                                     <el-select
                                         name="trabajo"
@@ -367,7 +367,7 @@ onMounted(async () => {
                                         {{ form.errors.trabajo }}
                                     </div>
                                 </div>
-                                <div class="col-md-6 form-group">
+                                <div class="col-md-3 form-group">
                                     <label>Estado de pago*</label>
                                     <select
                                         name="estado_pago"
@@ -390,7 +390,7 @@ onMounted(async () => {
                                         {{ form.errors.estado_pago }}
                                     </div>
                                 </div>
-                                <div class="col-md-6 form-group">
+                                <div class="col-md-3 form-group">
                                     <label>Estado de trabajo*</label>
                                     <select
                                         name="estado_trabajo"
@@ -414,7 +414,7 @@ onMounted(async () => {
                                         {{ form.errors.estado_trabajo }}
                                     </div>
                                 </div>
-                                <div class="col-md-6 form-group">
+                                <div class="col-md-3 form-group">
                                     <label>Cliente*</label>
                                     <el-select
                                         name="cliente_id"
@@ -439,7 +439,7 @@ onMounted(async () => {
                                         {{ form.errors.cliente_id }}
                                     </div>
                                 </div>
-                                <div class="col-md-6 form-group">
+                                <div class="col-md-3 form-group">
                                     <label>Fechas*</label>
                                     <select
                                         name="filtro_fecha"
@@ -453,7 +453,7 @@ onMounted(async () => {
                                         </option>
                                     </select>
                                 </div>
-                                <div class="col-12 mt-2">
+                                <div class="col-md-6 mt-2">
                                     <div class="row">
                                         <div
                                             class="col-12"
@@ -497,7 +497,7 @@ onMounted(async () => {
                                     </div>
                                 </div>
 
-                                <div class="col-12 mt-3">
+                                <div class="col-md-6 offset-md-3">
                                     <button
                                         type="submit"
                                         class="btn btn-primary btn-block"

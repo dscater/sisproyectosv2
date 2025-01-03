@@ -1,6 +1,15 @@
 <script setup>
-import { onMounted, onBeforeUnmount, onBeforeMount } from "vue";
+import { onMounted, onBeforeUnmount, onBeforeMount, ref } from "vue";
+import { useConfiguracionStore } from "@/stores/configuracion/configuracionStore";
+const configuracionStore = useConfiguracionStore();
+const configuracion = ref(null);
+
 onBeforeMount(() => {
+    configuracionStore.initConfiguracion();
+});
+
+onMounted(() => {
+    configuracion.value = configuracionStore.getConfiguracion;
     document.getElementsByTagName("body")[0].classList.add("login-page");
 });
 
@@ -13,11 +22,11 @@ onBeforeUnmount(() => {
         <!-- /.login-logo -->
         <div class="card card-outline card-primary">
             <div class="card-header text-center">
-                <a href="../../index2.html" class="h1"><b>Admin</b>LTE</a>
+                <a href="../../index2.html" class="h1">{{
+                    configuracion?.sistema
+                }}</a>
             </div>
             <div class="card-body">
-                <p class="login-box-msg">Sign in to start your session</p>
-
                 <slot />
             </div>
             <!-- /.card-body -->

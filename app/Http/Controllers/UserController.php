@@ -48,9 +48,13 @@ class UserController extends Controller
     ];
     public static function getPermisosUser()
     {
-        $array_permisos = self::$permisos;
-        if ($array_permisos["ADMINISTRADOR"]) {
-            return $array_permisos["ADMINISTRADOR"];
+        if (Auth::check()) {
+            $user = Auth::user();
+            $tipo = $user->tipo;
+            $array_permisos = self::$permisos;
+            if (isset($array_permisos["aux"]) && $array_permisos["aux"]) {
+                return $array_permisos["aux"];
+            }
         }
         return [];
     }

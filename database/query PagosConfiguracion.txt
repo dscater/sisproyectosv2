@@ -1,0 +1,29 @@
+ALTER TABLE `pagos` ADD `monto_original` DECIMAL(24,2) NOT NULL AFTER `cliente_id`, ADD `moneda_seleccionada_id` BIGINT UNSIGNED NOT NULL AFTER `monto_original`;
+
+UPDATE pagos SET monto_original = monto, moneda_seleccionada_id = moneda_id;
+
+CREATE TABLE `configuracions` (
+  `id` bigint UNSIGNED NOT NULL,
+  `sistema` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `alias` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `configuracions`
+  ADD PRIMARY KEY (`id`);
+
+ALTER TABLE `configuracions`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+INSERT INTO `configuracions` (`id`, `sistema`, `alias`, `created_at`, `updated_at`) VALUES (NULL, 'SISPROYECTOS', 'SP', NULL, NULL);
+
+
+ALTER TABLE `users` ADD `paterno` VARCHAR(155) NOT NULL AFTER `nombre`, ADD `materno` VARCHAR(155) NULL AFTER `paterno`;
+
+
+ALTER TABLE `users` ADD `tipo` VARCHAR(155) NOT NULL AFTER `password`;
+
+UPDATE users SET tipo ='ADMINISTRADOR';
+
+ALTER TABLE `users` ADD `foto` VARCHAR(255) NULL AFTER `correo`;

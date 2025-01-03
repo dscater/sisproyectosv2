@@ -336,7 +336,7 @@ onMounted(async () => {
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
-                        <p><strong>Código: </strong>{{ oTrabajo?.id }}</p>
+                        <p><strong>Código de trabajo: </strong>{{ oTrabajo?.id }}</p>
                         <hr />
                         <div class="bg-saldo">
                             <p

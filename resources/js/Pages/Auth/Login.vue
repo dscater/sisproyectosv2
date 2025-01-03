@@ -9,17 +9,12 @@ import Login from "@/Layouts/Login.vue";
 import { onMounted } from "vue";
 import { useForm, Head, usePage } from "@inertiajs/vue3";
 import { ref } from "vue";
-import { useConfiguracionStore } from "@/stores/configuracion/configuracionStore";
-const configuracion = useConfiguracionStore();
-const oConfiguracion = ref(configuracion.getConfiguracion());
 const { url_assets } = usePage().props;
 
 const form = useForm({
     usuario: "",
     password: "",
 });
-
-const visible = ref(false);
 
 const submit = () => {
     form.post(route("login"), {
@@ -41,12 +36,13 @@ const submit = () => {
 const url_asset = ref("/");
 
 onMounted(() => {
-    url_asset.value = url_assets;    
+    url_asset.value = url_assets;
 });
 </script>
 
 <template>
     <form @submit.prevent="submit">
+        <p class="login-box-msg">Ingresar usuario y contraseña</p>
         <div class="input-group mb-3">
             <input
                 type="text"
@@ -56,7 +52,7 @@ onMounted(() => {
             />
             <div class="input-group-append">
                 <div class="input-group-text">
-                    <span class="fas fa-envelope"></span>
+                    <span class="fas fa-user"></span>
                 </div>
             </div>
         </div>
@@ -64,7 +60,7 @@ onMounted(() => {
             <input
                 type="password"
                 class="form-control"
-                placeholder="Password"
+                placeholder="Contraseña"
                 v-model="form.password"
                 autocomplete="false"
             />
@@ -75,9 +71,13 @@ onMounted(() => {
             </div>
         </div>
         <div class="row">
-            <div class="col-4">
-                <button type="submit" class="btn btn-primary btn-block">
-                    Sign In
+            <div class="col-12">
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-block"
+                    :disabled="form.processing"
+                >
+                    Acceder
                 </button>
             </div>
             <!-- /.col -->

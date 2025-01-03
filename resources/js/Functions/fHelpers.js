@@ -1,4 +1,9 @@
 export const fHelpers = () => {
+    function getAnioActual() {
+        const fecha = new Date();
+        const año = fecha.getFullYear();
+        return `${año}`;
+    }
     function getFechaActual() {
         const fecha = new Date();
         const año = fecha.getFullYear();
@@ -58,11 +63,20 @@ export const fHelpers = () => {
         return Math.round(numero * factor) / factor;
     }
 
+    const getFormatoMoneda = (valor) => {
+        return new Intl.NumberFormat("es-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(valor);
+    };
+
     return {
         getFechaActual,
+        getAnioActual,
         sumarDiasFecha,
         getMontoCambio,
         contarDecimales,
         redondear,
+        getFormatoMoneda,
     };
 };

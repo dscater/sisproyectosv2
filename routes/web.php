@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ConfiguracionController;
 use App\Http\Controllers\InicioController;
 use App\Http\Controllers\MonedaController;
 use App\Http\Controllers\PagoController;
@@ -38,8 +39,16 @@ Route::get('/login', function () {
 
 // ADMINISTRACION
 Route::middleware(['auth'])->prefix("admin")->group(function () {
+    // INICIO
     Route::get('/inicio', [InicioController::class, 'inicio'])->name('inicio');
     Route::get("/inicio/getMaximoImagenes", [InicioController::class, 'getMaximoImagenes'])->name("entrenamientos.getMaximoImagenes");
+    Route::get("/inicio/graficoPagos", [InicioController::class, 'graficoPagos'])->name("entrenamientos.graficoPagos");
+    
+    // CONFIGURACION
+    Route::get("configuracions/getConfiguracion", [ConfiguracionController::class, 'getConfiguracion'])->name("configuracions.getConfiguracion");
+    Route::resource("configuracions", ConfiguracionController::class)->only(
+        ["index", "show", "update"]
+    );
 
     // USUARIO
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

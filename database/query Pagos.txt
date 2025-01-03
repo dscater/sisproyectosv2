@@ -1,3 +1,0 @@
-ALTER TABLE `pagos` ADD `monto_original` DECIMAL(24,2) NOT NULL AFTER `cliente_id`, ADD `moneda_seleccionada_id` BIGINT UNSIGNED NOT NULL AFTER `monto_original`;
-
-UPDATE pagos SET monto_original = monto, moneda_seleccionada_id = moneda_id;

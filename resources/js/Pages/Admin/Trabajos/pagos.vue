@@ -1,5 +1,5 @@
 <script setup>
-import BreezeAuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import Content from "@/Components/Content.vue";
 import { Head } from "@inertiajs/vue3";
 import Pago from "@/Pages/Admin/Pagos/Pago.vue";
 const props = defineProps({
@@ -15,7 +15,7 @@ const props = defineProps({
 </script>
 <template>
     <Head title="Trabajos - Pagos" />
-    <BreezeAuthenticatedLayout>
+    <Content>
         <template #header>
             <h2 class="text-xl font-semibold leading-tight">
                 Listado de pagos
@@ -167,5 +167,5 @@ const props = defineProps({
                 </div>
             </div>
         </div>
-    </BreezeAuthenticatedLayout>
+    </Content>
 </template>

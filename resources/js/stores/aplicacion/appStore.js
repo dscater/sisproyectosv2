@@ -1,11 +1,17 @@
+import { usePage } from "@inertiajs/vue3";
 import { defineStore } from "pinia";
 
 export const useAppStore = defineStore("app_store", {
     state: () => ({
         loading: true,
         delayLoading: 300,
+        user: null,
     }),
     actions: {
+        initUserInfo() {
+            this.user = usePage().props.auth.user ?? null;
+        },
+
         setLoading(value) {
             this.loading = value;
         },
@@ -31,8 +37,11 @@ export const useAppStore = defineStore("app_store", {
         getLoading() {
             return this.loading;
         },
-        getDelayLoading(value) {
-            this.delayLoading = value;
+        getDelayLoading() {
+            return this.delayLoading;
+        },
+        getUsuario() {
+            return this.user;
         },
     },
 });
