@@ -64,9 +64,14 @@ class TrabajoController extends Controller
     public function listado(Request $request)
     {
         $trabajos = Trabajo::with(["proyecto"])->select("trabajos.*");
+        if ($request->conSaldo && $request->conSaldo == true) {
+            $trabajos->where("saldo", ">", 0);
+        }
+
         if ($request->order && $request->order == "desc") {
             $trabajos->orderBy("trabajos.id", $request->order);
         }
+
         $trabajos = $trabajos->get();
         return response()->JSON([
             "trabajos" => $trabajos

@@ -99,9 +99,7 @@ class PagoController extends Controller
             $trabajo = Trabajo::find($request->trabajo_id);
             $request['cliente_id'] = $trabajo->cliente_id;
 
-            if ($trabajo->tipo_cambio_id != 0) {
-                $montos_pago = PagoController::generaMontosCambio($trabajo->tipo_cambio_id, $request->moneda_seleccionada_id, $request->monto_original);
-            }
+            $montos_pago = PagoController::generaMontosCambio($trabajo->tipo_cambio_id, $request->moneda_seleccionada_id, $request->monto_original);
 
             $datos_pago = [
                 "trabajo_id" => $trabajo->id,
@@ -178,9 +176,7 @@ class PagoController extends Controller
         try {
             $old_trabajo = $pago->trabajo;
             $trabajo = Trabajo::find($request->trabajo_id);
-            if ($trabajo->tipo_cambio_id != 0) {
-                $montos_pago = PagoController::generaMontosCambio($trabajo->tipo_cambio_id, $request->moneda_seleccionada_id, $request->monto_original);
-            }
+            $montos_pago = PagoController::generaMontosCambio($trabajo->tipo_cambio_id, $request->moneda_seleccionada_id, $request->monto_original);
             $datos_pago = [
                 "trabajo_id" => $trabajo->id,
                 "cliente_id" => $trabajo->cliente_id,

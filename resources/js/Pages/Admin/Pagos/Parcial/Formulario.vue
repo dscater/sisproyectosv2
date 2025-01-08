@@ -160,7 +160,6 @@ const getMontosSaldo = (sw = 1) => {
     return parseFloat(parseFloat(monto).toFixed(2)) ?? 0;
 };
 
-
 // enviar los datos para guardar en la bd
 const enviarFormulario = () => {
     enviando.value = true;
@@ -304,6 +303,7 @@ const getTrabajo = async (value) => {
 const getTrabajos = async () => {
     const resp = await useCrudAxios().axiosGet(route("trabajos.listado"), {
         order: "desc",
+        conSaldo: true,
     });
     listTrabajos.value = resp.trabajos;
 };
@@ -336,7 +336,10 @@ onMounted(async () => {
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-body">
-                        <p><strong>Código de trabajo: </strong>{{ oTrabajo?.id }}</p>
+                        <p>
+                            <strong>Código de trabajo: </strong
+                            >{{ oTrabajo?.id }}
+                        </p>
                         <hr />
                         <div class="bg-saldo">
                             <p

@@ -92,7 +92,7 @@ const headers = ref([
         sortable: true,
         fixed: "right",
         type: "Number",
-        width:"8%",
+        width:"9%",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -104,7 +104,7 @@ const headers = ref([
         sortable: true,
         fixed: "right",
         type: "Number",
-        width:"8%",
+        width:"9%",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -116,7 +116,7 @@ const headers = ref([
         sortable: true,
         fixed: "right",
         type: "Number",
-        width:"8%",
+        width:"9%",
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -230,24 +230,36 @@ function obtenerFechaActual() {
 
 const total_saldos = computed(() => {
     return listTrabajos.value.reduce(
-        (suma, objeto) =>
-            (parseFloat(suma) + parseFloat(objeto.saldo)).toFixed(2),
+        (suma, objeto) => {
+            if(objeto.saldo > 0){
+                return (parseFloat(suma) + parseFloat(objeto.saldo));
+            }
+            return suma;
+        },
         0
     );
 });
 
 const total_cancelado = computed(() => {
     return listTrabajos.value.reduce(
-        (suma, objeto) =>
-            (parseFloat(suma) + parseFloat(objeto.cancelado)).toFixed(2),
+        (suma, objeto) =>{
+            if(objeto.cancelado > 0){
+                return (parseFloat(suma) + parseFloat(objeto.cancelado));
+            }
+            return suma;
+        },
         0
     );
 });
 
 const total_costo = computed(() => {
     return listTrabajos.value.reduce(
-        (suma, objeto) =>
-            (parseFloat(suma) + parseFloat(objeto.costo)).toFixed(2),
+        (suma, objeto) =>{
+            if(objeto.cancelado > 0){
+                return (parseFloat(suma) + parseFloat(objeto.costo));
+            }
+            return suma;
+        },
         0
     );
 });
@@ -595,7 +607,7 @@ onMounted(async () => {
                                 TOTALES
                             </td>
                             <td
-                                colspan="8"
+                                colspan="7"
                                 class="bg-dark"
                                 style="position: sticky; bottom: 0"
                             >
@@ -604,18 +616,21 @@ onMounted(async () => {
                             <td
                                 class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                             >
-                                {{ total_costo }}
+                                {{ getFormatoMoneda(total_costo)  }}
                             </td>
                             <td
                                 class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                             >
-                                {{ total_cancelado }}
+                                {{ getFormatoMoneda(total_cancelado)  }}
                             </td>
                             <td
                                 class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                             >
-                                {{ total_saldos }}
+                                {{ getFormatoMoneda(total_saldos)  }}
                             </td>
+                            <td
+                                class="bg-dark footer-fixed p-3 fixed-column-ext-right"
+                            ></td>
                             <td
                                 class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                             ></td>

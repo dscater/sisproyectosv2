@@ -136,25 +136,25 @@ class Trabajo extends Model
     // FUNCION PARA OBTENER EL TOTAL CANCELADO DE TODOS LOS TRABAJOS
     static function getTotalCancelado()
     {
-        return Trabajo::sum("cancelado");
+        return Trabajo::where("cancelado", ">", 0)->sum("cancelado");
     }
 
     // FUNCION PARA OBTENER EL MONTO PENDIENTE DE TODOS LOS TRABAJOS
     static function getTotalSaldoPendiente()
     {
-        return Trabajo::whereIn("estado_trabajo", ["ENVIADO", "CONCLUIDO"])->sum("saldo");
+        return Trabajo::where("saldo", ">", 0)->whereIn("estado_trabajo", ["ENVIADO", "CONCLUIDO"])->sum("saldo");
     }
 
     // FUNCION PARA OBTENER EL MONTO TOTAL DE SALDOS
     static function getTotalSaldos()
     {
-        return Trabajo::sum("saldo");
+        return Trabajo::where("saldo", ">", 0)->sum("saldo");
     }
 
     // FUNCION PARA OBTENER EL TOTAL COSTO DE TODOS LOS TRABAJOS
     static function getTotalTrabajos()
     {
-        return Trabajo::sum("costo");
+        return Trabajo::where("costo", ">", 0)->sum("costo");
     }
 
     // reestablecer costos originales con moneda_selecccionada_id = 0
@@ -342,11 +342,15 @@ class Trabajo extends Model
         // actualizar los saldos de las columnas correspondientes
         $trabajo->cancelado = (float)$trabajo->cancelado + (float)$monto_cancelado;
         $trabajo->saldo  = (float)$trabajo->saldo - (float)$monto_cancelado;
-        // $trabajo->cancelado_cambio = (float)$trabajo->cancelado_cambio + (float)$monto_cancelado_cambio;
-        $trabajo->cancelado_cambio = self::getMontoCambio($trabajo->tipo_cambio_id, $trabajo->moneda_id, $trabajo->cancelado);
-        // $trabajo->saldo_cambio = (float)$trabajo->saldo_cambio - (float)$monto_cancelado_cambio;
-        $trabajo->saldo_cambio = self::getMontoCambio($trabajo->tipo_cambio_id, $trabajo->moneda_id, $trabajo->saldo);
-
+        if ($trabajo->tipo_cambio_id != 0) {
+            // $trabajo->cancelado_cambio = (float)$trabajo->cancelado_cambio + (float)$monto_cancelado_cambio;
+            $trabajo->cancelado_cambio = self::getMontoCambio($trabajo->tipo_cambio_id, $trabajo->moneda_id, $trabajo->cancelado);
+            // $trabajo->saldo_cambio = (float)$trabajo->saldo_cambio - (float)$monto_cancelado_cambio;
+            $trabajo->saldo_cambio = self::getMontoCambio($trabajo->tipo_cambio_id, $trabajo->moneda_id, $trabajo->saldo);
+        } else {
+            $trabajo->cancelado_cambio = (float)$trabajo->cancelado + (float)$monto_cancelado;
+            $trabajo->saldo_cambio  = (float)$trabajo->saldo - (float)$monto_cancelado;
+        }
         if ($trabajo->saldo == 0) {
             $trabajo->estado_pago = "COMPLETO";
         } else {
