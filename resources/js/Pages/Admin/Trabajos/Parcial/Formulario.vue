@@ -146,7 +146,7 @@ onMounted(() => {
                     <el-option
                         v-for="item in listProyectos"
                         :value="item.id"
-                        :label="item.nombre"
+                        :label="`${item.nombre} - ${item.alias}`"
                     >
                     </el-option>
                 </el-select>

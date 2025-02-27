@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\TrabajoStoreRequest;
+use App\Http\Requests\TrabajoUpdateRequest;
 use App\Models\Cliente;
 use App\Models\Moneda;
 use App\Models\Pago;
@@ -16,42 +18,6 @@ use Inertia\Inertia;
 
 class TrabajoController extends Controller
 {
-    public $validacion = [
-        'proyecto_id' => 'required',
-        'cliente_id' => 'required',
-        'costo_original' => 'required|numeric|min:1',
-        'moneda_seleccionada_id' => 'required',
-        'estado_pago' => 'required',
-        'descripcion' => 'required|min:4',
-        'fecha_inicio' => 'required|date',
-        'dias_plazo' => 'required|numeric',
-        'fecha_entrega' => 'required|date',
-        'estado_trabajo' => 'required',
-        'fecha_envio' => 'nullable|date',
-        'fecha_conclusion' => 'nullable|date',
-    ];
-
-    public $mensajes = [
-        "proyecto_id.required" => "Este campo es obligatorio",
-        "cliente_id.required" => "Este campo es obligatorio",
-        "costo_original.required" => "Este campo es obligatorio",
-        "costo_original.numeric" => "Debes ingresar un valor númerico",
-        "costo_original.min" => "Debes ingresar al menos :min",
-        "moneda_seleccionada_id.required" => "Este campo es obligatorio",
-        "estado_pago.required" => "Este campo es obligatorio",
-        "descripcion.required" => "Este campo es obligatorio",
-        "descripcion.min" => "Debes ingresar al menos :min caracteres",
-        "fecha_inicio.required" => "Este campo es obligatorio",
-        "fecha_inicio.date" => "Debes ingresar una fecha valida",
-        "dias_plazo.required" => "Este campo es obligatorio",
-        "dias_plazo.numeric" => "Debes ingresar un valor númerico",
-        "fecha_entrega.required" => "Este campo es obligatorio",
-        "estado_trabajo.required" => "Este campo es obligatorio",
-        "fecha_envio.required" => "Este campo es obligatorio",
-        "fecha_envio.date" => "Debes ingresar una fecha valida",
-        "fecha_conclusion.required" => "Este campo es obligatorio",
-        "fecha_conclusion.date" => "Debes ingresar una fecha valida",
-    ];
     // Trabajo::reestablecerCostos();
     // Trabajo::reestablecerPagos();
     // Trabajo::reestablecerCostosOriginales();
@@ -135,9 +101,8 @@ class TrabajoController extends Controller
         return Inertia::render('Admin/Trabajos/Create');
     }
 
-    public function store(Request $request)
+    public function store(TrabajoStoreRequest $request)
     {
-        $request->validate($this->validacion, $this->mensajes);
         DB::beginTransaction();
         try {
             $montos_trabajo = TrabajoController::generaMontosCambio($request->tipo_cambio_id, $request->moneda_seleccionada_id, $request->costo_original);
@@ -227,7 +192,7 @@ class TrabajoController extends Controller
         return response()->JSON(['trabajo' => $trabajo, 'message' => 'Registro actualizado con éxito', "sw" => true]);
     }
 
-    public function update(Request $request, Trabajo $trabajo)
+    public function update(TrabajoUpdateRequest $request, Trabajo $trabajo)
     {
         try {
             $montos_trabajo = TrabajoController::generaMontosCambio($request->tipo_cambio_id, $request->moneda_seleccionada_id, $request->costo_original);
