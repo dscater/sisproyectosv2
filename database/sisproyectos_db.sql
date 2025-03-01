@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: localhost:3306
--- Tiempo de generación: 27-02-2025 a las 21:43:08
+-- Tiempo de generación: 01-03-2025 a las 00:45:13
 -- Versión del servidor: 8.0.30
 -- Versión de PHP: 8.2.22
 
@@ -436,7 +436,8 @@ INSERT INTO `pagos` (`id`, `trabajo_id`, `cliente_id`, `monto_original`, `moneda
 (268, 183, 1, 335.20, 1, 335.20, 1, 48.16, 2, 'ultimo pago', 'fc_2681736296169.jpg', NULL, NULL, '2024-12-31', '2025-01-08 00:29:29', '2025-01-08 00:30:46'),
 (269, 189, 1, 100.00, 1, 100.00, 1, 14.37, 2, 'pago cuota', 'fc_2691736296239.jpg', NULL, NULL, '2024-12-31', '2025-01-08 00:30:39', '2025-01-08 00:30:39'),
 (270, 192, 1, 1392.00, 1, 1392.00, 1, 200.00, 2, 'pago total', 'fc_2701736296327.jpg', NULL, NULL, '2024-12-31', '2025-01-08 00:32:07', '2025-01-08 00:32:07'),
-(271, 184, 1, 100.00, 1, 100.00, 1, 14.37, 2, 'pago cuota', 'fc_2711736296384.jpg', NULL, NULL, '2024-12-31', '2025-01-08 00:33:04', '2025-01-08 00:33:04');
+(271, 184, 1, 100.00, 1, 100.00, 1, 14.37, 2, 'pago cuota', 'fc_2711736296384.jpg', NULL, NULL, '2024-12-31', '2025-01-08 00:33:04', '2025-01-08 00:33:04'),
+(272, 196, 3, 500.00, 1, 500.00, 1, 500.00, 0, 'pago total del trabajo', NULL, NULL, NULL, '2025-02-28', '2025-03-01 00:44:25', '2025-03-01 00:44:25');
 
 -- --------------------------------------------------------
 
@@ -848,7 +849,7 @@ INSERT INTO `trabajos` (`id`, `proyecto_id`, `cliente_id`, `costo_original`, `mo
 (193, 109, 1, 300.00, 1, 300.00, 1, 0, 0.00, 300.00, 0.00, 300.00, 300.00, 0, 'PENDIENTE', 'CORRECCIONES AL SISTEMA MAS ACTUALIZACION DE VERSIÓN PHP DE 5.6 A 8.2', '2024-12-12', 5, '2024-12-17', 'ENVIADO', '2024-12-12', NULL, '2025-01-02', '2025-01-03 00:38:50', '2025-01-03 18:27:09'),
 (194, 110, 3, 170.00, 2, 1190.00, 1, 5, 0.00, 1190.00, 0.00, 170.00, 170.00, 2, 'PENDIENTE', 'PLATAFORMA WEB PARA DROPSHIPPING CON LARAVEL 11', '2025-02-05', 20, '2025-02-25', 'ENVIADO', '2025-02-19', NULL, '2025-02-24', '2025-02-24 14:30:14', '2025-02-24 14:30:40'),
 (195, 91, 1, 50.00, 1, 50.00, 1, 0, 0.00, 50.00, 0.00, 50.00, 50.00, 0, 'PENDIENTE', 'OBSERVACIONES 02<br />\r\nENVIO DE CORREOS<br />\r\nBACKUP BD', '2025-02-24', 2, '2025-02-26', 'ENVIADO', '2025-02-25', NULL, '2025-02-25', '2025-02-25 15:10:28', '2025-02-25 15:10:28'),
-(196, 111, 3, 500.00, 1, 500.00, 1, 0, 0.00, 500.00, 0.00, 500.00, 500.00, 0, 'PENDIENTE', 'REPORTES CON SCRAPING USANDO PYTHON', '2025-02-24', 10, '2025-03-06', 'EN PROCESO', NULL, NULL, '2025-02-25', '2025-02-25 15:11:15', '2025-02-25 15:11:15');
+(196, 111, 3, 500.00, 1, 500.00, 1, 0, 500.00, 500.00, 0.00, 500.00, 500.00, 0, 'COMPLETO', 'REPORTES CON SCRAPING USANDO PYTHON', '2025-02-24', 10, '2025-03-06', 'CONCLUIDO', '2025-02-27', '2025-02-28', '2025-02-25', '2025-02-25 15:11:15', '2025-03-01 00:44:59');
 
 -- --------------------------------------------------------
 
@@ -860,12 +861,12 @@ CREATE TABLE `users` (
   `id` bigint UNSIGNED NOT NULL,
   `usuario` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `nombre` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `paterno` varchar(155) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `materno` varchar(155) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `paterno` varchar(155) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `materno` varchar(155) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `correo` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `foto` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `foto` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `tipo` varchar(155) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tipo` varchar(155) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -982,7 +983,7 @@ ALTER TABLE `monedas`
 -- AUTO_INCREMENT de la tabla `pagos`
 --
 ALTER TABLE `pagos`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=272;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=273;
 
 --
 -- AUTO_INCREMENT de la tabla `personal_access_tokens`
