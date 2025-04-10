@@ -231,7 +231,7 @@ function obtenerFechaActual() {
 const total_saldos = computed(() => {
     return listTrabajos.value.reduce(
         (suma, objeto) => {
-            if(objeto.saldo > 0){
+            if(objeto.saldo >= 0){
                 return (parseFloat(suma) + parseFloat(objeto.saldo));
             }
             return suma;
@@ -243,7 +243,7 @@ const total_saldos = computed(() => {
 const total_cancelado = computed(() => {
     return listTrabajos.value.reduce(
         (suma, objeto) =>{
-            if(objeto.cancelado > 0){
+            if(objeto.cancelado >= 0){
                 return (parseFloat(suma) + parseFloat(objeto.cancelado));
             }
             return suma;
@@ -255,7 +255,7 @@ const total_cancelado = computed(() => {
 const total_costo = computed(() => {
     return listTrabajos.value.reduce(
         (suma, objeto) =>{
-            if(objeto.cancelado > 0){
+            if(objeto.cancelado >= 0){
                 return (parseFloat(suma) + parseFloat(objeto.costo));
             }
             return suma;
@@ -616,7 +616,7 @@ onMounted(async () => {
                             <td
                                 class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                             >
-                                {{ getFormatoMoneda(total_costo)  }}
+                                {{ getFormatoMoneda(total_costo)  }}  -  {{ total_costo }}
                             </td>
                             <td
                                 class="bg-dark footer-fixed p-3 fixed-column-ext-right"

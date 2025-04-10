@@ -208,9 +208,9 @@
                     <td class="{{ mb_strtolower($trabajo->estado_pago) }}">{{ $trabajo->estado_pago }}</td>
                 </tr>
                 @php
-                    $total_saldo += $trabajo->saldo;
-                    $total_cancelado += $trabajo->cancelado;
-                    $total_costo += $trabajo->costo;
+                    $total_saldo += (float)$trabajo->saldo;
+                    $total_cancelado += (float)$trabajo->cancelado;
+                    $total_costo += (float)$trabajo->costo;
                 @endphp
             @endforeach
             <tr>
