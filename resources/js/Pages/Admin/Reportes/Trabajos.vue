@@ -616,7 +616,7 @@ onMounted(async () => {
                             <td
                                 class="bg-dark footer-fixed p-3 fixed-column-ext-right"
                             >
-                                {{ getFormatoMoneda(total_costo)  }}  -  {{ total_costo }}
+                                {{ getFormatoMoneda(total_costo)  }}
                             </td>
                             <td
                                 class="bg-dark footer-fixed p-3 fixed-column-ext-right"
