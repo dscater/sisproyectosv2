@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: localhost:3306
--- Tiempo de generación: 08-05-2025 a las 00:23:54
+-- Tiempo de generación: 02-06-2025 a las 20:52:40
 -- Versión del servidor: 8.0.30
 -- Versión de PHP: 8.2.22
 
@@ -457,7 +457,9 @@ INSERT INTO `pagos` (`id`, `trabajo_id`, `cliente_id`, `monto_original`, `moneda
 (289, 191, 1, 50.00, 1, 50.00, 1, 50.00, 0, 'pago total', NULL, NULL, NULL, '2024-11-09', '2025-04-10 15:32:49', '2025-04-10 15:32:49'),
 (290, 202, 1, 50.00, 1, 50.00, 1, 50.00, 0, 'pago total', 'fc_2901746663684.jpg', NULL, NULL, '2025-04-29', '2025-05-08 00:21:24', '2025-05-08 00:21:24'),
 (291, 205, 1, 300.00, 1, 300.00, 1, 300.00, 0, 'pago total', 'fc_2911746663713.jpg', NULL, NULL, '2025-04-29', '2025-05-08 00:21:53', '2025-05-08 00:21:53'),
-(292, 84, 1, 372.00, 1, 372.00, 1, 53.45, 2, 'pago cuota', 'fc_2921746663747.jpg', NULL, NULL, '2025-04-29', '2025-05-08 00:22:27', '2025-05-08 00:23:00');
+(292, 84, 1, 372.00, 1, 372.00, 1, 53.45, 2, 'pago cuota', 'fc_2921746663747.jpg', NULL, NULL, '2025-04-29', '2025-05-08 00:22:27', '2025-05-08 00:23:00'),
+(293, 206, 1, 100.00, 1, 100.00, 1, 100.00, 0, 'pago total', 'fc_2931748897263.jpg', NULL, NULL, '2025-05-31', '2025-06-02 20:47:43', '2025-06-02 20:47:43'),
+(294, 207, 1, 350.00, 1, 350.00, 1, 350.00, 0, 'pago total', 'fc_2941748897294.jpg', NULL, NULL, '2025-05-31', '2025-06-02 20:48:14', '2025-06-02 20:48:14');
 
 -- --------------------------------------------------------
 
@@ -880,7 +882,8 @@ INSERT INTO `trabajos` (`id`, `proyecto_id`, `cliente_id`, `costo_original`, `mo
 (203, 103, 1, 100.00, 1, 100.00, 1, 0, 0.00, 100.00, 0.00, 100.00, 100.00, 0, 'PENDIENTE', 'OBSERVACIONES 01', '2025-04-08', 5, '2025-04-13', 'ENVIADO', '2025-04-08', NULL, '2025-04-10', '2025-04-10 15:30:19', '2025-04-10 15:30:19'),
 (204, 86, 1, 200.00, 1, 200.00, 1, 0, 0.00, 200.00, 0.00, 200.00, 200.00, 0, 'PENDIENTE', 'OBSERVACIONES 05', '2025-04-09', 5, '2025-04-14', 'EN PROCESO', NULL, NULL, '2025-04-10', '2025-04-10 15:30:56', '2025-04-10 15:30:56'),
 (205, 112, 1, 300.00, 1, 300.00, 1, 0, 300.00, 0.00, 600.00, -300.00, 300.00, 0, 'COMPLETO', 'CORRECCIONES DE DISEÑO<br />\r\n- AGREGACIÓN DE MODULO DE ACEPTACION O RECHAZO DE RESERVACIONES<br />\r\n- NOTIFICACIONES POR CORREO', '2025-04-22', 5, '2025-04-27', 'EN PROCESO', NULL, NULL, '2025-04-22', '2025-04-22 19:21:01', '2025-05-08 00:21:53'),
-(206, 10, 1, 100.00, 1, 100.00, 1, 0, 0.00, 100.00, 0.00, 100.00, 100.00, 0, 'PENDIENTE', 'SUCURSAL TEJADA SORZANO<br />\r\nNOMBRE SUCURSAL: TEJADA SORZANO<br />\r\nDIRECCIÓN: AV. DE LAS  AMERICAS ,FRENTE CALLE RURRENABAQUE Nª378<br />\r\nCÓDIGO: TS<br />\r\nCAJA 1: 281<br />\r\nCAJA 2: 282<br />\r\n<br />\r\nSUCURSAL CHACALTALLA<br />\r\nNOMBRE SUCURSAL: CHACALTALLA<br />\r\nDIRECCIÓN: AV. ALFONSO UGARTE,ESQUINA  CALLE ARTURO VALLE Nº97<br />\r\nCÓDIGO: CH<br />\r\nCAJA 1: 291<br />\r\nCAJA 2: 292', '2025-05-07', 1, '2025-05-08', 'ENVIADO', '2025-05-07', NULL, '2025-05-07', '2025-05-07 21:31:08', '2025-05-07 21:31:08');
+(206, 10, 1, 100.00, 1, 100.00, 1, 0, 100.00, 0.00, 200.00, -100.00, 100.00, 0, 'COMPLETO', 'SUCURSAL TEJADA SORZANO<br />\r\nNOMBRE SUCURSAL: TEJADA SORZANO<br />\r\nDIRECCIÓN: AV. DE LAS  AMERICAS ,FRENTE CALLE RURRENABAQUE Nª378<br />\r\nCÓDIGO: TS<br />\r\nCAJA 1: 281<br />\r\nCAJA 2: 282<br />\r\n<br />\r\nSUCURSAL CHACALTALLA<br />\r\nNOMBRE SUCURSAL: CHACALTALLA<br />\r\nDIRECCIÓN: AV. ALFONSO UGARTE,ESQUINA  CALLE ARTURO VALLE Nº97<br />\r\nCÓDIGO: CH<br />\r\nCAJA 1: 291<br />\r\nCAJA 2: 292', '2025-05-07', 1, '2025-05-08', 'ENVIADO', '2025-05-07', NULL, '2025-05-07', '2025-05-07 21:31:08', '2025-06-02 20:47:43'),
+(207, 102, 1, 350.00, 1, 350.00, 1, 0, 350.00, 0.00, 700.00, -350.00, 350.00, 0, 'COMPLETO', 'OBSERVACIONES 02', '2025-05-09', 5, '2025-05-14', 'ENVIADO', '2025-05-13', NULL, '2025-05-14', '2025-05-14 22:53:16', '2025-06-02 20:48:14');
 
 -- --------------------------------------------------------
 
@@ -1014,7 +1017,7 @@ ALTER TABLE `monedas`
 -- AUTO_INCREMENT de la tabla `pagos`
 --
 ALTER TABLE `pagos`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=293;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=295;
 
 --
 -- AUTO_INCREMENT de la tabla `personal_access_tokens`
@@ -1038,7 +1041,7 @@ ALTER TABLE `tipo_cambios`
 -- AUTO_INCREMENT de la tabla `trabajos`
 --
 ALTER TABLE `trabajos`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=207;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=208;
 
 --
 -- AUTO_INCREMENT de la tabla `users`
