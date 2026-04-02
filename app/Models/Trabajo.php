@@ -264,8 +264,14 @@ class Trabajo extends Model
                         $p->save();
                     }
                     $trabajo->estado_pago = 'PENDIENTE';
-                    if ($trabajo->costo == $suma_total) {
+                    // if ($trabajo->id == 29) {
+                    //     Log::debug("SUMA: " . (float)$suma_total);
+                    //     Log::debug("COSTO: " . (float)$trabajo->costo);
+                    // }
+                    if (round((float)$trabajo->costo, 2) == round((float)$suma_total, 2)) {
                         $trabajo->estado_pago = 'COMPLETO';
+                        $trabajo->saldo = 0;
+                        $trabajo->saldo_cambio = 0;
                         $trabajo->cancelado = $suma_total;
                         $trabajo->cancelado_cambio = $suma_total_cambio;
                     }
@@ -341,7 +347,7 @@ class Trabajo extends Model
 
         // actualizar los saldos de las columnas correspondientes
         $trabajo->cancelado = (float)$trabajo->cancelado + (float)$monto_cancelado;
-        $trabajo->saldo  = (float)$trabajo->saldo - (float)$monto_cancelado;
+        $trabajo->saldo  = (float)$trabajo->costo - (float)$trabajo->cancelado;
         if ($trabajo->tipo_cambio_id != 0) {
             // $trabajo->cancelado_cambio = (float)$trabajo->cancelado_cambio + (float)$monto_cancelado_cambio;
             $trabajo->cancelado_cambio = self::getMontoCambio($trabajo->tipo_cambio_id, $trabajo->moneda_id, $trabajo->cancelado);
@@ -349,7 +355,7 @@ class Trabajo extends Model
             $trabajo->saldo_cambio = self::getMontoCambio($trabajo->tipo_cambio_id, $trabajo->moneda_id, $trabajo->saldo);
         } else {
             $trabajo->cancelado_cambio = (float)$trabajo->cancelado + (float)$monto_cancelado;
-            $trabajo->saldo_cambio  = (float)$trabajo->saldo - (float)$monto_cancelado;
+            $trabajo->saldo_cambio  = (float)$trabajo->costo - (float)$trabajo->cancelado;
         }
         if ($trabajo->saldo == 0) {
             $trabajo->estado_pago = "COMPLETO";
