@@ -24,7 +24,6 @@ class TrabajoController extends Controller
     // TrabajoController::registraPagos();
     public function index()
     {
-        Trabajo::reestablecerPagos();
         return Inertia::render("Admin/Trabajos/Index");
     }
 
