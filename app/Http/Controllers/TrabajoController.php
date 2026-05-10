@@ -10,6 +10,8 @@ use App\Models\Pago;
 use App\Models\Proyecto;
 use App\Models\TipoCambio;
 use App\Models\Trabajo;
+use App\Services\TipoCambioService;
+use App\Services\TrabajoService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,10 +20,12 @@ use Inertia\Inertia;
 
 class TrabajoController extends Controller
 {
-    // Trabajo::reestablecerCostos();
-    // Trabajo::reestablecerPagos();
-    // Trabajo::reestablecerCostosOriginales();
-    // TrabajoController::registraPagos();
+    public function __construct(private TrabajoService $trabajo_service) {}
+
+    // $this->trabajo_service->reestablecerCostos();
+    // $this->trabajo_service->reestablecerPagos();
+    // $this->trabajo_service->reestablecerCostosOriginales();
+    // $this->trabajo_service->registraPagos();
     public function index()
     {
         return Inertia::render("Admin/Trabajos/Index");
@@ -105,33 +109,7 @@ class TrabajoController extends Controller
     {
         DB::beginTransaction();
         try {
-            $montos_trabajo = TrabajoController::generaMontosCambio($request->tipo_cambio_id, $request->moneda_seleccionada_id, $request->costo_original);
-            $datos_trabajo = [
-                "proyecto_id" => $request->proyecto_id,
-                "cliente_id" => $request->cliente_id,
-                "costo_original" => $request->costo_original,
-                "moneda_seleccionada_id" => $request->moneda_seleccionada_id,
-                "costo" => $montos_trabajo["costo"],
-                "moneda_id" => $montos_trabajo["moneda_id"],
-                "tipo_cambio_id" => $request->tipo_cambio_id,
-                "cancelado" => $request->cancelado ? $request->cancelado : 0,
-                "saldo" => $montos_trabajo["saldo"],
-                "cancelado_cambio" => $montos_trabajo["cancelado_cambio"],
-                "saldo_cambio" => $montos_trabajo["saldo_cambio"],
-                "costo_cambio" => $montos_trabajo["costo_cambio"],
-                "moneda_cambio_id" => $montos_trabajo["moneda_cambio_id"],
-                "estado_pago" => $request->estado_pago,
-                "descripcion" => nl2br(mb_strtoupper($request->descripcion)),
-                "fecha_inicio" => $request->fecha_inicio,
-                "dias_plazo" => $request->dias_plazo,
-                "fecha_entrega" => $request->fecha_entrega,
-                "estado_trabajo" => $request->estado_trabajo,
-                "fecha_envio" => $request->fecha_envio ? $request->fecha_envio : NULL,
-                "fecha_conclusion" => $request->fecha_conclusion ? $request->fecha_conclusion : NULL,
-                "fecha_registro" => date("Y-m-d")
-            ];
-
-            Trabajo::create($datos_trabajo);
+            $this->trabajo_service->crear($request->validated());
             DB::commit();
             return redirect()->route('trabajos.index')->with('message', 'Trabajo registrado con éxito');
         } catch (ValidationException $e) {
@@ -156,7 +134,7 @@ class TrabajoController extends Controller
     public function show(Trabajo $trabajo, Request $request)
     {
         $trabajo = $trabajo->load(["moneda_seleccionada", "moneda", "moneda_cambio", "tipo_cambio"]);
-        $total_pagos = Trabajo::getTotalCanceladoSinPago($trabajo->id, $request->filtra, $request->pago);
+        $total_pagos = $this->trabajo_service->getTotalCanceladoSinPago($trabajo->id, $request->filtra, $request->pago);
         return response()->JSON(["trabajo" => $trabajo, "total_pagos" => $total_pagos]);
     }
 
@@ -195,36 +173,7 @@ class TrabajoController extends Controller
     public function update(TrabajoUpdateRequest $request, Trabajo $trabajo)
     {
         try {
-            $montos_trabajo = TrabajoController::generaMontosCambio($request->tipo_cambio_id, $request->moneda_seleccionada_id, $request->costo_original);
-            $old_tipo_cambio = $trabajo->tipo_cambio_id;
-            $datos_trabajo = [
-                "proyecto_id" => $request->proyecto_id,
-                "cliente_id" => $request->cliente_id,
-                "costo_original" => $request->costo_original,
-                "moneda_seleccionada_id" => $request->moneda_seleccionada_id,
-                "costo" => $montos_trabajo["costo"],
-                "moneda_id" => $montos_trabajo["moneda_id"],
-                "tipo_cambio_id" => $request->tipo_cambio_id,
-                "cancelado" => $request->cancelado ? $request->cancelado : 0,
-                "saldo" => $montos_trabajo["saldo"],
-                "cancelado_cambio" => $montos_trabajo["cancelado_cambio"],
-                "saldo_cambio" => $montos_trabajo["saldo_cambio"],
-                "costo_cambio" => $montos_trabajo["costo_cambio"],
-                "moneda_cambio_id" => $montos_trabajo["moneda_cambio_id"],
-                "estado_pago" => $request->estado_pago,
-                "descripcion" => nl2br(mb_strtoupper($request->descripcion)),
-                "fecha_inicio" => $request->fecha_inicio,
-                "dias_plazo" => $request->dias_plazo,
-                "fecha_entrega" => $request->fecha_entrega,
-                "estado_trabajo" => $request->estado_trabajo,
-                "fecha_envio" => $request->fecha_envio ? $request->fecha_envio : NULL,
-                "fecha_conclusion" => $request->fecha_conclusion ? $request->fecha_conclusion : NULL,
-            ];
-            $trabajo->update($datos_trabajo);
-            if ($old_tipo_cambio != $trabajo->tipo_cambio_id) {
-                Trabajo::reestablecerPagosTrabajo($trabajo->id);
-            }
-
+            $this->trabajo_service->actualizar($trabajo, $request->validated());
             DB::commit();
             return redirect()->route('trabajos.index')->with('message', 'Registro actualizado con éxito');
         } catch (ValidationException $e) {
@@ -272,52 +221,4 @@ class TrabajoController extends Controller
             "trabajo" => $trabajo
         ]);
     }
-
-    public static function generaMontosCambio($tipo_cambio_id, $moneda_seleccionada_id, $costo_original)
-    {
-        $montos_trabajo = [
-            "costo" => $costo_original,
-            "moneda_id" => $moneda_seleccionada_id,
-            "costo_cambio" => $costo_original,
-            "cancelado_cambio" => 0,
-            "saldo_cambio" => $costo_original,
-            "saldo" => $costo_original,
-            "moneda_cambio_id" => 0
-        ];
-
-        if ($tipo_cambio_id != 0) {
-            $moneda_principal = Moneda::where("principal", 1)->get()->first();
-            $tipo_cambio = TipoCambio::findOrFail($tipo_cambio_id);
-            $costo_cambio = Trabajo::getMontoCambio($tipo_cambio_id, $moneda_seleccionada_id, $costo_original);
-            if ($moneda_seleccionada_id == $moneda_principal->id) {
-                // convertir a la segunda moneda
-                // solo afectara las columnas de cambio
-                $montos_trabajo["costo_cambio"] = $costo_cambio;
-                $montos_trabajo["saldo_cambio"] = $costo_cambio;
-                $montos_trabajo["saldo"] = $costo_original;
-            } else {
-                // convertir a moneda principal
-                $montos_trabajo["costo_cambio"] = $costo_original;
-                $montos_trabajo["saldo_cambio"] = $costo_original;
-                $montos_trabajo["costo"] = $costo_cambio;
-                $montos_trabajo["saldo"] = $costo_cambio;
-            }
-            $montos_trabajo["moneda_id"] = $tipo_cambio->moneda1_id;
-            $montos_trabajo["moneda_cambio_id"] = $tipo_cambio->moneda2_id;
-        }
-        return $montos_trabajo;
-    }
-
-    // public static function registraPagos()
-    // {
-    //     $trabajos =  Trabajo::where('cancelado', '>', 0)->get();
-    //     foreach ($trabajos as $t) {
-    //         $t->pagos()->create([
-    //             'cliente_id' => $t->cliente_id,
-    //             'monto' => $t->cancelado,
-    //             'moneda_id' => $t->moneda_id,
-    //             'fecha_pago' => $t->fecha_registro
-    //         ]);
-    //     }
-    // }
 }

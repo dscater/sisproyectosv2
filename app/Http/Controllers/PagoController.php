@@ -6,6 +6,8 @@ use App\Models\Moneda;
 use App\Models\Pago;
 use App\Models\TipoCambio;
 use App\Models\Trabajo;
+use App\Services\TipoCambioService;
+use App\Services\TrabajoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +34,8 @@ class PagoController extends Controller
         "descripcion.requried" => "Este campo es obligatorio",
         "descripcion.min" => "Debes ingresar al menos :min caracteres",
     ];
+
+    public function __construct(private TrabajoService $trabajo_service, private TipoCambioService $tipo_cambio_service) {}
 
     public function index(Request $request)
     {
@@ -99,7 +103,7 @@ class PagoController extends Controller
             $trabajo = Trabajo::find($request->trabajo_id);
             $request['cliente_id'] = $trabajo->cliente_id;
 
-            $montos_pago = PagoController::generaMontosCambio($trabajo->tipo_cambio_id, $request->moneda_seleccionada_id, $request->monto_original);
+            $montos_pago = $this->tipo_cambio_service->generaMontosCambio($trabajo->tipo_cambio_id, $request->moneda_seleccionada_id, $request->monto_original);
 
             $datos_pago = [
                 "trabajo_id" => $trabajo->id,
@@ -133,7 +137,7 @@ class PagoController extends Controller
             }
             $nuevo_pago->save();
 
-            Trabajo::actualizaSaldoTrabajoPorPago($nuevo_pago, $trabajo);
+            $this->trabajo_service->actualizaSaldoTrabajoPorPago($nuevo_pago, $trabajo);
 
             DB::commit();
             return redirect()->route('pagos.index')->with('msj', 'Pago registrado con éxito');
@@ -176,7 +180,7 @@ class PagoController extends Controller
         try {
             $old_trabajo = $pago->trabajo;
             $trabajo = Trabajo::find($request->trabajo_id);
-            $montos_pago = PagoController::generaMontosCambio($trabajo->tipo_cambio_id, $request->moneda_seleccionada_id, $request->monto_original);
+            $montos_pago = $this->tipo_cambio_service->generaMontosCambio($trabajo->tipo_cambio_id, $request->moneda_seleccionada_id, $request->monto_original);
             $datos_pago = [
                 "trabajo_id" => $trabajo->id,
                 "cliente_id" => $trabajo->cliente_id,
@@ -259,34 +263,5 @@ class PagoController extends Controller
             // Log::debug("ERROR " . $e->getCode() . ": " . $e->getMessage());
             throw new \RuntimeException($e->getMessage(), $e->getCode());
         }
-    }
-
-    public static function generaMontosCambio($tipo_cambio_id, $moneda_seleccionada_id, $monto_original)
-    {
-        $montos_pago = [
-            "monto" => $monto_original,
-            "moneda_id" => $moneda_seleccionada_id,
-            "monto_cambio" => $monto_original,
-            "moneda_cambio_id" => 0
-        ];
-
-        if ($tipo_cambio_id != 0) {
-            $moneda_principal = Moneda::where("principal", 1)->get()->first();
-            $tipo_cambio = TipoCambio::findOrFail($tipo_cambio_id);
-            $monto_cambio = Trabajo::getMontoCambio($tipo_cambio_id, $moneda_seleccionada_id, $monto_original);
-            if ($moneda_seleccionada_id == $moneda_principal->id) {
-                // convertir a la segunda moneda
-                // solo afectara las columnas de cambio
-                $montos_pago["monto_cambio"] = $monto_cambio;
-                $montos_pago["monto"] = $monto_original;
-            } else {
-                // convertir a moneda principal
-                $montos_pago["monto_cambio"] = $monto_original;
-                $montos_pago["monto"] = $monto_cambio;
-            }
-            $montos_pago["moneda_id"] = $tipo_cambio->moneda1_id;
-            $montos_pago["moneda_cambio_id"] = $tipo_cambio->moneda2_id;
-        }
-        return $montos_pago;
     }
 }

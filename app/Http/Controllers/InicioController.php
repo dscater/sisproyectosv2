@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Moneda;
 use App\Models\Pago;
 use App\Models\Trabajo;
+use App\Services\TrabajoService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class InicioController extends Controller
 {
+    public function __construct(private TrabajoService $trabajo_service) {}
+
     public function inicio()
     {
 
@@ -20,11 +23,11 @@ class InicioController extends Controller
         $no_cancelados = Trabajo::where("estado_pago", "PENDIENTE")
             ->whereIn("estado_trabajo", ["ENVIADO", "CONCLUIDO"])->get();
 
-        $total_cancelado = Trabajo::getTotalCancelado();
-        $total_saldo = Trabajo::getTotalSaldos();
-        $total_saldo_enviando = Trabajo::getTotalSaldoPendiente();
+        $total_cancelado = $this->trabajo_service->getTotalCancelado();
+        $total_saldo = $this->trabajo_service->getTotalSaldos();
+        $total_saldo_enviando = $this->trabajo_service->getTotalSaldoPendiente();
 
-        $costo_total = Trabajo::getTotalTrabajos();
+        $costo_total = $this->trabajo_service->getTotalTrabajos();
         // fin informacion trabajos
 
 
