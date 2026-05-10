@@ -64,6 +64,10 @@ const props = defineProps({
         type: String,
         default: "",
     },
+    footerClass: {
+        type: String,
+        default: "",
+    },
     paginationClass: {
         type: String,
         default: "",
@@ -122,7 +126,7 @@ const mensajeError = ref("");
 const per_page = ref(props.perPage);
 const orderBy = ref(props.syncOrderBy);
 const orderAsc = ref(
-    props.syncOrderAsc ? props.syncOrderAsc.toLowerCase() : null
+    props.syncOrderAsc ? props.syncOrderAsc.toLowerCase() : null,
 );
 const total = ref(listData.value.length);
 const currentPage = ref(1);
@@ -142,7 +146,7 @@ watch(
         orderBy.value = newVal;
         // console.log("watch 1");
         cargarDatos();
-    }
+    },
 );
 
 watch(
@@ -151,7 +155,7 @@ watch(
         orderAsc.value = newVal ? newVal.toLowerCase() : null;
         // console.log("watch 2");
         cargarDatos();
-    }
+    },
 );
 
 watch(
@@ -159,14 +163,14 @@ watch(
     (newVal) => {
         // console.log("watch 3");
         pLoading.value = newVal;
-    }
+    },
 );
 
 watch(
     () => props.multiSearch,
     (newVal) => {
         // console.log("watch 4");
-        setLoading(true)
+        setLoading(true);
         clearInterval(intervalSearch.value);
         intervalSearch.value = setTimeout(() => {
             currentPage.value = 1;
@@ -174,21 +178,21 @@ watch(
             cargarDatos();
         }, props.delaySearch);
     },
-    { deep: true }
+    { deep: true },
 );
 
 watch(
     () => props.search,
     (newVal) => {
         // console.log("watch 5");
-        setLoading(true)
+        setLoading(true);
         tSearch.value = newVal;
         clearInterval(intervalSearch.value);
         intervalSearch.value = setTimeout(() => {
             currentPage.value = 1;
             cargarDatos();
         }, props.delaySearch);
-    }
+    },
 );
 
 watch(per_page, (newValue, oldValue) => {
@@ -203,7 +207,7 @@ watch(
         listData.value = newVal;
         total.value = listData.value.length;
         cargarDatos();
-    }
+    },
 );
 
 watch(
@@ -215,7 +219,7 @@ watch(
                 establecerAltoContenedor();
             });
         }
-    }
+    },
 );
 
 // funcion para determinar si se cargaron todos los elementos
@@ -295,7 +299,7 @@ const generarDatosPorLista = async () => {
                     value
                         .toString()
                         .toLowerCase()
-                        .includes(tSearch.value.toLowerCase())
+                        .includes(tSearch.value.toLowerCase()),
                 );
             });
 
@@ -307,7 +311,7 @@ const generarDatosPorLista = async () => {
                 filteredArray = filteredArray.sort((a, b) => {
                     // Obtener la configuración de la columna por su key
                     let columnConfig = listCols.value.find(
-                        (col) => col.key === vOrderBy
+                        (col) => col.key === vOrderBy,
                     );
                     if (!columnConfig) {
                         return 0;
@@ -361,7 +365,7 @@ const generarDatosPorLista = async () => {
             if (props.conPaginacion) {
                 listaFiltrada = filteredArray.slice(
                     startIndex,
-                    startIndex + pageSize
+                    startIndex + pageSize,
                 );
             }
 
@@ -478,10 +482,12 @@ const miContentHeaderRef = ref(null);
 const miTableHeaderRef = ref(null);
 const miContentScrollRef = ref(null);
 const miContentTableRef = ref(null);
+const miTableFooterRef = ref(null);
+const miContentFooter = ref(null);
 const miTableRef = ref(null);
 const listAnchoColumnas = ref([]);
 const widthMiTable = ref(
-    miTable.value ? parseInt(miTable.value.offsetWidth) : 0
+    miTable.value ? parseInt(miTable.value.offsetWidth) : 0,
 );
 const widthColFirstDefault = ref(40);
 const widthColsDefault = ref(40);
@@ -502,6 +508,10 @@ const ajustarAnchoColumnas = async () => {
                 miContentHeaderRef.value.querySelectorAll("col");
             const colsColgroupContent =
                 miContentTableRef.value.querySelectorAll("col");
+
+            const colsColgroupFooter =
+                miTableFooterRef.value.querySelectorAll("col");
+
             // recorrer las columnas listThHeader
             listThHeader.forEach((elemCol, indexCol) => {
                 const width = parseInt(elemCol.offsetWidth);
@@ -512,7 +522,7 @@ const ajustarAnchoColumnas = async () => {
                 let widthDefinido = widthCol;
                 if (listCols.value[indexCol].width) {
                     widthDefinido = getCalculoAnchoPVW(
-                        listCols.value[indexCol].width
+                        listCols.value[indexCol].width,
                     );
                     if (widthContent > widthDefinido) {
                         widthDefinido = widthContent;
@@ -531,6 +541,7 @@ const ajustarAnchoColumnas = async () => {
                 colsColgroupHeader[indexCol].style.width = widthDefinido + "px";
                 colsColgroupContent[indexCol].style.width =
                     widthDefinido + "px";
+                colsColgroupFooter[indexCol].style.width = widthDefinido + "px";
                 listAnchoColumnas.value[indexCol] = widthDefinido;
             });
         }
@@ -555,10 +566,10 @@ const getStyleColRenderizado = (indexCol, widthParam) => {
         axisParam = "l";
         let claseBoxShadow = {};
         const listLefts = listCols.value.filter(
-            (elem) => elem.fixed && elem.fixed == true
+            (elem) => elem.fixed && elem.fixed == true,
         );
         const listRights = listCols.value.filter(
-            (elem) => elem.fixed && elem.fixed == "right"
+            (elem) => elem.fixed && elem.fixed == "right",
         );
 
         if (listCols.value[indexCol].fixed == "right") {
@@ -568,7 +579,7 @@ const getStyleColRenderizado = (indexCol, widthParam) => {
         const distancia = calcularDistanciaPosicionRL(
             indexCol,
             axisParam,
-            listAnchoColumnas.value
+            listAnchoColumnas.value,
         );
         if (window.innerWidth > 790 || !props.tableResponsive) {
             return {
@@ -589,10 +600,10 @@ const getClassShadow = (item, indexCol, width_content) => {
     if (item.fixed && miContentTableRef.value && miTableRef.value) {
         verificar = item.fixed == "right" ? "r" : "l";
         const listLefts = listCols.value.filter(
-            (elem) => elem.fixed && elem.fixed == true
+            (elem) => elem.fixed && elem.fixed == true,
         );
         const listRights = listCols.value.filter(
-            (elem) => elem.fixed && elem.fixed == "right"
+            (elem) => elem.fixed && elem.fixed == "right",
         );
 
         if (
@@ -666,13 +677,13 @@ const calcularDistanciaPosicionRL = (indexCol, rl, listaActualizada) => {
 const establecerColumnasFixedSlot = () => {
     return new Promise((resolve, reject) => {
         try {
-            if (miTableRef.value) {
-                const table = miTableRef.value;
+            if (miTableFooterRef.value) {
+                const table = miTableFooterRef.value;
 
                 const listIzquierda =
                     table.querySelectorAll(".fixed-column-ext");
                 const listDerechaIni = table.querySelectorAll(
-                    ".fixed-column-ext-right"
+                    ".fixed-column-ext-right",
                 );
                 const listDerecha = [...listDerechaIni].reverse();
                 let distancia_acum = 0;
@@ -801,21 +812,21 @@ const syncScrollBodyHeader = () => {
     if (miContentTableRef.value) {
         miContentTableRef.value.removeEventListener(
             "scroll",
-            scrollContentAHeader
+            scrollContentAHeader,
         );
         miContentTableRef.value.addEventListener(
             "scroll",
-            scrollContentAHeader
+            scrollContentAHeader,
         );
     }
     if (miContentHeaderRef.value) {
         miContentHeaderRef.value.removeEventListener(
             "scroll",
-            scrollHeaderAContent
+            scrollHeaderAContent,
         );
         miContentHeaderRef.value.addEventListener(
             "scroll",
-            scrollHeaderAContent
+            scrollHeaderAContent,
         );
     }
 };
@@ -834,7 +845,7 @@ const scrollContentAHeader = (e) => {
     } else {
         miContentTableRef.value.removeEventListener(
             "scroll",
-            syncScrollBodyHeader
+            syncScrollBodyHeader,
         );
     }
 
@@ -852,7 +863,7 @@ const scrollContentAHeader = (e) => {
     } else {
         miContentTableRef.value.removeEventListener(
             "scroll",
-            syncScrollBodyHeader
+            syncScrollBodyHeader,
         );
     }
 };
@@ -871,7 +882,7 @@ const scrollHeaderAContent = (e) => {
     } else {
         miContentHeaderRef.value.removeEventListener(
             "scroll",
-            syncScrollBodyHeader
+            syncScrollBodyHeader,
         );
     }
 };
@@ -1003,9 +1014,7 @@ defineExpose({
                             <tr>
                                 <th
                                     v-for="(item, index) in listCols"
-                                    :colspan="`${
-                                        item.colspan ? item.colspan : 1
-                                    }`"
+                                    :colspan="`${item.colspan ? item.colspan : 1}`"
                                     :class="[
                                         item.fixed
                                             ? item.fixed == 'right'
@@ -1016,14 +1025,14 @@ defineExpose({
                                         getClassShadow(
                                             item,
                                             index,
-                                            widthParamContent
+                                            widthParamContent,
                                         ),
                                     ]"
                                     :data-width="item.width ? item.width : ''"
                                     :style="
                                         getStyleColRenderizado(
                                             index,
-                                            widthParamContent
+                                            widthParamContent,
                                         )
                                     "
                                 >
@@ -1036,7 +1045,7 @@ defineExpose({
                                                     ? item.keySortable
                                                         ? item.keySortable
                                                         : item.key
-                                                    : item.key
+                                                    : item.key,
                                             )
                                         "
                                     >
@@ -1047,7 +1056,7 @@ defineExpose({
                                             class="accion"
                                             :class="{
                                                 active: getClassActiveSort(
-                                                    item
+                                                    item,
                                                 ),
                                             }"
                                         >
@@ -1148,12 +1157,10 @@ defineExpose({
                                             getClassShadow(
                                                 i_col,
                                                 index_col,
-                                                widthParamContent
+                                                widthParamContent,
                                             ),
                                         ]"
-                                        :colspan="`${
-                                            item.colspan ? item.colspan : 1
-                                        }`"
+                                        :colspan="`${item.colspan ? item.colspan : 1}`"
                                         :ref="
                                             (el) =>
                                                 (refsRowsCol[
@@ -1163,7 +1170,7 @@ defineExpose({
                                         :style="
                                             getStyleColRenderizado(
                                                 index_col,
-                                                widthParamContent
+                                                widthParamContent,
                                             )
                                         "
                                     >
@@ -1188,10 +1195,19 @@ defineExpose({
                                             </template>
                                             <template v-else>
                                                 {{
-                                                    getColumnValue(
-                                                        item,
-                                                        i_col.key
-                                                    )
+                                                    i_col.isIndex
+                                                        ? index_row + 1
+                                                        : i_col.render
+                                                          ? i_col.render(
+                                                                item,
+                                                                index_row,
+                                                            )
+                                                          : i_col.key
+                                                            ? getColumnValue(
+                                                                  item,
+                                                                  i_col.key,
+                                                              )
+                                                            : ""
                                                 }}
                                             </template>
                                         </div>
@@ -1202,18 +1218,13 @@ defineExpose({
                                 <tr>
                                     <td
                                         :colspan="listCols.length"
-                                        class="text-center"
+                                        class="text-center py-2"
                                     >
                                         {{ textSinRegistros }}
                                     </td>
                                 </tr>
                             </template>
                         </tbody>
-                        <tfoot>
-                            <template v-if="$slots.tableFooter">
-                                <slot name="tableFooter"></slot>
-                            </template>
-                        </tfoot>
                     </table>
                 </div>
                 <div class="content-scroll-x">
@@ -1231,9 +1242,23 @@ defineExpose({
                     ></div>
                 </div>
             </div>
+            <div
+                class="mi-content-footer"
+                ref="miContentFooter"
+                v-if="$slots.tableFooter"
+            >
+                <table class="table table-bordered" ref="miTableFooterRef">
+                    <colgroup ref="tableHeaderGroup">
+                        <col v-for="item in listCols" />
+                    </colgroup>
+                    <tbody :class="[footerClass]">
+                        <slot name="tableFooter"></slot>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="content-foot px-3 pt-2" v-if="conPaginacion">
+        <div class="content-foot" v-if="conPaginacion">
             <div class="row mt-1">
                 <div class="my-1 col-md-3">
                     <select class="form-control rounded-0" v-model="per_page">

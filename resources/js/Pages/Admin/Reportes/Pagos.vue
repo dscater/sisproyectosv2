@@ -64,7 +64,7 @@ const headers = ref([
         sortable: true,
         fixed: true,
         // width: "190",
-        
+
         classTd: () => {
             let class_fixed = "bg__fixed";
             return class_fixed;
@@ -157,7 +157,7 @@ const total_pagos = computed(() => {
     return listPagos.value.reduce(
         (suma, objeto) =>
             (parseFloat(suma) + parseFloat(objeto.monto)).toFixed(2),
-        0
+        0,
     );
 });
 
@@ -221,11 +221,15 @@ function obtenerFechaActual() {
                                             @change="cambioValoresFiltros"
                                             filterable
                                         >
-                                            <el-option :value="'todos'" :label="'Todos'">Todos</el-option>
+                                            <el-option
+                                                :value="'todos'"
+                                                :label="'Todos'"
+                                                >Todos</el-option
+                                            >
                                             <el-option
                                                 v-for="item in proyectos"
                                                 :value="item.id"
-                                                :label="`(${item.alias}) ${ item.nombre }`"
+                                                :label="`(${item.alias}) ${item.nombre}`"
                                             >
                                             </el-option>
                                         </el-select>
@@ -247,11 +251,15 @@ function obtenerFechaActual() {
                                             @change="cambioValoresFiltros"
                                             filterable
                                         >
-                                            <el-option :value="'todos'" :label="'Todos'">Todos</el-option>
+                                            <el-option
+                                                :value="'todos'"
+                                                :label="'Todos'"
+                                                >Todos</el-option
+                                            >
                                             <el-option
                                                 v-for="item in trabajos"
                                                 :value="item.id"
-                                                :label="`(${ item.proyecto.alias }) ${ item.descripcion }`"
+                                                :label="`(${item.proyecto.alias}) ${item.descripcion}`"
                                             >
                                             </el-option>
                                         </el-select>
@@ -407,7 +415,7 @@ function obtenerFechaActual() {
                             fixed-header
                             table-height="50vh"
                         >
-                            <template #['trabajo.proyecto.nombre']="{ item }">
+                            <template #[`trabajo.proyecto.nombre`]="{ item }">
                                 <p
                                     style="
                                         width: 120px;
@@ -422,14 +430,14 @@ function obtenerFechaActual() {
 
                             <template #foto_comprobante="{ item }">
                                 <div
-                                class="w-100 text-center"
+                                    class="w-100 text-center"
                                     v-text="item.foto_comprobante ? 'SI' : 'NO'"
                                 ></div>
                             </template>
 
                             <template #archivo_comprobante="{ item }">
                                 <div
-                                class="w-100 text-center"
+                                    class="w-100 text-center"
                                     v-text="
                                         item.archivo_comprobante ? 'SI' : 'NO'
                                     "
@@ -443,10 +451,8 @@ function obtenerFechaActual() {
                                 </div>
                             </template>
 
-                            <template #['trabajo.descripcion']="{ item }">
-                                <div
-                                    v-html="item.trabajo.descripcion"
-                                ></div>
+                            <template #[`trabajo.descripcion`]="{ item }">
+                                <div v-html="item.trabajo.descripcion"></div>
                             </template>
 
                             <template
@@ -458,15 +464,11 @@ function obtenerFechaActual() {
                                 >
                                     <td
                                         colspan="3"
-                                        class="bg-dark footer-fixed p-3 fixed-column-ext text-right"
+                                        class="bg-dark fixed-column-ext text-right"
                                     >
                                         TOTAL
                                     </td>
-                                    <td
-                                        colspan="5"
-                                        class="bg-dark"
-                                        style="position: sticky; bottom: 0"
-                                    >
+                                    <td colspan="5" class="bg-dark">
                                         <div>&nbsp;</div>
                                     </td>
                                     <td

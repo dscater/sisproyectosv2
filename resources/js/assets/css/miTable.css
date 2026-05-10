@@ -36,7 +36,9 @@
 
 .mi-table .mi-content-scroll .content-table {
     width: 100%;
-    transition: height 0.2s ease-in-out, width 0.1s ease-in-out;
+    transition:
+        height 0.2s ease-in-out,
+        width 0.1s ease-in-out;
 }
 
 .mi-table .mi-content-scroll .mi-content-header {
@@ -85,7 +87,7 @@
     position: relative;
     display: flex;
     padding: 10px;
-    height: 100%;
+    /* height: 100%; */
     width: 100%;
     gap: 2px;
     align-items: center;
@@ -115,7 +117,9 @@
 
 .mi-table .content-table td,
 .mi-table .content-table th {
-    transition: left 0.1s linear, right 0.1s linear;
+    transition:
+        left 0.1s linear,
+        right 0.1s linear;
 }
 
 .mi-table .content-foot {
@@ -315,7 +319,7 @@
         vertical-align: middle;
     }
 
-    .mi-table table.table-resposive tbody tr{
+    .mi-table table.table-resposive tbody tr {
         background-color: rgb(255, 255, 255);
     }
 
@@ -362,9 +366,20 @@
         tr
         td.fixed-column-right:nth-child(1 of .fixed-column-right),
     .mi-table .content-table table.table-resposive tbody tr td .mi-celda {
-        border: none;
+        display: inline-flex;
+        align-items: center;
         box-shadow: none;
+        flex: 1;
+        height: 100%;
+        padding: 5px 0px;
     }
+
+    .mi-table .content-table table.table-resposive tbody tr td .mi-celda {
+        display: flex;
+        position: relative;
+        height: 100%;
+    }
+
     .mi-table
         .content-table
         table.table-resposive
@@ -373,21 +388,20 @@
         td.fixed-column-right,
     .mi-table .content-table table.table-resposive tbody tr td.fixed-column,
     .mi-table .content-table table.table-resposive tbody tr td {
+        padding-left: 10px;
         background-color: transparent;
-        display: flex;
-        position: relative;
         width: 100%;
-        font-size: 0.8rem;
+        font-size: 0.77rem;
     }
 
     .mi-table table.table-resposive tbody tr td .label-responsive {
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        justify-content: end;
-        width: 40%;
-        text-align: right;
         overflow-wrap: break-word;
+        justify-content: end;
+        text-align: right;
         font-weight: 700;
+        flex: 1 1 0;
         font-style: normal;
         padding: 0 0.5rem 0 0;
         margin: 0;
