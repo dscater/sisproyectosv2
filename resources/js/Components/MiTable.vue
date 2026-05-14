@@ -509,8 +509,9 @@ const ajustarAnchoColumnas = async () => {
             const colsColgroupContent =
                 miContentTableRef.value.querySelectorAll("col");
 
-            const colsColgroupFooter =
-                miTableFooterRef.value.querySelectorAll("col");
+            const colsColgroupFooter = miTableFooterRef.value
+                ? miTableFooterRef.value.querySelectorAll("col")
+                : [];
 
             // recorrer las columnas listThHeader
             listThHeader.forEach((elemCol, indexCol) => {
@@ -541,8 +542,11 @@ const ajustarAnchoColumnas = async () => {
                 colsColgroupHeader[indexCol].style.width = widthDefinido + "px";
                 colsColgroupContent[indexCol].style.width =
                     widthDefinido + "px";
-                colsColgroupFooter[indexCol].style.width = widthDefinido + "px";
                 listAnchoColumnas.value[indexCol] = widthDefinido;
+                if (colsColgroupFooter.length > 0) {
+                    colsColgroupFooter[indexCol].style.width =
+                        widthDefinido + "px";
+                }
             });
         }
 
@@ -679,33 +683,35 @@ const establecerColumnasFixedSlot = () => {
         try {
             if (miTableFooterRef.value) {
                 const table = miTableFooterRef.value;
+                const listFilas = table.querySelectorAll("tr");
+                listFilas.forEach((fila) => {
+                    const listIzquierda =
+                        fila.querySelectorAll(".fixed-column-ext");
+                    const listDerechaIni = fila.querySelectorAll(
+                        ".fixed-column-ext-right",
+                    );
+                    const listDerecha = [...listDerechaIni].reverse();
+                    let distancia_acum = 0;
+                    listIzquierda.forEach((elem) => {
+                        elem.style.position = "sticky";
+                        elem.style.left = distancia_acum + "px";
+                        if (elem.classList.contains("footer-fixed")) {
+                            elem.style.bottom = "1px";
+                        }
+                        elem.style.left = distancia_acum + "px";
+                        distancia_acum += parseFloat(elem.offsetWidth);
+                    });
 
-                const listIzquierda =
-                    table.querySelectorAll(".fixed-column-ext");
-                const listDerechaIni = table.querySelectorAll(
-                    ".fixed-column-ext-right",
-                );
-                const listDerecha = [...listDerechaIni].reverse();
-                let distancia_acum = 0;
-                listIzquierda.forEach((elem) => {
-                    elem.style.position = "sticky";
-                    elem.style.left = distancia_acum + "px";
-                    if (elem.classList.contains("footer-fixed")) {
-                        elem.style.bottom = "1px";
-                    }
-                    elem.style.left = distancia_acum + "px";
-                    distancia_acum += parseFloat(elem.offsetWidth);
-                });
-
-                distancia_acum = 0;
-                listDerecha.forEach((elem) => {
-                    elem.style.position = "sticky";
-                    elem.style.right = distancia_acum + "px";
-                    if (elem.classList.contains("footer-fixed")) {
-                        elem.style.bottom = "1px";
-                    }
-                    elem.style.right = distancia_acum + "px";
-                    distancia_acum += parseFloat(elem.offsetWidth);
+                    distancia_acum = 0;
+                    listDerecha.forEach((elem) => {
+                        elem.style.position = "sticky";
+                        elem.style.right = distancia_acum + "px";
+                        if (elem.classList.contains("footer-fixed")) {
+                            elem.style.bottom = "1px";
+                        }
+                        elem.style.right = distancia_acum + "px";
+                        distancia_acum += parseFloat(elem.offsetWidth);
+                    });
                 });
             }
             resolve();
@@ -1131,7 +1137,7 @@ defineExpose({
                         ]"
                         ref="miTableRef"
                     >
-                        <colgroup ref="tableHeaderGroup">
+                        <colgroup ref="tableContentGroup">
                             <col v-for="item in listCols" />
                         </colgroup>
                         <tbody
@@ -1145,6 +1151,7 @@ defineExpose({
                                 <tr
                                     v-for="(item, index_row) in listItems"
                                     :class="getRowClass(item)"
+                                    :key="item.id ? item.id : index_row"
                                 >
                                     <td
                                         v-for="(i_col, index_col) in listCols"
@@ -1248,7 +1255,7 @@ defineExpose({
                 v-if="$slots.tableFooter"
             >
                 <table class="table table-bordered" ref="miTableFooterRef">
-                    <colgroup ref="tableHeaderGroup">
+                    <colgroup ref="tableFooterGroup">
                         <col v-for="item in listCols" />
                     </colgroup>
                     <tbody :class="[footerClass]">
