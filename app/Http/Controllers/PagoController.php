@@ -221,11 +221,11 @@ class PagoController extends Controller
             $pago->save();
 
             // reestablecer pagos del trabajo
-            Trabajo::reestablecerPagosTrabajo($trabajo->id);
+            $this->trabajo_service->reestablecerPagosTrabajo($trabajo->id);
 
             // restablecer pagos trabajo erroneo
             if ($old_trabajo->id != $trabajo->id) {
-                Trabajo::reestablecerPagosTrabajo($old_trabajo->id);
+                $this->trabajo_service->reestablecerPagosTrabajo($old_trabajo->id);
             }
 
             DB::commit();
